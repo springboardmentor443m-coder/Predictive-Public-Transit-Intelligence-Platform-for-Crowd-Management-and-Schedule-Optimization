@@ -1,0 +1,127 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f4f7fb;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 30px;
+}
+
+.login-container {
+  width: 900px;
+  max-width: 100%;
+  min-height: 500px;
+  display: flex;
+  background: white;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* Left side */
+
+.brand-section {
+  width: 50%;
+  padding: 60px 45px;
+  background: #12355b;
+  color: white;
+}
+
+.brand-section h1 {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+.brand-section > p {
+  font-size: 18px;
+  color: #d6e4f0;
+}
+
+.info-box {
+  margin-top: 70px;
+}
+
+.info-box h2 {
+  font-size: 28px;
+}
+
+.info-box p {
+  line-height: 1.6;
+  color: #d6e4f0;
+}
+
+/* Right side */
+
+.login-section {
+  width: 50%;
+  padding: 60px 45px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.login-section h2 {
+  font-size: 32px;
+  margin-bottom: 5px;
+  color: #12355b;
+}
+
+.subtitle {
+  color: #777;
+  margin-bottom: 30px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  margin-top: 15px;
+  margin-bottom: 7px;
+  font-weight: bold;
+  color: #333;
+}
+
+input,
+select {
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 15px;
+}
+
+button {
+  margin-top: 25px;
+  padding: 13px;
+  border: none;
+  border-radius: 6px;
+  background: #12355b;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1c5288;
+}
+
+@media (max-width: 700px) {
+  .login-container {
+    flex-direction: column;
+  }
+
+  .brand-section,
+  .login-section {
+    width: 100%;
+  }
+}
