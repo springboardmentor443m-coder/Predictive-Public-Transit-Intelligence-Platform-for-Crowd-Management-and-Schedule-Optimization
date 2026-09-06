@@ -2,8 +2,8 @@ import os
 import time
 from datetime import datetime, timezone
 
-import requests
 import pandas as pd
+import requests
 from google.transit import gtfs_realtime_pb2
 
 
@@ -11,309 +11,573 @@ from google.transit import gtfs_realtime_pb2
 # SETTINGS
 # =========================================================
 
-API_URL = (
-    "https://api.opendata.transport.vic.gov.au/"
-    "opendata/public-transport/gtfs/realtime/v1/"
-    "vline/vehicle-positions"
+REALTIME_URL = (
+    "https://api.vic.gov.au/transport/"
+    "vline/gtfs-realtime/vehicle-positions"
 )
 
-API_KEY = os.getenv("TRANSPORT_VICTORIA_API_KEY")
+OUTPUT_FILE = (
+    "data/realtime/vline_vehicle_history.csv"
+)
 
-OUTPUT_FILE = "data/realtime/vline_vehicle_history.csv"
-
-# Collect every 60 seconds
-COLLECTION_INTERVAL = 60
-
-
-# =========================================================
-# CHECK API KEY
-# =========================================================
-
-if not API_KEY:
-    raise RuntimeError(
-        "API key not found. Please set the "
-        "TRANSPORT_VICTORIA_API_KEY environment variable."
-    )
+COLLECTION_INTERVAL_SECONDS = 60
 
 
 # =========================================================
-# CREATE OUTPUT DIRECTORY
+# HELPER FUNCTIONS
 # =========================================================
 
-os.makedirs("data/realtime", exist_ok=True)
+def unix_to_datetime(timestamp):
+    """Convert Unix timestamp to UTC datetime."""
+
+    if timestamp is None:
+        return None
+
+    try:
+        return datetime.fromtimestamp(
+            int(timestamp),
+            tz=timezone.utc
+        )
+    except (ValueError, TypeError, OSError):
+        return None
+
+
+def get_vehicle_status(
+    vehicle_timestamp,
+    previous_timestamp,
+    feed_timestamp,
+    previous_feed_timestamp
+):
+    """
+    Determine whether the realtime observation is fresh
+    or stale.
+
+    A changing vehicle timestamp means the vehicle data
+    itself has been updated.
+
+    A changing feed timestamp alone does NOT guarantee that
+    the vehicle position has changed.
+    """
+
+    if vehicle_timestamp is None:
+        return "MISSING_TIMESTAMP"
+
+    if previous_timestamp is None:
+        return "FRESH"
+
+    if vehicle_timestamp > previous_timestamp:
+        return "FRESH"
+
+    if vehicle_timestamp == previous_timestamp:
+
+        if (
+            feed_timestamp is not None
+            and previous_feed_timestamp is not None
+            and feed_timestamp > previous_feed_timestamp
+        ):
+            return "STALE_VEHICLE_DATA"
+
+        return "REPEATED_DATA"
+
+    return "OLDER_DATA"
 
 
 # =========================================================
 # FETCH REALTIME FEED
 # =========================================================
 
-def fetch_realtime_feed():
+def fetch_vehicle_positions():
 
     response = requests.get(
-        API_URL,
-        headers={
-            "KeyID": API_KEY,
-            "Cache-Control": "no-cache"
-        },
-        params={
-            "t": str(time.time())
-        },
+        REALTIME_URL,
         timeout=30
+    )
+
+    print(
+        f"HTTP Status: {response.status_code}"
     )
 
     response.raise_for_status()
 
     feed = gtfs_realtime_pb2.FeedMessage()
 
-    feed.ParseFromString(response.content)
+    feed.ParseFromString(
+        response.content
+    )
 
     return feed
 
 
 # =========================================================
-# EXTRACT VEHICLE DATA
+# EXTRACT VEHICLES
 # =========================================================
 
-def extract_vehicle_data(feed):
+def extract_vehicles(feed):
 
-    observations = []
-
-    collection_time = datetime.now(
-        timezone.utc
-    ).isoformat()
-
-    feed_timestamp = None
-
-    if feed.header.HasField("timestamp"):
-        feed_timestamp = feed.header.timestamp
+    vehicles = []
 
     for entity in feed.entity:
 
-        if not entity.HasField("vehicle"):
+        if not entity.HasField(
+            "vehicle"
+        ):
             continue
 
         vehicle = entity.vehicle
 
-        # -------------------------------------------------
-        # Vehicle ID
-        # -------------------------------------------------
-
         vehicle_id = ""
-
-        if vehicle.HasField("vehicle"):
-            vehicle_id = vehicle.vehicle.id
-
-        # -------------------------------------------------
-        # Trip ID
-        # -------------------------------------------------
 
         trip_id = ""
 
-        if vehicle.HasField("trip"):
-            trip_id = vehicle.trip.trip_id
-
-        # -------------------------------------------------
-        # Route ID
-        # -------------------------------------------------
-
         route_id = ""
 
-        if vehicle.HasField("trip"):
-            route_id = vehicle.trip.route_id
-
-        # -------------------------------------------------
-        # GPS position
-        # -------------------------------------------------
-
         latitude = None
+
         longitude = None
-
-        if vehicle.HasField("position"):
-
-            latitude = vehicle.position.latitude
-            longitude = vehicle.position.longitude
-
-        # -------------------------------------------------
-        # Vehicle timestamp
-        # -------------------------------------------------
 
         vehicle_timestamp = None
 
-        if vehicle.HasField("timestamp"):
-            vehicle_timestamp = vehicle.timestamp
+        # ---------------------------------------------
+        # Vehicle ID
+        # ---------------------------------------------
 
-        # -------------------------------------------------
-        # Determine freshness
-        # -------------------------------------------------
+        if vehicle.HasField("vehicle"):
 
-        status = "UNKNOWN"
-
-        if (
-            vehicle_timestamp is not None
-            and feed_timestamp is not None
-        ):
-
-            age_seconds = (
-                feed_timestamp
-                - vehicle_timestamp
+            vehicle_id = (
+                vehicle.vehicle.id
             )
 
-            if age_seconds <= 120:
-                status = "FRESH"
-            else:
-                status = "STALE"
+        # ---------------------------------------------
+        # Trip information
+        # ---------------------------------------------
 
-        # -------------------------------------------------
-        # Save observation
-        # -------------------------------------------------
+        if vehicle.HasField("trip"):
 
-        observations.append(
+            trip = vehicle.trip
+
+            if trip.trip_id:
+                trip_id = trip.trip_id
+
+            if trip.route_id:
+                route_id = trip.route_id
+
+        # ---------------------------------------------
+        # Position
+        # ---------------------------------------------
+
+        if vehicle.HasField("position"):
+
+            position = vehicle.position
+
+            latitude = position.latitude
+
+            longitude = position.longitude
+
+        # ---------------------------------------------
+        # Vehicle timestamp
+        # ---------------------------------------------
+
+        if vehicle.HasField("timestamp"):
+
+            vehicle_timestamp = (
+                vehicle.timestamp
+            )
+
+        vehicles.append(
             {
-                "collection_time": collection_time,
                 "vehicle_id": vehicle_id,
                 "trip_id": trip_id,
                 "route_id": route_id,
                 "latitude": latitude,
                 "longitude": longitude,
-                "vehicle_timestamp": vehicle_timestamp,
-                "feed_timestamp": feed_timestamp,
-                "status": status
+                "vehicle_timestamp":
+                    vehicle_timestamp
             }
         )
 
-    return observations
+    return vehicles
 
 
 # =========================================================
-# SAVE OBSERVATIONS
+# LOAD EXISTING HISTORY
 # =========================================================
 
-def save_observations(observations):
+def load_existing_history():
 
-    if not observations:
+    if not os.path.exists(
+        OUTPUT_FILE
+    ):
+        return pd.DataFrame()
+
+    try:
+
+        df = pd.read_csv(
+            OUTPUT_FILE
+        )
+
+        return df
+
+    except Exception as error:
+
+        print(
+            "Warning: could not read existing "
+            "history file."
+        )
+
+        print(error)
+
+        return pd.DataFrame()
+
+
+# =========================================================
+# FIND PREVIOUS VEHICLE OBSERVATION
+# =========================================================
+
+def get_previous_observation(
+    history,
+    vehicle_id
+):
+
+    if history.empty:
+        return None
+
+    if "vehicle_id" not in history.columns:
+        return None
+
+    vehicle_history = history[
+        history["vehicle_id"].astype(str)
+        == str(vehicle_id)
+    ]
+
+    if vehicle_history.empty:
+        return None
+
+    vehicle_history = vehicle_history.sort_values(
+        "collection_time"
+    )
+
+    return vehicle_history.iloc[-1]
+
+
+# =========================================================
+# COLLECT ONE BATCH
+# =========================================================
+
+def collect_once(history):
+
+    feed = fetch_vehicle_positions()
+
+    feed_timestamp = None
+
+    if feed.HasField("header"):
+
+        if feed.header.HasField(
+            "timestamp"
+        ):
+
+            feed_timestamp = (
+                feed.header.timestamp
+            )
+
+    print(
+        "Realtime feed decoded successfully!"
+    )
+
+    print(
+        "Realtime entities:",
+        len(feed.entity)
+    )
+
+    vehicles = extract_vehicles(
+        feed
+    )
+
+    collection_time = datetime.now(
+        timezone.utc
+    )
+
+    rows = []
+
+    for vehicle in vehicles:
+
+        vehicle_id = (
+            vehicle["vehicle_id"]
+        )
+
+        previous = (
+            get_previous_observation(
+                history,
+                vehicle_id
+            )
+        )
+
+        previous_timestamp = None
+        previous_feed_timestamp = None
+
+        if previous is not None:
+
+            if pd.notna(
+                previous.get(
+                    "vehicle_timestamp"
+                )
+            ):
+
+                previous_timestamp = int(
+                    previous[
+                        "vehicle_timestamp"
+                    ]
+                )
+
+            if pd.notna(
+                previous.get(
+                    "feed_timestamp"
+                )
+            ):
+
+                previous_feed_timestamp = int(
+                    previous[
+                        "feed_timestamp"
+                    ]
+                )
+
+        status = get_vehicle_status(
+            vehicle[
+                "vehicle_timestamp"
+            ],
+            previous_timestamp,
+            feed_timestamp,
+            previous_feed_timestamp
+        )
+
+        vehicle_datetime = (
+            unix_to_datetime(
+                vehicle[
+                    "vehicle_timestamp"
+                ]
+            )
+        )
+
+        rows.append(
+            {
+                "collection_time":
+                    collection_time.isoformat(),
+
+                "vehicle_id":
+                    vehicle[
+                        "vehicle_id"
+                    ],
+
+                "trip_id":
+                    vehicle[
+                        "trip_id"
+                    ],
+
+                "route_id":
+                    vehicle[
+                        "route_id"
+                    ],
+
+                "latitude":
+                    vehicle[
+                        "latitude"
+                    ],
+
+                "longitude":
+                    vehicle[
+                        "longitude"
+                    ],
+
+                "vehicle_timestamp":
+                    vehicle[
+                        "vehicle_timestamp"
+                    ],
+
+                "vehicle_datetime":
+                    (
+                        vehicle_datetime.isoformat()
+                        if vehicle_datetime
+                        else None
+                    ),
+
+                "feed_timestamp":
+                    feed_timestamp,
+
+                "status":
+                    status
+            }
+        )
+
+    return rows
+
+
+# =========================================================
+# SAVE HISTORY
+# =========================================================
+
+def save_rows(rows):
+
+    if not rows:
         return
 
-    new_data = pd.DataFrame(observations)
+    new_data = pd.DataFrame(
+        rows
+    )
 
-    if os.path.exists(OUTPUT_FILE):
+    os.makedirs(
+        os.path.dirname(
+            OUTPUT_FILE
+        ),
+        exist_ok=True
+    )
 
-        new_data.to_csv(
-            OUTPUT_FILE,
-            mode="a",
-            header=False,
-            index=False
+    if os.path.exists(
+        OUTPUT_FILE
+    ):
+
+        try:
+
+            existing = pd.read_csv(
+                OUTPUT_FILE
+            )
+
+        except Exception:
+
+            existing = pd.DataFrame()
+
+        combined = pd.concat(
+            [
+                existing,
+                new_data
+            ],
+            ignore_index=True
         )
 
     else:
 
-        new_data.to_csv(
-            OUTPUT_FILE,
-            index=False
-        )
+        combined = new_data
+
+    combined.to_csv(
+        OUTPUT_FILE,
+        index=False
+    )
 
 
 # =========================================================
-# MAIN COLLECTION LOOP
+# MAIN COLLECTOR
 # =========================================================
 
-print("========================================")
-print("V/LINE REALTIME DATA COLLECTOR")
-print("========================================")
+def main():
 
-print(
-    "Collection interval:",
-    COLLECTION_INTERVAL,
-    "seconds"
-)
+    print(
+        "========================================"
+    )
 
-print(
-    "Output file:",
-    OUTPUT_FILE
-)
+    print(
+        "V/LINE REALTIME DATA COLLECTOR"
+    )
 
-print("\nCollector started.")
-print("Press Ctrl+C to stop.\n")
+    print(
+        "========================================"
+    )
 
+    print(
+        f"Collection interval: "
+        f"{COLLECTION_INTERVAL_SECONDS} seconds"
+    )
 
-try:
+    print(
+        f"Output file: {OUTPUT_FILE}"
+    )
 
-    while True:
+    print()
 
-        collection_start = time.time()
+    history = load_existing_history()
 
-        try:
+    print(
+        "Collector started."
+    )
 
-            # -------------------------------------------------
-            # Fetch feed
-            # -------------------------------------------------
+    print(
+        "Press Ctrl+C to stop."
+    )
 
-            feed = fetch_realtime_feed()
+    print()
 
-            # -------------------------------------------------
-            # Extract vehicles
-            # -------------------------------------------------
+    try:
 
-            observations = extract_vehicle_data(feed)
+        while True:
 
-            # -------------------------------------------------
-            # Save data
-            # -------------------------------------------------
+            try:
 
-            save_observations(observations)
-
-            # -------------------------------------------------
-            # Display results
-            # -------------------------------------------------
-
-            print(
-                f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
-                f"Vehicles collected: {len(observations)}"
-            )
-
-            for observation in observations:
-
-                print(
-                    f"  Vehicle: "
-                    f"{observation['vehicle_id']} | "
-                    f"Trip: "
-                    f"{observation['trip_id']} | "
-                    f"Status: "
-                    f"{observation['status']}"
+                rows = collect_once(
+                    history
                 )
 
-        except requests.RequestException as error:
+                save_rows(rows)
 
-            print(
-                "API request error:",
-                error
+                # Update in-memory history so the
+                # next iteration can compare against
+                # the observation collected now.
+
+                if rows:
+
+                    new_rows = pd.DataFrame(
+                        rows
+                    )
+
+                    history = pd.concat(
+                        [
+                            history,
+                            new_rows
+                        ],
+                        ignore_index=True
+                    )
+
+                print(
+                    f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
+                    f"Vehicles collected: "
+                    f"{len(rows)}"
+                )
+
+                for row in rows:
+
+                    print(
+                        f"  Vehicle: "
+                        f"{row['vehicle_id']} | "
+                        f"Trip: "
+                        f"{row['trip_id']} | "
+                        f"Status: "
+                        f"{row['status']}"
+                    )
+
+            except Exception as error:
+
+                print(
+                    "Collection error:"
+                )
+
+                print(error)
+
+            time.sleep(
+                COLLECTION_INTERVAL_SECONDS
             )
 
-        except Exception as error:
+    except KeyboardInterrupt:
 
-            print(
-                "Processing error:",
-                error
-            )
+        print()
 
-        # -----------------------------------------------------
-        # Wait until next collection
-        # -----------------------------------------------------
-
-        elapsed = (
-            time.time()
-            - collection_start
+        print(
+            "Collector stopped by user."
         )
 
-        sleep_time = max(
-            0,
-            COLLECTION_INTERVAL - elapsed
+        print(
+            "Realtime data collection completed."
         )
 
-        time.sleep(sleep_time)
 
+# =========================================================
+# RUN
+# =========================================================
 
-except KeyboardInterrupt:
-
-    print("\n")
-    print("Collector stopped by user.")
-    print("Realtime data collection completed.")
+if __name__ == "__main__":
+    main()
