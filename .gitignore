@@ -4,3 +4,8 @@ __pycache__/
 .ipynb_checkpoints/
 data/static/shapes.txt
 data/realtime/
+# Generated crowd-management data
+data/crowd/
+
+# Generated schedule optimization outputs
+data/optimization/
