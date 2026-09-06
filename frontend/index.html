@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>V/Line Transit Intelligence</title>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <div class="app">
+
+        <!-- ==================================================
+             SIDEBAR
+        ================================================== -->
+
+        <aside class="sidebar">
+
+            <div class="brand">
+                <div class="brand-icon">V</div>
+
+                <div>
+                    <h1>V/LINE</h1>
+                    <span>TRANSIT INTELLIGENCE</span>
+                </div>
+            </div>
+
+            <nav class="navigation">
+
+                <button class="nav-item active" data-section="overview">
+                    <span>◈</span>
+                    Overview
+                </button>
+
+                <button class="nav-item" data-section="crowd">
+                    <span>♟</span>
+                    Crowd Management
+                </button>
+
+                <button class="nav-item" data-section="optimization">
+                    <span>◆</span>
+                    Schedule Optimization
+                </button>
+
+                <button class="nav-item" data-section="stations">
+                    <span>⌖</span>
+                    Priority Stations
+                </button>
+
+                <button class="nav-item" data-section="delay">
+                    <span>◷</span>
+                    Delay Prediction
+                </button>
+
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="system-indicator">
+                    <span class="status-dot"></span>
+                    Backend Connected
+                </div>
+
+                <small>Transit Intelligence Platform</small>
+            </div>
+
+        </aside>
+
+
+        <!-- ==================================================
+             MAIN CONTENT
+        ================================================== -->
+
+        <main class="main-content">
+
+            <header class="topbar">
+
+                <div>
+                    <p class="eyebrow">PUBLIC TRANSPORT INTELLIGENCE</p>
+                    <h2 id="page-title">Network Overview</h2>
+                </div>
+
+                <div class="connection-status">
+                    <span class="status-dot"></span>
+                    <span id="backend-status">Checking backend...</span>
+                </div>
+
+            </header>
+
+
+            <!-- ==================================================
+                 OVERVIEW
+            ================================================== -->
+
+            <section id="overview" class="dashboard-section active">
+
+                <div class="hero">
+
+                    <div>
+                        <p class="eyebrow">V/LINE NETWORK</p>
+
+                        <h3>
+                            Data-driven transit
+                            <span>intelligence.</span>
+                        </h3>
+
+                        <p class="hero-description">
+                            Monitor service pressure, identify priority
+                            stations and support schedule planning using
+                            V/Line network data.
+                        </p>
+                    </div>
+
+                    <div class="hero-badge">
+                        <span class="status-dot"></span>
+                        Analytics Online
+                    </div>
+
+                </div>
+
+
+                <!-- NETWORK SUMMARY -->
+
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">NETWORK SNAPSHOT</p>
+                        <h3>Current dataset</h3>
+                    </div>
+                </div>
+
+                <div class="metric-grid">
+
+                    <div class="metric-card">
+                        <span class="metric-label">Routes</span>
+                        <strong id="metric-routes">—</strong>
+                        <small>Analysed routes</small>
+                    </div>
+
+                    <div class="metric-card">
+                        <span class="metric-label">Stops</span>
+                        <strong id="metric-stops">—</strong>
+                        <small>Network stops</small>
+                    </div>
+
+                    <div class="metric-card">
+                        <span class="metric-label">Trips</span>
+                        <strong id="metric-trips">—</strong>
+                        <small>Scheduled trips</small>
+                    </div>
+
+                    <div class="metric-card">
+                        <span class="metric-label">Feature observations</span>
+                        <strong id="metric-features">—</strong>
+                        <small>Historical schedule observations</small>
+                    </div>
+
+                </div>
+
+
+                <!-- SYSTEM STATUS -->
+
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">SYSTEM STATUS</p>
+                        <h3>Intelligence modules</h3>
+                    </div>
+                </div>
+
+                <div class="status-grid">
+
+                    <div class="status-card">
+                        <div class="status-card-header">
+                            <span>Crowd Management</span>
+                            <span class="pill success">AVAILABLE</span>
+                        </div>
+
+                        <p>
+                            Service-pressure and peak-period analysis
+                            is available.
+                        </p>
+                    </div>
+
+
+                    <div class="status-card">
+                        <div class="status-card-header">
+                            <span>Schedule Optimization</span>
+                            <span class="pill success">AVAILABLE</span>
+                        </div>
+
+                        <p>
+                            Route-hour and priority-stop recommendations
+                            are available.
+                        </p>
+                    </div>
+
+
+                    <div class="status-card">
+                        <div class="status-card-header">
+                            <span>Delay Prediction</span>
+                            <span class="pill waiting">WAITING</span>
+                        </div>
+
+                        <p>
+                            Waiting for genuine historical realtime
+                            delay observations.
+                        </p>
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- ==================================================
+                 CROWD MANAGEMENT
+            ================================================== -->
+
+            <section id="crowd" class="dashboard-section">
+
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">CROWD MANAGEMENT</p>
+                        <h3>Service pressure</h3>
+                    </div>
+                </div>
+
+                <div class="info-banner">
+                    <strong>Data-driven service pressure</strong>
+                    <p>
+                        These indicators are generated from scheduled
+                        service intensity and network activity.
+                    </p>
+                </div>
+
+                <div id="crowd-content" class="data-grid">
+                    <div class="loading">Loading crowd data...</div>
+                </div>
+
+            </section>
+
+
+            <!-- ==================================================
+                 OPTIMIZATION
+            ================================================== -->
+
+            <section id="optimization" class="dashboard-section">
+
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">SCHEDULE PLANNING</p>
+                        <h3>Optimization recommendations</h3>
+                    </div>
+                </div>
+
+                <div class="info-banner">
+                    <strong>Planning support</strong>
+                    <p>
+                        Recommendations indicate periods that may
+                        warrant additional service evaluation.
+                        They are not timetable changes.
+                    </p>
+                </div>
+
+                <div id="optimization-content" class="data-grid">
+                    <div class="loading">
+                        Loading optimization data...
+                    </div>
+                </div>
+
+            </section>
+
+
+            <!-- ==================================================
+                 PRIORITY STATIONS
+            ================================================== -->
+
+            <section id="stations" class="dashboard-section">
+
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">NETWORK HOTSPOTS</p>
+                        <h3>Priority stations</h3>
+                    </div>
+                </div>
+
+                <div class="info-banner">
+                    <strong>Priority monitoring</strong>
+                    <p>
+                        Stations below have elevated service-pressure
+                        indicators in the analysed schedule data.
+                    </p>
+                </div>
+
+                <div id="stations-content" class="data-grid">
+                    <div class="loading">
+                        Loading priority stations...
+                    </div>
+                </div>
+
+            </section>
+
+
+            <!-- ==================================================
+                 DELAY PREDICTION
+            ================================================== -->
+
+            <section id="delay" class="dashboard-section">
+
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">MACHINE LEARNING</p>
+                        <h3>Delay prediction</h3>
+                    </div>
+                </div>
+
+                <div class="delay-placeholder">
+
+                    <div class="delay-icon">◷</div>
+
+                    <h3>
+                        Waiting for genuine realtime delay data
+                    </h3>
+
+                    <p>
+                        The prediction model is intentionally not
+                        trained yet because genuine historical
+                        delay observations are not currently available.
+                    </p>
+
+                    <div class="delay-rules">
+
+                        <div>✓ No artificial delay labels</div>
+                        <div>✓ No scheduled-time-as-delay substitution</div>
+                        <div>✓ Model training will begin when genuine observations are available</div>
+
+                    </div>
+
+                    <span class="pill waiting">
+                        MODEL STATUS: WAITING
+                    </span>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <script src="js/app.js"></script>
+
+</body>
+</html>
