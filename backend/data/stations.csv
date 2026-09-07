@@ -1,0 +1,11 @@
+code,name,line,capacity_per_hour
+ST01,Central Junction,Red,520
+ST02,Riverside Park,Red,430
+ST03,Tech District,Red,610
+ST04,Old Town Market,Blue,480
+ST05,Stadium Plaza,Blue,700
+ST06,University Gate,Blue,560
+ST07,Airport Terminal,Green,540
+ST08,Harbor Front,Green,400
+ST09,North Industrial,Green,350
+ST10,South Commons,Red,450

@@ -1,0 +1,16 @@
+.venv
+venv
+__pycache__
+*.py[cod]
+.pytest_cache
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite3
+data/
+models_store/
+tests/
+docs/
+Dockerfile
+.dockerignore

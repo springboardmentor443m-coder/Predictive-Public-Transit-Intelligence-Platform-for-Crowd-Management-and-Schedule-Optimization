@@ -1,0 +1,153 @@
+{
+  "info": {
+    "name": "MetroFlow API",
+    "description": "AI Platform for Metro Crowd Management and Scheduling — full API surface per PRD modules.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api/v1" },
+    { "key": "token", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "System",
+      "item": [
+        { "name": "Health", "request": { "method": "GET", "url": "{{base_url}}/health" } }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('token', body.access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": { "mode": "urlencoded", "urlencoded": [
+              { "key": "username", "value": "admin@metroflow.io" },
+              { "key": "password", "value": "Admin@123" }
+            ]},
+            "url": "{{base_url}}/auth/login"
+          }
+        },
+        { "name": "Current Profile", "request": { "method": "GET", "url": "{{base_url}}/auth/me" } },
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"email\":\"new@metroflow.io\",\"full_name\":\"New Operator\",\"role\":\"operator\",\"password\":\"Secret@123\"}" },
+            "url": "{{base_url}}/auth/register"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users (Admin)",
+      "item": [
+        { "name": "List Users", "request": { "method": "GET", "url": "{{base_url}}/users/" } },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"email\":\"op2@metroflow.io\",\"full_name\":\"Second Op\",\"role\":\"operator\",\"password\":\"Secret@123\"}" },
+            "url": "{{base_url}}/users/"
+          }
+        },
+        { "name": "Deactivate User", "request": { "method": "POST", "url": "{{base_url}}/users/:user_id/deactivate" } }
+      ]
+    },
+    {
+      "name": "Crowd Monitoring",
+      "item": [
+        { "name": "Live Density", "request": { "method": "GET", "url": "{{base_url}}/crowd/live" } },
+        { "name": "Live Station", "request": { "method": "GET", "url": "{{base_url}}/crowd/live/ST01" } },
+        { "name": "Heatmap", "request": { "method": "GET", "url": "{{base_url}}/crowd/heatmap" } },
+        { "name": "Station History", "request": { "method": "GET", "url": "{{base_url}}/crowd/station/ST01/history?hours=24" } }
+      ]
+    },
+    {
+      "name": "Scheduling",
+      "item": [
+        { "name": "List Schedules", "request": { "method": "GET", "url": "{{base_url}}/scheduling/schedules?limit=50" } },
+        {
+          "name": "Create Schedule",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"id\":\"SCH-PM-001\",\"train_id\":\"TR-R01\",\"station_id\":\"ST01\",\"direction\":\"northbound\",\"arrival\":\"2026-09-01T10:00:00Z\",\"departure\":\"2026-09-01T10:01:00Z\",\"headway_min\":5,\"is_peak\":\"yes\"}" },
+            "url": "{{base_url}}/scheduling/schedules"
+          }
+        },
+        { "name": "Optimization Recommendations", "request": { "method": "GET", "url": "{{base_url}}/scheduling/optimization" } },
+        {
+          "name": "Report Delay",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"delay_min\": 6}" },
+            "url": "{{base_url}}/scheduling/delay/SCH-R01-08-ST01"
+          }
+        },
+        {
+          "name": "Apply Headway (Frequency Adjustment)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": "{{base_url}}/scheduling/apply-headway/ST01"
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI Predictions",
+      "item": [
+        { "name": "Crowd Forecast", "request": { "method": "GET", "url": "{{base_url}}/predictions/crowd?station_id=ST01&hours=12" } },
+        { "name": "Demand Forecast", "request": { "method": "GET", "url": "{{base_url}}/predictions/demand?station_id=ST01&hours=12" } },
+        { "name": "Smart Recommendations", "request": { "method": "GET", "url": "{{base_url}}/predictions/recommendations" } },
+        { "name": "Traffic Patterns", "request": { "method": "GET", "url": "{{base_url}}/predictions/patterns" } }
+      ]
+    },
+    {
+      "name": "Alerts",
+      "item": [
+        { "name": "List Alerts", "request": { "method": "GET", "url": "{{base_url}}/alerts/?limit=50" } },
+        { "name": "Acknowledge Alert", "request": { "method": "POST", "url": "{{base_url}}/alerts/:alert_id/acknowledge" } },
+        {
+          "name": "Emergency Broadcast (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"type\":\"emergency\",\"severity\":\"high\",\"title\":\"Platform Closure\",\"message\":\"Platform 2 closed for maintenance.\"}" },
+            "url": "{{base_url}}/alerts/broadcast"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        { "name": "Overview KPIs", "request": { "method": "GET", "url": "{{base_url}}/analytics/overview" } },
+        { "name": "Traffic Series", "request": { "method": "GET", "url": "{{base_url}}/analytics/traffic?hours=24" } },
+        { "name": "Station Performance", "request": { "method": "GET", "url": "{{base_url}}/analytics/station-performance?limit=10" } }
+      ]
+    }
+  ]
+}
