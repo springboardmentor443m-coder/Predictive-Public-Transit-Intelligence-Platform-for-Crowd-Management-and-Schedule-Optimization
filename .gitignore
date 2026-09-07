@@ -1,0 +1,47 @@
+# Raw & processed data (large; not committed — see docs for how to obtain/reproduce)
+# Anchored to the project root (leading slash) so this does NOT also match
+# src/metroflow/data/ (the ingestion/feature-engineering source package).
+/archive/
+/data/
+/models/
+/reports/figures/
+
+# Generated reports from later milestones are excluded selectively via
+# git add (not blanket-ignored here), so this section only covers truly
+# generated/binary artifacts:
+*.db
+*.sqlite
+*.sqlite3
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+
+# Node / frontend
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+*.pem
+*.key
+
+# Local scratch files (not part of any milestone)
+*.bak
+dl_log.txt
+insp2.txt
+inspect_report.txt
+inspect_all.py
+scripts_inspect.py
