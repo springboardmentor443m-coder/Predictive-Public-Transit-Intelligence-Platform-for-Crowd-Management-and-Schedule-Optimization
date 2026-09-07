@@ -25,3 +25,8 @@ build/
 
 # Logs
 *.log
+
+# Large datasets - kept locally, not uploaded to GitHub
+data/mta_hourly_ridership.csv
+data/nyc_subway_traffic.csv
+data/metro_transactions.csv
