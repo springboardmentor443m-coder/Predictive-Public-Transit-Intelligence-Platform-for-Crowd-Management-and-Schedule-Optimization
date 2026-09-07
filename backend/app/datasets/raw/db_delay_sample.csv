@@ -1,0 +1,5 @@
+Date,Train_ID,Station,Scheduled_Time,Actual_Time,Delay_Minutes,Cause_Category
+2026-08-25,ICE 574,Frankfurt Hbf,08:12:00,08:24:00,12,Signal Alignment Failure
+2026-08-25,RE 1,Köln Hbf,08:45:00,08:48:00,3,Platform Overcrowding
+2026-08-25,S 3,München Hbf,17:30:00,17:42:00,12,Track Maintenance
+2026-08-25,ICE 720,Berlin Hbf,18:10:00,18:15:00,5,Rolling Stock Inspection
