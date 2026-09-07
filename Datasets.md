@@ -80,33 +80,6 @@ Excludes Ridership / Ticketing / Smart Card datasets per request.)
 
 ---
 
-## REMOVED (do NOT use) — post-2021 or synthetic
-
-- NYC MTA Subway Hourly Ridership Dataset 2022-2023 *(post-2021)*
-- MTA Subway Hourly Ridership (Beginning Feb 2022) *(post-2021)*
-- Urban Rail Transit Crowd Evacuation Dataset *(derived from 2024 Kaggle, synthetic)*
-- Delhi Metro Dataset - Ridership (nikhilkumar766) *(data 2022-2024, post-2021)*
-- Medellin Metro Passenger Flow 2023 *(post-2021)*
-- Public Transportation Usage Dataset (Multi-City) *(synthetic)*
-- Deutsche Bahn (DB) Delays (nokkyu) *(data Jul 2024, post-2021)*
-- Public Transportation Passenger Counts (ifuurh) *(not verified pre-2021)*
-- Indian Railway Delay Dataset (mnakum940) *(synthetic)*
-
----
-
-## Mapping to Project Modules (from PDF documentation)
-
-| Module | Datasets |
-|---|---|
-| Crowd Monitoring Module | 1, 2, 3, 4 |
-| AI Prediction Module | 5, 6 |
-| Scheduling Management Module | 6, 7 |
-| Smart Card / Ticketing Data | excluded per request |
-| Station Footfall / Ridership | 1, 2, 3 |
-| Delay Logs & Notifications | 6, 7 |
-| Train Occupancy / Crowding | 1, 4, 5 *(approximated from passenger flow)* |
-| Peak-hour / Congestion Analysis | 1, 2, 3, 4, 5 |
-
 ## Quick Reference
 
 ### Crowd Monitoring / Passenger Density
