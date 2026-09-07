@@ -1,57 +1,49 @@
-## Contributing Guidelines (For Interns / Collaborators)
+# MetroFlow: AI Public Transit Intelligence Platform
 
-All interns added as collaborators to this repository must follow the branch workflow below. **Direct commits or pushes to the `main` branch are not allowed.**
+An intelligent public transit operations platform designed to monitor passenger density across stations, forecast commuter surges using machine learning, and dynamically adjust train dispatch schedules to relieve network bottlenecks.
 
-> Note: `main` only contains the `LICENSE` and `README.md` — it is not used for active development. There is no need to pull the latest `main` into your branch at any point.
+---
 
-### 1. Branch Naming
+## Deliverables Summary
 
-- Every intern must create their own branch off `main`, named after themselves.
-- Suggested naming convention: `firstname-lastname` (all lowercase, hyphen-separated).
-  - Example: `john-doe`, `aisha-khan`
+### Milestone 1: Data Pipeline & Crowd Monitoring
+* **Operator Authentication**: Secure credential validation for transit operations via `/api/v1/auth/login`.
+* **Turnstile Ingestion**: Automated pipeline processing turnstile entries and exits to calculate net station accumulation and classify congestion levels (`NORMAL`, `MODERATE`, `HIGH`, `CRITICAL`).
+* **Real-Time Operations Dashboard**: Web dashboard featuring dynamic passenger flow charts, live station status tables, and high-density alerts.
 
-### 2. How to Create Your Branch
+### Milestone 2: Dynamic Scheduling & ML Demand Forecasting
+* **Active Timetable Management**: Endpoint at `/api/v1/scheduling/timetable` calculating route delays, line occupancy rates, and dispatch timelines.
+* **Dynamic Headway Optimization**: Headway compression algorithm dynamically reducing train intervals from 8 minutes to 3–5 minutes during peak surges.
+* **Peak-Hour Capacity Buffering**: Rush-hour demand policies scaling capacity multipliers ($1.45\times - 1.50\times$) during morning and evening windows.
+* **ML Passenger Demand Forecasting**: Trained Random Forest Regressor predicting station passenger volume based on temporal variables (hour, day of week).
+* **Corridor Volatility Classification**: Categorization engine identifying high-variance central transit hubs versus low-variance residential feeders.
+* **Operational Decision Engine**: Automated rule-based system generating prioritized operational recommendations (platform metering, auxiliary train injection).
 
-**Option A — Clone and push (recommended)**
+---
 
-```bash
-# Clone the repository
-git clone https://github.com/springboardmentor443m-coder/Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization.git
+## Directory Architecture
 
-# Move into the project folder
-cd Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization
-
-# Create and switch to your own branch (off main)
-git checkout -b your-name
-
-# ... make your changes ...
-
-# Stage, commit, and push your changes to YOUR branch only
-git add .
-git commit -m "Describe your change here"
-git push origin your-name
-```
-
-**Option B — GitHub UI upload**
-
-1. Go to the repository on GitHub.
-2. Switch the branch dropdown from `main` to your own branch (create it first via **Branch: main → View all branches → New branch**, named after yourself).
-3. Once on your branch, use **Add file → Upload files** to upload your code.
-4. Commit directly to your branch (not `main`).
-
-### 3. Rules
-
-- ❌ Do **not** push or upload code directly to `main`.
-- ❌ Do **not** push code to another intern's branch.
-- ✅ Only push/upload code to the branch that carries your own name.
-- Keep uploading/pushing your code to your branch regularly as you make progress. No pull requests are required — your branch itself is the deliverable.
-
-### 4. Summary
-
-| Action | Allowed? |
-|---|---|
-| Push to `main` directly | ❌ No |
-| Create your own branch from `main` | ✅ Yes |
-| Push/upload code to your own branch | ✅ Yes |
-| Push/upload code to someone else's branch | ❌ No |
-| Open a Pull Request | Not required |
+```text
+Virtual Internship/
+├── backend/
+│   ├── app/
+│   │   └── main.py                   # FastAPI application & route endpoints
+│   ├── data/
+│   │   ├── live_crowd_summary.csv    # Processed station accumulation metrics
+│   │   ├── active_schedules.csv      # Processed route schedules & delay metrics
+│   │   └── traffic_patterns.csv      # Station volatility classifications
+│   ├── models/
+│   │   └── demand_forecast_model.pkl # Trained Random Forest model artifact
+│   ├── clean_and_sync_data.py        # Dataset preprocessing and validation pipeline
+│   ├── train_clean_model.py          # ML training and evaluation script
+│   ├── schedule_manager.py           # Timetable aggregation module
+│   ├── frequency_adjuster.py         # Dynamic headway adjustment engine
+│   ├── peak_optimizer.py             # Rush-hour buffer optimization logic
+│   ├── traffic_pattern_analyzer.py   # Corridor variance classification
+│   ├── traffic_reporter.py           # Performance metrics JSON digest generator
+│   ├── ai_recommender.py             # Operational recommendations engine
+│   └── test_milestone2.py            # Automated endpoint testing script
+├── frontend/
+│   └── index.html                    # Operations dashboard UI (Tailwind CSS + Chart.js)
+├── .gitignore                        # Git exclusion rules (virtual environments, raw CSVs)
+└── README.md                         # Project documentation
