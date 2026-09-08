@@ -1,0 +1,7 @@
+id,name,line,capacity,lat,lng
+STN_001,Central Hub,Red Line,1200,28.6139,77.209
+STN_002,Tech Park,Red Line,1000,28.625,77.218
+STN_003,Airport Terminal,Blue Line,1500,28.5562,77.1
+STN_004,City Center,Blue Line,1100,28.6328,77.2197
+STN_005,University Junction,Green Line,900,28.69,77.11
+STN_006,Financial District,Green Line,1300,28.5355,77.391

@@ -1,57 +1,58 @@
-## Contributing Guidelines (For Interns / Collaborators)
+# MetroFlow: AI Platform for Metro Crowd Management and Scheduling
+### 🎓 Infosys Springboard Project — Milestone 1 Submission (Week 1 & 2)
 
-All interns added as collaborators to this repository must follow the branch workflow below. **Direct commits or pushes to the `main` branch are not allowed.**
+---
 
-> Note: `main` only contains the `LICENSE` and `README.md` — it is not used for active development. There is no need to pull the latest `main` into your branch at any point.
+## 📌 Project Overview & Objectives
 
-### 1. Branch Naming
+**MetroFlow** is an AI-powered metro crowd management and train scheduling platform. It helps metro authorities monitor real-time passenger density across platforms, predict overcrowding using Machine Learning, and optimize train timetables to reduce peak-hour congestion.
 
-- Every intern must create their own branch off `main`, named after themselves.
-- Suggested naming convention: `firstname-lastname` (all lowercase, hyphen-separated).
-  - Example: `john-doe`, `aisha-khan`
+### Key Objectives:
+1. **Real-time Crowd Monitoring**: Track passenger inflow/outflow across metro stations using ticketing & turnstile data.
+2. **AI Passenger Demand Forecasting**: Use Machine Learning (`scikit-learn`) to predict future crowd surges.
+3. **Train Schedule Optimization**: Dynamically adjust train frequencies during rush hours to prevent dangerous overcrowding.
+4. **Emergency Alerts & Analytics**: Trigger automatic warnings when station capacity exceeds safe thresholds (>85%).
 
-### 2. How to Create Your Branch
+> **Note**: The system does **not** use computer vision or CCTV cameras. It uses numerical transportation data (turnstile entries/exits, station footfall logs, and train timetables).
 
-**Option A — Clone and push (recommended)**
+---
 
-```bash
-# Clone the repository
-git clone https://github.com/springboardmentor443m-coder/Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization.git
+## 📊 Milestone 1 Submission Deliverables (Week 1 & 2)
 
-# Move into the project folder
-cd Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization
+### 1. Selected Datasets (`datasets/` Folder)
+- **`metro_ridership_dataset.csv`**: Contains 3,060 time-series passenger records logging entry counts, exit counts, live occupancy, and congestion levels across metro stations.
+- **`train_schedules_dataset.csv`**: Operational train fleet logs (12 active trains across Red, Blue, Green, Yellow, and Purple lines).
+- **`station_master_dataset.csv`**: Station directory metadata and capacity limits for 6 major metro hubs.
 
-# Create and switch to your own branch (off main)
-git checkout -b your-name
+### 2. Exploratory Data Analysis (`notebooks/` Folder)
+- **`01_exploratory_data_analysis.ipynb`**: Analyzes passenger arrival patterns, hourly occupancy curves, and station congestion bottlenecks.
+- **`02_crowd_prediction_model_experiments.ipynb`**: Machine Learning model experiments (`RandomForestRegressor` vs `LinearRegression`) for crowd density forecasting.
 
-# ... make your changes ...
+---
 
-# Stage, commit, and push your changes to YOUR branch only
-git add .
-git commit -m "Describe your change here"
-git push origin your-name
+## 🗓️ 8-Week Milestone Execution Plan
+
+- [x] **Milestone 1 (Week 1 & 2)**: Project Definition, Dataset Selection, Schema Design & EDA Notebooks.
+- [ ] **Milestone 2 (Week 3 & 4)**: AI Model Training, Evaluation & FastAPI Backend Endpoint Implementation.
+- [ ] **Milestone 3 (Week 5 & 6)**: React Dashboard UI Setup, Real-Time Station Heatmaps & Alert Center.
+- [ ] **Milestone 4 (Week 7 & 8)**: System Integration, End-to-End Testing & Final Presentation.
+
+---
+
+## 📁 Repository Structure
+
 ```
-
-**Option B — GitHub UI upload**
-
-1. Go to the repository on GitHub.
-2. Switch the branch dropdown from `main` to your own branch (create it first via **Branch: main → View all branches → New branch**, named after yourself).
-3. Once on your branch, use **Add file → Upload files** to upload your code.
-4. Commit directly to your branch (not `main`).
-
-### 3. Rules
-
-- ❌ Do **not** push or upload code directly to `main`.
-- ❌ Do **not** push code to another intern's branch.
-- ✅ Only push/upload code to the branch that carries your own name.
-- Keep uploading/pushing your code to your branch regularly as you make progress. No pull requests are required — your branch itself is the deliverable.
-
-### 4. Summary
-
-| Action | Allowed? |
-|---|---|
-| Push to `main` directly | ❌ No |
-| Create your own branch from `main` | ✅ Yes |
-| Push/upload code to your own branch | ✅ Yes |
-| Push/upload code to someone else's branch | ❌ No |
-| Open a Pull Request | Not required |
+.
+├── datasets/
+│   ├── metro_ridership_dataset.csv   # Historical Ticketing & Turnstile Logs
+│   ├── train_schedules_dataset.csv   # Train Timetables & Delay Logs
+│   └── station_master_dataset.csv    # Station Metadata & Capacity Limits
+├── notebooks/
+│   ├── 01_exploratory_data_analysis.ipynb          # Milestone 1 EDA Analysis
+│   └── 02_crowd_prediction_model_experiments.ipynb # Milestone 2 ML Experiments
+├── backend/
+│   └── README.md                     # Backend Service Placeholder
+├── frontend/
+│   └── README.md                     # Frontend Service Placeholder
+└── README.md                         # Milestone 1 Submission Documentation
+```

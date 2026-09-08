@@ -1,0 +1,13 @@
+id,line,origin,destination,frequency,capacity,load,delay,status
+TRN_RED_101,Red Line,Central Hub,Tech Park,4,1200,850,0,On Time
+TRN_RED_102,Red Line,Tech Park,Central Hub,4,1200,920,2,Minor Delay
+TRN_RED_103,Red Line,Central Hub,City Center,5,1200,650,0,On Time
+TRN_BLUE_201,Blue Line,City Center,Airport Terminal,6,1500,1280,0,On Time
+TRN_BLUE_202,Blue Line,Airport Terminal,City Center,6,1500,640,0,On Time
+TRN_BLUE_203,Blue Line Express,Central Hub,Airport Terminal,8,1500,1100,0,On Time
+TRN_GREEN_301,Green Line,University Junction,Financial District,7,1000,710,6,Delayed
+TRN_GREEN_302,Green Line,Financial District,University Junction,7,1000,580,0,On Time
+TRN_GREEN_303,Green Line Express,University Junction,Central Hub,10,900,420,0,On Time
+TRN_YELLOW_401,Yellow Line,Central Hub,Financial District,5,1300,1050,0,On Time
+TRN_YELLOW_402,Yellow Line,Financial District,Central Hub,5,1300,890,3,Minor Delay
+TRN_PURPLE_501,Purple Line Express,Tech Park,Airport Terminal,12,1400,980,0,On Time
