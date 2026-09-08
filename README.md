@@ -61,8 +61,9 @@ While **Platform Density** alerts us to a *current* problem, **Train Occupancy**
 
 *   Platform Density tells you there is a problem right now.
 *   Train Occupancy tells you how to fix the schedule to make that problem go away.
-
-*   EXAMPLE SCENARIO FROM MY DATASET :
+  ---
+  
+### EXAMPLE SCENARIO FROM THE DATASET :
 
 *   Imagine , the monitoring system detects 1,000 people on the platform at Rajiv Chowk. If the next train arrives but is already at 95% occupancy from previous stops, nobody on the crowded platform will be able to board. The platform crowd will continue to grow exponentially, creating a dangerous bottleneck. By predicting train occupancy, my system anticipates this failure before it happens.
 
