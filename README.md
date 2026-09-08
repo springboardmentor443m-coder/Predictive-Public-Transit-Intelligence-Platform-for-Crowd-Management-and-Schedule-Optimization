@@ -55,3 +55,41 @@ git push origin your-name
 | Push/upload code to your own branch | ✅ Yes |
 | Push/upload code to someone else's branch | ❌ No |
 | Open a Pull Request | Not required |
+
+
+## Vijaya Sree Progress Update
+
+### Completed
+- Dataset Selection (NYC Subway Traffic)
+- Data Cleaning
+- Feature Engineering
+- Exploratory Data Analysis
+
+### Features Created
+- hour
+- day
+- month
+- year
+- day_of_week
+- is_weekend
+- is_peak_hour
+- Total_Traffic
+- Congestion_Level
+
+### Files Added
+
+src/
+- data_cleaning.py
+- feature_engineering.py
+- train_model.py
+- prediction.py
+- utils.py
+
+notebooks/
+- 01_EDA.ipynb
+
+### Upcoming
+- Random Forest Model Training
+- Traffic Forecasting
+- Dashboard Development
+- FastAPI Integration
