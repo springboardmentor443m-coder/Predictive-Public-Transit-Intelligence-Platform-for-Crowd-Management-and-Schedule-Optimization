@@ -48,3 +48,21 @@ Visualisations are our lens to uncover hidden patterns, spot bottlenecks, and ha
 
 *   📈 **Train Occupancy Spikes (Boxplot):** Displays the distribution of train occupancy (passenger count) across the 24-hour format to easily identify hourly spikes in ridership.
 *   🚨 **Platform Crowd Density Bottlenecks (Bar Plot):** Shows the average platform crowd density (passengers waiting) by hour of the day. This visualisation includes a visual reference line for a **"Critical Overcrowding Threshold"** set at 800 passengers to highlight rush hour bottlenecks and critical danger zones.
+
+---
+
+### Why Predict Train Occupancy?
+
+While **Platform Density** alerts us to a *current* problem, **Train Occupancy** tells the system how to *solve* it. Forecasting occupancy allows the platform to:
+
+*   **Prevent Platform Bottlenecks:** Anticipate when arriving trains are too full to clear waiting passengers, preventing dangerous exponential crowd buildup.
+*   **Forecast Destination Outflow:** Proactively alert upcoming stations about massive incoming passenger volumes, enabling early exit gate and security management.
+*   **Automate Schedule Optimization:** Differentiate between localized station flow issues and actual fleet capacity limits, dynamically decreasing headway intervals (e.g., from 6 to 3 minutes) only when demand requires it.
+
+*   Platform Density tells you there is a problem right now.
+*   Train Occupancy tells you how to fix the schedule to make that problem go away.
+
+*   EXAMPLE SCENARIO FROM MY DATASET :
+
+*   Imagine , the monitoring system detects 1,000 people on the platform at Rajiv Chowk. If the next train arrives but is already at 95% occupancy from previous stops, nobody on the crowded platform will be able to board. The platform crowd will continue to grow exponentially, creating a dangerous bottleneck. By predicting train occupancy, my system anticipates this failure before it happens.
+
