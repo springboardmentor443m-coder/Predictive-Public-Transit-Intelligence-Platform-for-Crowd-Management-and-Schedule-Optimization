@@ -2,9 +2,6 @@
 
 **Project:** "AI Predictive Public Transit Intelligence Platform for Crowd Management and Schedule Optimization"
 
-**Rules:** Kaggle-only, ALL data pre-2021, working links only, no synthetic data.
-Removed all post-2021 and generated datasets.
-
 ---
 
 **Total Datasets: 7** (all verified pre-2021, real observational data, working Kaggle links.
@@ -42,7 +39,7 @@ Excludes Ridership / Ticketing / Smart Card datasets per request.)
 
 - **Module:** Crowd Monitoring, Origin-Destination flow, Congestion modeling
 - **Description:** Real card-swiping transaction records of Beijing metro passengers (Jan 2019). Fields: entry/exit line & station, `entry_tm`, `exit_tm`. Enables station- and line-level passenger flow, OD analysis, and time-of-day congestion estimation.
-- **Year:** Jan 2019 (pre-2021)
+- **Year:** Jan 2019
 - **Link:** https://www.kaggle.com/datasets/itsncut/data-of-metro-passengers-in-beijing
 - **Format:** CSV
 
@@ -52,7 +49,7 @@ Excludes Ridership / Ticketing / Smart Card datasets per request.)
 
 - **Module:** AI Prediction, Passenger flow forecasting, Network modeling
 - **Description:** Large-scale metro traffic prediction dataset (card-swiping records from 81 stations / 3 lines, Jan 2019) with train/test splits and a road map CSV (network topology). Builds station-graph models for passenger flow prediction. (4.26 GB)
-- **Year:** Jan 2019 (pre-2021)
+- **Year:** Jan 2019
 - **Link:** https://www.kaggle.com/datasets/zjplab/hangzhou-metro-traffic-prediction
 - **Format:** CSV
 
@@ -66,7 +63,7 @@ Excludes Ridership / Ticketing / Smart Card datasets per request.)
 
 - **Module:** Scheduling, Delay prediction, AI prediction
 - **Description:** 312,040 rail journey records (year 2015) for delay prediction. Features: distance, weather, day of week, time of day, train type, historical delay, and route congestion. Directly trains delay-impact prediction models. NOTE: sampled rows carry US carrier codes but the schema is delay-prediction ready.
-- **Year:** 2015 (pre-2021)
+- **Year:** 2015
 - **Link:** https://www.kaggle.com/datasets/anuragraturi/railway-delay-dataset
 - **Format:** CSV
 
