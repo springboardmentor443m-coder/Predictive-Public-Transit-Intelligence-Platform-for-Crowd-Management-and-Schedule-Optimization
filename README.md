@@ -51,19 +51,40 @@ Visualisations are our lens to uncover hidden patterns, spot bottlenecks, and ha
 
 ---
 
-### Why Predict Train Occupancy?
+## 🧠 Why Predict Train Occupancy?
 
 While **Platform Density** alerts us to a *current* problem, **Train Occupancy** tells the system how to *solve* it. Forecasting occupancy allows the platform to:
 
 *   **Prevent Platform Bottlenecks:** Anticipate when arriving trains are too full to clear waiting passengers, preventing dangerous exponential crowd buildup.
 *   **Forecast Destination Outflow:** Proactively alert upcoming stations about massive incoming passenger volumes, enabling early exit gate and security management.
 *   **Automate Schedule Optimization:** Differentiate between localized station flow issues and actual fleet capacity limits, dynamically decreasing headway intervals (e.g., from 6 to 3 minutes) only when demand requires it.
-
 *   Platform Density tells you there is a problem right now.
 *   Train Occupancy tells you how to fix the schedule to make that problem go away.
-  ---
-  
-### EXAMPLE SCENARIO FROM THE DATASET :
 
-*   Imagine , the monitoring system detects 1,000 people on the platform at Rajiv Chowk. If the next train arrives but is already at 95% occupancy from previous stops, nobody on the crowded platform will be able to board. The platform crowd will continue to grow exponentially, creating a dangerous bottleneck. By predicting train occupancy, my system anticipates this failure before it happens.
+### 🚉 Example Scenario From The Dataset
+Imagine the monitoring system detects 1,000 people on the platform at Rajiv Chowk. If the next train arrives but is already at 95% occupancy from previous stops, nobody on the crowded platform will be able to board. The platform crowd will continue to grow exponentially, creating a dangerous bottleneck. By predicting train occupancy, my system anticipates this failure before it happens.
 
+---
+
+## 🤖 Model Training (XGBoost)
+To accurately forecast crowd levels, the data is split chronologically into an 80% training set (4,000 historical records) and a 20% testing set (1,000 future records). Splitting chronologically ensures the model learns from past patterns to predict future events, which is essential for time-series transit data. 
+
+An XGBoost Regressor is utilized to learn the relationships between extracted features—such as the hour of day, the specific station, the metro line, and the train's capacity—to accurately estimate train occupancy.
+
+### 🎯 Model Evaluation
+The XGBoost model's performance on the testing set proves its high accuracy:
+*   **R-Squared:** The model achieved a score of 0.9506, successfully explaining roughly 95% of the variance in train occupancy.
+*   **Mean Absolute Error (MAE):** On average, the model's predictions deviate from the actual passenger counts by only 111.33 passengers.
+*   **Root Mean Squared Error (RMSE):** The model recorded an RMSE of 140.60 passengers, which indicates its sensitivity to larger prediction errors.
+
+---
+
+## 🚦 Smart Scheduling & Rule-Based Engine
+The architecture combines the predictive power of XGBoost with a Rule-Based Engine that makes immediate scheduling decisions based on forecasted occupancy. The AI triggers specific transit demand and smart scheduling actions based on a tiered alert system:
+
+*   🔴 **Severe Rush Hour (Red Alert - ≥ 1,500 passengers):** The prediction indicates the train will be packed. The AI triggers a high-frequency dispatch action to reduce the headway to 3 minutes, effectively clearing the crowded platform.
+*   🟡 **Moderate Traffic (Yellow Alert - 800 to 1,499 passengers):** This signifies normal commute levels. The system maintains standard operations, keeping train intervals at 5-6 minutes.
+*   🟢 **Off-Peak (Green Alert - < 800 passengers):** During empty or quiet hours, the AI automatically extends the headway to 10 minutes. This action conserves the fleet, saves operational money, and reduces mechanical wear-and-tear.
+
+### 📑 Automated Fleet Action Report
+The Scheduling Management Module automatically analyzes instances from the test data (e.g., scanning 1,000 different trip records) to determine real-time crowd levels. It actively assigns the correct scheduling tier (Severe, Moderate, or Off-Peak) to each trip, effectively translating raw predictive insights into immediate network-wide traffic solutions.
