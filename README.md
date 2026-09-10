@@ -1,23 +1,6 @@
-# MetroFlow: AI Public Transit Intelligence Platform
+# MetroFlow: AI Public Transit Intelligence Platform for Crowd Management and Schedule Optimization
 
-An intelligent public transit operations platform designed to monitor passenger density across stations, forecast commuter surges using machine learning, and dynamically adjust train dispatch schedules to relieve network bottlenecks.
-
----
-
-## Deliverables Summary
-
-### Milestone 1: Data Pipeline & Crowd Monitoring
-* **Operator Authentication**: Secure credential validation for transit operations via `/api/v1/auth/login`.
-* **Turnstile Ingestion**: Automated pipeline processing turnstile entries and exits to calculate net station accumulation and classify congestion levels (`NORMAL`, `MODERATE`, `HIGH`, `CRITICAL`).
-* **Real-Time Operations Dashboard**: Web dashboard featuring dynamic passenger flow charts, live station status tables, and high-density alerts.
-
-### Milestone 2: Dynamic Scheduling & ML Demand Forecasting
-* **Active Timetable Management**: Endpoint at `/api/v1/scheduling/timetable` calculating route delays, line occupancy rates, and dispatch timelines.
-* **Dynamic Headway Optimization**: Headway compression algorithm dynamically reducing train intervals from 8 minutes to 3–5 minutes during peak surges.
-* **Peak-Hour Capacity Buffering**: Rush-hour demand policies scaling capacity multipliers ($1.45\times - 1.50\times$) during morning and evening windows.
-* **ML Passenger Demand Forecasting**: Trained Random Forest Regressor predicting station passenger volume based on temporal variables (hour, day of week).
-* **Corridor Volatility Classification**: Categorization engine identifying high-variance central transit hubs versus low-variance residential feeders.
-* **Operational Decision Engine**: Automated rule-based system generating prioritized operational recommendations (platform metering, auxiliary train injection).
+MetroFlow is an AI-powered smart transit operations and crowd management platform designed to monitor passenger density across stations, forecast commuter surges using machine learning, and dynamically optimize train dispatch schedules to relieve network bottlenecks without relying on computer vision.
 
 ---
 
@@ -27,23 +10,33 @@ An intelligent public transit operations platform designed to monitor passenger 
 Virtual Internship/
 ├── backend/
 │   ├── app/
-│   │   └── main.py                   # FastAPI application & route endpoints
+│   │   └── main.py                     # FastAPI application, route definitions, and CORS middleware
 │   ├── data/
-│   │   ├── live_crowd_summary.csv    # Processed station accumulation metrics
-│   │   ├── active_schedules.csv      # Processed route schedules & delay metrics
-│   │   └── traffic_patterns.csv      # Station volatility classifications
+│   │   ├── live_crowd_summary.csv      # Real-time station footfall & congestion level metrics
+│   │   ├── active_schedules.csv        # Timetables, delay metrics, and headway records
+│   │   ├── traffic_patterns.csv        # Corridor variance classifications
+│   │   ├── alerts_history.csv          # Persistent alert and notification logs
+│   │   ├── frequency_recommendations.csv # AI-recommended headway adjustments
+│   │   ├── peak_hour_policy.csv        # Surge capacity multiplier configuration
+│   │   └── traffic_analysis_report.json # Historical throughput and volatility digest
 │   ├── models/
-│   │   └── demand_forecast_model.pkl # Trained Random Forest model artifact
-│   ├── clean_and_sync_data.py        # Dataset preprocessing and validation pipeline
-│   ├── train_clean_model.py          # ML training and evaluation script
-│   ├── schedule_manager.py           # Timetable aggregation module
-│   ├── frequency_adjuster.py         # Dynamic headway adjustment engine
-│   ├── peak_optimizer.py             # Rush-hour buffer optimization logic
-│   ├── traffic_pattern_analyzer.py   # Corridor variance classification
-│   ├── traffic_reporter.py           # Performance metrics JSON digest generator
-│   ├── ai_recommender.py             # Operational recommendations engine
-│   └── test_milestone2.py            # Automated endpoint testing script
+│   │   └── demand_forecast_model.pkl   # Serialized Random Forest demand regressor
+│   ├── alert_manager.py                # Rule-based threshold alerts & emergency broadcast service
+│   ├── analytics_engine.py             # Network KPI aggregation & congestion heatmap engine
+│   ├── simulator.py                    # Live background telemetry sensor & drift simulator
+│   ├── clean_and_sync_data.py          # Data ingestion and cleaning pipeline
+│   ├── train_clean_model.py            # Model training and artifact serialization
+│   ├── schedule_manager.py             # Active dispatch timetable manager
+│   ├── frequency_adjuster.py           # Dynamic headway compression algorithm
+│   ├── peak_optimizer.py               # Rush-hour buffer scaling logic
+│   ├── traffic_pattern_analyzer.py     # Corridor variance classification
+│   ├── test_milestone2.py              # Milestone 2 validation suite
+│   ├── test_milestone3.py              # Milestone 3 alert and analytics validation suite
+│   ├── test_full_system.py             # End-to-end multi-milestone integration test suite
+│   ├── Dockerfile                      # Backend container specification
+│   └── requirements.txt                # Python package dependencies
 ├── frontend/
-│   └── index.html                    # Operations dashboard UI (Tailwind CSS + Chart.js)
-├── .gitignore                        # Git exclusion rules (virtual environments, raw CSVs)
-└── README.md                         # Project documentation
+│   └── index.html                      # Multi-view SPA command console (Tailwind CSS, Chart.js)
+├── docker-compose.yml                  # Multi-container orchestration definition
+├── .gitignore                          # Repository exclusion rules (raw data, virtual environments)
+└── README.md                           # Platform documentation
