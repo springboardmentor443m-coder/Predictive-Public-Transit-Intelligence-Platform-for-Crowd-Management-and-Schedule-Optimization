@@ -117,12 +117,163 @@ import matplotlib.pyplot as plt
 
 hourly_ridership.plot(kind="bar", figsize=(10, 5))
 
-plt.title("Average Ridership by Hour")
+plt.title("Total Ridership by Hour")
 plt.xlabel("Hour of Day")
-plt.ylabel("Average Ridership")
+plt.ylabel("Total Ridership")
 
 plt.xticks(rotation=0)
 plt.tight_layout()
 
 plt.savefig("outputs/hourly_ridership.png")
+plt.show()
+
+# Top 10 busiest stations graph
+top_10_stations = station_ridership.head(10)
+
+top_10_stations.sort_values().plot(
+    kind="barh",
+    figsize=(10, 6)
+)
+
+plt.title("Top 10 Stations by Total Ridership")
+plt.xlabel("Total Ridership")
+plt.ylabel("Station")
+plt.tight_layout()
+
+plt.savefig("outputs/top_10_stations.png")
+plt.show()
+
+# Daily ridership analysis
+daily_ridership = df.groupby("Date")["Ridership"].sum().sort_index()
+
+print("\nDaily ridership:")
+print(daily_ridership)
+
+print("\nHighest ridership day:")
+print(daily_ridership.idxmax(), "with", daily_ridership.max(), "passengers")
+
+print("\nLowest ridership day:")
+print(daily_ridership.idxmin(), "with", daily_ridership.min(), "passengers")
+
+# Daily ridership graph
+daily_ridership.plot(
+    kind="line",
+    figsize=(12, 5),
+    marker="o"
+)
+
+plt.title("Daily Total Ridership")
+plt.xlabel("Date")
+plt.ylabel("Total Ridership")
+plt.xticks(rotation=45)
+plt.tight_layout()
+
+plt.savefig("outputs/daily_ridership.png")
+plt.show()
+
+# Peak and off-peak period analysis
+
+def classify_period(hour):
+    if 7 <= hour <= 10:
+        return "Morning Peak"
+    elif 17 <= hour <= 20:
+        return "Evening Peak"
+    elif 11 <= hour <= 16:
+        return "Midday"
+    else:
+        return "Off-Peak"
+
+
+df["Period"] = df["Hour"].apply(classify_period)
+
+period_ridership = df.groupby("Period")["Ridership"].agg(
+    Total_Ridership="sum",
+    Average_Ridership="mean"
+)
+
+print("\nRidership by period:")
+print(period_ridership)
+
+print("\nPeriod with highest total ridership:")
+print(period_ridership["Total_Ridership"].idxmax())
+
+print("\nPeriod with highest average ridership:")
+print(period_ridership["Average_Ridership"].idxmax())
+
+# Period-wise ridership graph
+period_ridership["Total_Ridership"].sort_values(ascending=False).plot(
+    kind="bar",
+    figsize=(9, 5)
+)
+
+plt.title("Ridership by Time Period")
+plt.xlabel("Time Period")
+plt.ylabel("Total Ridership")
+plt.xticks(rotation=0)
+plt.tight_layout()
+
+plt.savefig("outputs/period_ridership.png")
+plt.show()
+
+# Weekday vs weekend analysis
+
+df["Date"] = pd.to_datetime(df["Date"])
+
+df["Day"] = df["Date"].dt.day_name()
+
+day_ridership = df.groupby("Day")["Ridership"].agg(
+    Total_Ridership="sum",
+    Average_Ridership="mean"
+)
+
+# Arrange days in calendar order
+day_order = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday"
+]
+
+day_ridership = day_ridership.reindex(day_order)
+
+print("\nRidership by day of week:")
+print(day_ridership)
+
+print("\nDay with highest average ridership:")
+print(day_ridership["Average_Ridership"].idxmax())
+
+print(
+    "Average ridership:",
+    day_ridership["Average_Ridership"].max()
+)
+
+# Weekday vs weekend classification
+df["Day_Type"] = df["Date"].dt.dayofweek.apply(
+    lambda x: "Weekend" if x >= 5 else "Weekday"
+)
+
+day_type_ridership = df.groupby("Day_Type")["Ridership"].agg(
+    Total_Ridership="sum",
+    Average_Ridership="mean"
+)
+
+print("\nWeekday vs Weekend ridership:")
+print(day_type_ridership)
+
+# Day-of-week graph
+day_ridership["Average_Ridership"].plot(
+    kind="bar",
+    figsize=(10, 5)
+)
+
+plt.title("Average Ridership by Day of Week")
+plt.xlabel("Day of Week")
+plt.ylabel("Average Ridership")
+plt.xticks(rotation=45)
+plt.tight_layout()
+
+plt.savefig("outputs/day_of_week_ridership.png")
 plt.show()
