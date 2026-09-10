@@ -81,6 +81,19 @@ export const PRESETS = [
     expected_tier: "OFF_PEAK",
     icon: "Moon",
     badgeColor: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+  },
+  {
+    title: "Hauz Khas Tech Corridor",
+    desc: "Evening rush hour connection across Magenta and Yellow lines",
+    hour: 19,
+    day_of_week: 1,
+    from_station: 2, // Hauz Khas
+    to_station: 4,   // Rajiv Chowk
+    line_color: 1,   // Magenta Line
+    train_capacity: 2400,
+    expected_tier: "SEVERE_RUSH",
+    icon: "Layers",
+    badgeColor: "bg-pink-500/20 text-pink-400 border-pink-500/30"
   }
 ];
 

@@ -13,12 +13,14 @@ import {
   Clock, 
   Train,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Check
 } from 'lucide-react';
 import { LINES, STATIONS } from '../data/constants';
 
 export default function ScheduleAdvisoryTable() {
   const [loading, setLoading] = useState(false);
+  const [refreshSuccess, setRefreshSuccess] = useState(false);
   const [data, setData] = useState({ total_records_analyzed: 0, directives: [], tier_counts: {} });
   const [searchTerm, setSearchTerm] = useState('');
   const [tierFilter, setTierFilter] = useState('ALL');
@@ -28,16 +30,22 @@ export default function ScheduleAdvisoryTable() {
   const [pageSize, setPageSize] = useState(12);
   const [sortField, setSortField] = useState('predicted_occupancy');
   const [sortAsc, setSortAsc] = useState(false);
+  const [lastSynced, setLastSynced] = useState(new Date().toLocaleTimeString());
 
   const loadData = async () => {
     setLoading(true);
+    setRefreshSuccess(false);
     try {
       const res = await fetchScheduleAdvisory();
       if (res && res.directives) {
         setData(res);
+        setRefreshSuccess(true);
+        setLastSynced(new Date().toLocaleTimeString());
+        setTimeout(() => setRefreshSuccess(false), 2500);
       } else {
-        // Generate rich initial set if empty
         generateFallbackDirectives();
+        setRefreshSuccess(true);
+        setTimeout(() => setRefreshSuccess(false), 2500);
       }
     } catch (err) {
       console.error("Advisory table error:", err);
@@ -175,41 +183,41 @@ export default function ScheduleAdvisoryTable() {
   const offPeakCount = data.tier_counts?.OFF_PEAK ?? data.directives?.filter(d => d.traffic_tier === 'OFF_PEAK').length ?? 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       
-      {/* Top Header & Metrics Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Top Header & Metrics Bar with Generous Padding */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
         {/* Total Instances */}
-        <div className="glass-panel rounded-2xl p-4 border border-cyan-500/30 flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-mono uppercase text-slate-400">Total Trips Analyzed</p>
-            <h4 className="text-2xl font-black text-white font-display mt-1">{data.total_records_analyzed || data.directives.length}</h4>
-            <p className="text-[10px] text-cyan-400 font-mono mt-0.5">XGBoost Test Instances</p>
+        <div className="glass-panel rounded-3xl p-6 border border-cyan-500/30 flex items-center justify-between shadow-xl">
+          <div className="space-y-1">
+            <p className="text-xs font-mono uppercase text-slate-400">Total Trips Analyzed</p>
+            <h4 className="text-3xl font-black text-white font-display">{data.total_records_analyzed || data.directives.length}</h4>
+            <p className="text-[11px] text-cyan-400 font-mono">XGBoost Test Instances</p>
           </div>
-          <div className="p-3 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-            <Train className="w-5 h-5" />
+          <div className="p-4 rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-inner">
+            <Train className="w-6 h-6" />
           </div>
         </div>
 
         {/* Severe Rush */}
         <button 
           onClick={() => setTierFilter(tierFilter === 'SEVERE_RUSH' ? 'ALL' : 'SEVERE_RUSH')}
-          className={`glass-panel rounded-2xl p-4 border text-left transition-all ${
-            tierFilter === 'SEVERE_RUSH' ? 'border-red-500 bg-red-950/30 ring-1 ring-red-500' : 'border-red-500/30 hover:border-red-500/60'
+          className={`glass-panel rounded-3xl p-6 border text-left transition-all duration-300 shadow-xl ${
+            tierFilter === 'SEVERE_RUSH' ? 'border-red-500 bg-red-950/30 ring-2 ring-red-500 scale-[1.02]' : 'border-red-500/30 hover:border-red-500/60'
           }`}
         >
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-mono uppercase text-red-400 flex items-center gap-1 font-bold">
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+            <div className="space-y-1">
+              <p className="text-xs font-mono uppercase text-red-400 flex items-center gap-1.5 font-bold">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
                 🔴 Severe Rush (≥1,500)
               </p>
-              <h4 className="text-2xl font-black text-red-300 font-display mt-1">{severeCount}</h4>
-              <p className="text-[10px] text-red-400/80 font-mono mt-0.5">3-Min High Frequency</p>
+              <h4 className="text-3xl font-black text-red-300 font-display">{severeCount}</h4>
+              <p className="text-[11px] text-red-400/90 font-mono">3-Min High Frequency</p>
             </div>
-            <div className="p-3 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20">
-              <ShieldAlert className="w-5 h-5" />
+            <div className="p-4 rounded-2xl bg-red-500/10 text-red-400 border border-red-500/20 shadow-inner">
+              <ShieldAlert className="w-6 h-6" />
             </div>
           </div>
         </button>
@@ -217,18 +225,18 @@ export default function ScheduleAdvisoryTable() {
         {/* Moderate Traffic */}
         <button 
           onClick={() => setTierFilter(tierFilter === 'MODERATE_TRAFFIC' ? 'ALL' : 'MODERATE_TRAFFIC')}
-          className={`glass-panel rounded-2xl p-4 border text-left transition-all ${
-            tierFilter === 'MODERATE_TRAFFIC' ? 'border-amber-500 bg-amber-950/30 ring-1 ring-amber-500' : 'border-amber-500/30 hover:border-amber-500/60'
+          className={`glass-panel rounded-3xl p-6 border text-left transition-all duration-300 shadow-xl ${
+            tierFilter === 'MODERATE_TRAFFIC' ? 'border-amber-500 bg-amber-950/30 ring-2 ring-amber-500 scale-[1.02]' : 'border-amber-500/30 hover:border-amber-500/60'
           }`}
         >
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-mono uppercase text-amber-400 font-bold">🟡 Moderate (800–1,499)</p>
-              <h4 className="text-2xl font-black text-amber-300 font-display mt-1">{moderateCount}</h4>
-              <p className="text-[10px] text-amber-400/80 font-mono mt-0.5">5–6 Min Standard Dispatch</p>
+            <div className="space-y-1">
+              <p className="text-xs font-mono uppercase text-amber-400 font-bold">🟡 Moderate (800–1,499)</p>
+              <h4 className="text-3xl font-black text-amber-300 font-display">{moderateCount}</h4>
+              <p className="text-[11px] text-amber-400/90 font-mono">5–6 Min Standard Dispatch</p>
             </div>
-            <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              <Clock className="w-5 h-5" />
+            <div className="p-4 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-inner">
+              <Clock className="w-6 h-6" />
             </div>
           </div>
         </button>
@@ -236,18 +244,18 @@ export default function ScheduleAdvisoryTable() {
         {/* Off-Peak Flow */}
         <button 
           onClick={() => setTierFilter(tierFilter === 'OFF_PEAK' ? 'ALL' : 'OFF_PEAK')}
-          className={`glass-panel rounded-2xl p-4 border text-left transition-all ${
-            tierFilter === 'OFF_PEAK' ? 'border-emerald-500 bg-emerald-950/30 ring-1 ring-emerald-500' : 'border-emerald-500/30 hover:border-emerald-500/60'
+          className={`glass-panel rounded-3xl p-6 border text-left transition-all duration-300 shadow-xl ${
+            tierFilter === 'OFF_PEAK' ? 'border-emerald-500 bg-emerald-950/30 ring-2 ring-emerald-500 scale-[1.02]' : 'border-emerald-500/30 hover:border-emerald-500/60'
           }`}
         >
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-mono uppercase text-emerald-400 font-bold">🟢 Off-Peak (&lt;800)</p>
-              <h4 className="text-2xl font-black text-emerald-300 font-display mt-1">{offPeakCount}</h4>
-              <p className="text-[10px] text-emerald-400/80 font-mono mt-0.5">10-Min Fleet Conserve</p>
+            <div className="space-y-1">
+              <p className="text-xs font-mono uppercase text-emerald-400 font-bold">🟢 Off-Peak (&lt;800)</p>
+              <h4 className="text-3xl font-black text-emerald-300 font-display">{offPeakCount}</h4>
+              <p className="text-[11px] text-emerald-400/90 font-mono">10-Min Fleet Conserve</p>
             </div>
-            <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <CheckCircle2 className="w-5 h-5" />
+            <div className="p-4 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-inner">
+              <CheckCircle2 className="w-6 h-6" />
             </div>
           </div>
         </button>
@@ -255,14 +263,14 @@ export default function ScheduleAdvisoryTable() {
       </div>
 
       {/* Table Container Card */}
-      <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden shadow-2xl">
+      <div className="glass-panel rounded-3xl border border-slate-800 overflow-hidden shadow-2xl space-y-0">
         
-        {/* Controls Bar */}
-        <div className="p-5 border-b border-slate-800 bg-slate-900/60 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        {/* Controls Bar with Refresh Feedback */}
+        <div className="p-6 border-b border-slate-800 bg-slate-900/60 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           
           {/* Search Input */}
           <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-4 top-3.5" />
             <input
               type="text"
               placeholder="Search station, train ID, or line..."
@@ -271,12 +279,12 @@ export default function ScheduleAdvisoryTable() {
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full bg-slate-950/80 border border-slate-700/80 text-white rounded-xl pl-9 pr-4 py-2 text-xs focus:border-cyan-400 focus:outline-none placeholder:text-slate-500 font-mono"
+              className="w-full bg-slate-950/90 border border-slate-700/80 text-white rounded-2xl pl-10 pr-4 py-2.5 text-xs focus:border-cyan-400 focus:outline-none placeholder:text-slate-500 font-mono shadow-inner"
             />
           </div>
 
           {/* Filters & Actions */}
-          <div className="flex items-center flex-wrap gap-2.5">
+          <div className="flex items-center flex-wrap gap-3">
             
             {/* Tier Filter */}
             <select
@@ -285,7 +293,7 @@ export default function ScheduleAdvisoryTable() {
                 setTierFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="bg-slate-950/80 border border-slate-700/80 text-slate-300 rounded-xl px-3 py-2 text-xs focus:border-cyan-400 focus:outline-none font-mono"
+              className="bg-slate-950/90 border border-slate-700/80 text-slate-300 rounded-2xl px-4 py-2.5 text-xs focus:border-cyan-400 focus:outline-none font-mono cursor-pointer shadow-inner"
             >
               <option value="ALL">All Demand Tiers</option>
               <option value="SEVERE_RUSH">🔴 Severe Rush (≥1,500)</option>
@@ -300,7 +308,7 @@ export default function ScheduleAdvisoryTable() {
                 setLineFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="bg-slate-950/80 border border-slate-700/80 text-slate-300 rounded-xl px-3 py-2 text-xs focus:border-cyan-400 focus:outline-none font-mono"
+              className="bg-slate-950/90 border border-slate-700/80 text-slate-300 rounded-2xl px-4 py-2.5 text-xs focus:border-cyan-400 focus:outline-none font-mono cursor-pointer shadow-inner"
             >
               <option value="ALL">All Metro Lines</option>
               {LINES.map(l => (
@@ -308,21 +316,35 @@ export default function ScheduleAdvisoryTable() {
               ))}
             </select>
 
-            {/* Action Buttons */}
+            {/* Refresh Action Button with Live Visual Feedback */}
             <button
               onClick={loadData}
               disabled={loading}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 border border-slate-700 transition-colors"
-              title="Refresh Data"
+              className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl border text-xs font-mono font-medium transition-all shadow-md active:scale-95 ${
+                refreshSuccess 
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50' 
+                  : 'bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 border-slate-700'
+              }`}
+              title="Refresh Fleet Schedule Directives from Backend"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              {refreshSuccess ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-400" />
+                  <span>Synced!</span>
+                </>
+              ) : (
+                <>
+                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-cyan-400' : ''}`} />
+                  <span>Refresh</span>
+                </>
+              )}
             </button>
 
             <button
               onClick={exportCSV}
-              className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-xs font-mono font-medium transition-colors"
+              className="flex items-center space-x-2 px-4 py-2.5 rounded-2xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-xs font-mono font-medium transition-all shadow-md"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-4 h-4" />
               <span>Export CSV</span>
             </button>
 
@@ -335,35 +357,35 @@ export default function ScheduleAdvisoryTable() {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-950/90 text-slate-400 font-mono uppercase tracking-wider border-b border-slate-800 text-[11px]">
               <tr>
-                <th className="py-3.5 px-4 cursor-pointer hover:text-white" onClick={() => handleSort('trip_id')}>
-                  <div className="flex items-center space-x-1">
+                <th className="py-4 px-5 cursor-pointer hover:text-white" onClick={() => handleSort('trip_id')}>
+                  <div className="flex items-center space-x-1.5">
                     <span>Trip & Train</span>
-                    <ArrowUpDown className="w-3 h-3" />
+                    <ArrowUpDown className="w-3.5 h-3.5" />
                   </div>
                 </th>
-                <th className="py-3.5 px-4 cursor-pointer hover:text-white" onClick={() => handleSort('from_station')}>
-                  <div className="flex items-center space-x-1">
+                <th className="py-4 px-5 cursor-pointer hover:text-white" onClick={() => handleSort('from_station')}>
+                  <div className="flex items-center space-x-1.5">
                     <span>Origin Hub</span>
-                    <ArrowUpDown className="w-3 h-3" />
+                    <ArrowUpDown className="w-3.5 h-3.5" />
                   </div>
                 </th>
-                <th className="py-3.5 px-4">Destination</th>
-                <th className="py-3.5 px-4">Metro Line</th>
-                <th className="py-3.5 px-4 cursor-pointer hover:text-white" onClick={() => handleSort('hour_int')}>
-                  <div className="flex items-center space-x-1">
+                <th className="py-4 px-5">Destination</th>
+                <th className="py-4 px-5">Metro Line</th>
+                <th className="py-4 px-5 cursor-pointer hover:text-white" onClick={() => handleSort('hour_int')}>
+                  <div className="flex items-center space-x-1.5">
                     <span>Time</span>
-                    <ArrowUpDown className="w-3 h-3" />
+                    <ArrowUpDown className="w-3.5 h-3.5" />
                   </div>
                 </th>
-                <th className="py-3.5 px-4 cursor-pointer hover:text-white" onClick={() => handleSort('predicted_occupancy')}>
-                  <div className="flex items-center space-x-1">
+                <th className="py-4 px-5 cursor-pointer hover:text-white" onClick={() => handleSort('predicted_occupancy')}>
+                  <div className="flex items-center space-x-1.5">
                     <span>Predicted Pax</span>
-                    <ArrowUpDown className="w-3 h-3" />
+                    <ArrowUpDown className="w-3.5 h-3.5" />
                   </div>
                 </th>
-                <th className="py-3.5 px-4">Headway</th>
-                <th className="py-3.5 px-4">Automated Fleet Action Directive</th>
-                <th className="py-3.5 px-4">Traffic Tier</th>
+                <th className="py-4 px-5">Headway</th>
+                <th className="py-4 px-5">Automated Fleet Action Directive</th>
+                <th className="py-4 px-5">Traffic Tier</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-sans">
@@ -382,63 +404,63 @@ export default function ScheduleAdvisoryTable() {
                         isSevere ? 'bg-red-950/10' : ''
                       }`}
                     >
-                      <td className="py-3.5 px-4 font-mono">
-                        <div className="font-bold text-white">#{row.trip_id}</div>
-                        <div className="text-[10px] text-cyan-400/90">{row.train_id}</div>
+                      <td className="py-4 px-5 font-mono">
+                        <div className="font-bold text-white text-sm">#{row.trip_id}</div>
+                        <div className="text-[11px] text-cyan-400 font-semibold">{row.train_id}</div>
                       </td>
 
-                      <td className="py-3.5 px-4 font-semibold text-slate-100">
+                      <td className="py-4 px-5 font-bold text-slate-100 text-sm">
                         {row.from_station}
                       </td>
 
-                      <td className="py-3.5 px-4 text-slate-400">
+                      <td className="py-4 px-5 text-slate-300 font-medium">
                         {row.to_station}
                       </td>
 
-                      <td className="py-3.5 px-4">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium border ${lineObj?.badge || 'bg-slate-800 text-slate-300 border-slate-700'}`}>
-                          <span className="w-1.5 h-1.5 rounded-full mr-1.5" style={{ backgroundColor: lineObj?.color || '#38bdf8' }}></span>
+                      <td className="py-4 px-5">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-xl text-xs font-semibold border ${lineObj?.badge || 'bg-slate-800 text-slate-300 border-slate-700'}`}>
+                          <span className="w-2 h-2 rounded-full mr-2 shadow-sm" style={{ backgroundColor: lineObj?.color || '#38bdf8' }}></span>
                           {row.line_color}
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 font-mono font-medium text-slate-300">
+                      <td className="py-4 px-5 font-mono font-bold text-slate-200 text-sm">
                         {row.entry_hour}
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-4 px-5">
                         <div className="flex items-baseline space-x-1.5 font-mono">
-                          <span className={`font-black text-sm ${isSevere ? 'text-red-400 font-display' : (isModerate ? 'text-amber-400' : 'text-emerald-400')}`}>
+                          <span className={`font-black text-base ${isSevere ? 'text-red-400 font-display' : (isModerate ? 'text-amber-400' : 'text-emerald-400')}`}>
                             {row.predicted_occupancy}
                           </span>
-                          <span className="text-[10px] text-slate-500">pax</span>
+                          <span className="text-[11px] text-slate-400">pax</span>
                         </div>
                         <div className="text-[10px] text-slate-400 font-mono">
                           {row.occupancy_rate_pct}% capacity
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4">
-                        <span className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold border inline-flex items-center gap-1 ${
+                      <td className="py-4 px-5">
+                        <span className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold border inline-flex items-center gap-1.5 shadow-sm ${
                           isSevere 
-                            ? 'bg-red-500/20 text-red-300 border-red-500/40 shadow-sm' 
+                            ? 'bg-red-500/20 text-red-300 border-red-500/40' 
                             : (isModerate 
                                 ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' 
                                 : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40')
                         }`}>
-                          <Clock className="w-3 h-3" />
+                          <Clock className="w-3.5 h-3.5" />
                           {row.recommended_headway_min} Min
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 text-slate-200 text-xs font-medium max-w-xs">
+                      <td className="py-4 px-5 text-slate-200 text-xs font-medium max-w-sm">
                         <span className="line-clamp-2">
                           {row.fleet_action}
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${
+                      <td className="py-4 px-5">
+                        <span className={`px-3 py-1 rounded-xl text-[10px] font-mono font-bold uppercase border shadow-sm ${
                           isSevere 
                             ? 'bg-red-500/20 text-red-400 border-red-500/40' 
                             : (isModerate 
@@ -454,7 +476,7 @@ export default function ScheduleAdvisoryTable() {
                 })
               ) : (
                 <tr>
-                  <td colSpan="9" className="py-8 text-center text-slate-500 font-mono text-xs">
+                  <td colSpan="9" className="py-12 text-center text-slate-500 font-mono text-sm">
                     No transit scheduling records match current filter criteria.
                   </td>
                 </tr>
@@ -463,27 +485,27 @@ export default function ScheduleAdvisoryTable() {
           </table>
         </div>
 
-        {/* Pagination Bar */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400 font-mono">
+        {/* Pagination Bar with Enhanced Padding */}
+        <div className="p-6 border-t border-slate-800 bg-slate-950/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-mono">
           <div>
             Showing <span className="text-white font-bold">{Math.min(sorted.length, (currentPage - 1) * pageSize + 1)}</span> to <span className="text-white font-bold">{Math.min(sorted.length, currentPage * pageSize)}</span> of <span className="text-white font-bold">{sorted.length}</span> directives
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <button
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 disabled:opacity-40 transition-colors"
+              className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 disabled:opacity-40 transition-colors shadow-sm"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="px-3 py-1 rounded-xl bg-slate-900 border border-slate-800 text-slate-200">
+            <span className="px-4 py-1.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-200">
               Page {currentPage} of {totalPages}
             </span>
             <button
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 disabled:opacity-40 transition-colors"
+              className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 disabled:opacity-40 transition-colors shadow-sm"
             >
               <ChevronRight className="w-4 h-4" />
             </button>

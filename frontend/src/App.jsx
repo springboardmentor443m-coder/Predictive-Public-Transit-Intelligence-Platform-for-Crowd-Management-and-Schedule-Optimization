@@ -51,8 +51,8 @@ export default function App() {
         lastUpdated={lastUpdated}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+      {/* Main Content Area with Generous Spacing and Breathing Room */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-10 space-y-10">
         
         {/* Connection Notice if Backend is Offline */}
         {backendStatus?.status === 'Offline' && (
