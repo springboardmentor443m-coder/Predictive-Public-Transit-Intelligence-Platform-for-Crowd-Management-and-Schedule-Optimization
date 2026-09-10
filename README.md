@@ -1,57 +1,94 @@
-## Contributing Guidelines (For Interns / Collaborators)
+# MetroFlow
 
-All interns added as collaborators to this repository must follow the branch workflow below. **Direct commits or pushes to the `main` branch are not allowed.**
+AI Platform for Metro Crowd Management and Scheduling
 
-> Note: `main` only contains the `LICENSE` and `README.md` — it is not used for active development. There is no need to pull the latest `main` into your branch at any point.
+## Project Overview
 
-### 1. Branch Naming
+MetroFlow is an AI-powered platform designed to monitor passenger flow, predict crowd demand, and support metro scheduling decisions using real-world transit data.
 
-- Every intern must create their own branch off `main`, named after themselves.
-- Suggested naming convention: `firstname-lastname` (all lowercase, hyphen-separated).
-  - Example: `john-doe`, `aisha-khan`
+The project focuses on combining passenger movement data with train scheduling information to build a data-driven crowd management and prediction system.
 
-### 2. How to Create Your Branch
+## Core Datasets
 
-**Option A — Clone and push (recommended)**
+1. Passenger entry/inflow — MTA Subway Hourly Ridership
+2. Passenger outflow — MTA Subway Origin-Destination Ridership Estimate
+3. Train arrival/departure — MTA Subway Schedules
+4. Station structure — MTA Subway Entrances & Exits
 
-```bash
-# Clone the repository
-git clone https://github.com/springboardmentor443m-coder/Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization.git
+Additional delay/service and capacity data will be integrated later.
 
-# Move into the project folder
-cd Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization
+## Data Pipeline
 
-# Create and switch to your own branch (off main)
-git checkout -b your-name
+The current data pipeline is:
 
-# ... make your changes ...
+MTA Open Data
+→ Data Download
+→ Data Cleaning
+→ Hourly Aggregation
+→ Station Mapping
+→ Dataset Integration
+→ Data Validation
 
-# Stage, commit, and push your changes to YOUR branch only
-git add .
-git commit -m "Describe your change here"
-git push origin your-name
-```
+## Current Progress
 
-**Option B — GitHub UI upload**
+### Dataset Integration — Completed
 
-1. Go to the repository on GitHub.
-2. Switch the branch dropdown from `main` to your own branch (create it first via **Branch: main → View all branches → New branch**, named after yourself).
-3. Once on your branch, use **Add file → Upload files** to upload your code.
-4. Commit directly to your branch (not `main`).
+Real MTA datasets have been successfully integrated for **May 5, 2025**.
 
-### 3. Rules
+Current integrated dataset:
 
-- ❌ Do **not** push or upload code directly to `main`.
-- ❌ Do **not** push code to another intern's branch.
-- ✅ Only push/upload code to the branch that carries your own name.
-- Keep uploading/pushing your code to your branch regularly as you make progress. No pull requests are required — your branch itself is the deliverable.
+- 9,908 station-hour records
+- 417 stations
+- 24 hourly timestamps
+- Passenger entry/inflow
+- Estimated passenger exit/outflow
+- Scheduled trains
+- Station and geographic information
+- Time-based features
+- Data availability indicators
 
-### 4. Summary
+### Data Quality
 
-| Action | Allowed? |
-|---|---|
-| Push to `main` directly | ❌ No |
-| Create your own branch from `main` | ✅ Yes |
-| Push/upload code to your own branch | ✅ Yes |
-| Push/upload code to someone else's branch | ❌ No |
-| Open a Pull Request | Not required |
+The integrated dataset has been validated for:
+
+- Duplicate station-hour records
+- Missing values
+- Negative passenger counts
+- Negative train counts
+- Station ID compatibility
+- Timestamp coverage
+- Dataset consistency
+
+Core data-quality checks passed successfully.
+
+## Important Dataset Note
+
+The current May 5, 2025 dataset is being used as a **validated integration dataset**.
+
+It is not yet sufficient for training the final prediction model because reliable crowd prediction requires multiple dates and temporal patterns such as:
+
+- Weekday vs weekend
+- Different days of the week
+- Different weeks/months
+- Holiday effects
+
+The next stage is to extend the same pipeline to multiple dates before developing and evaluating the ML prediction model.
+
+## Project Structure
+
+```text
+MetroFlow/
+├── data/
+│   ├── raw/
+│   ├── processed/
+│   └── external/
+├── models/
+├── notebooks/
+├── reports/
+├── src/
+│   ├── api/
+│   ├── data/
+│   ├── features/
+│   └── ml/
+├── .gitignore
+└── README.md
