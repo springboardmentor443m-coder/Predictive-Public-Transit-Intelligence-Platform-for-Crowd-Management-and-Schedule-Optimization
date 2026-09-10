@@ -58,15 +58,4 @@
 └── README.md                         # Milestone Submission Documentation
 ```
 
----
 
-## 🚀 How to Push to GitHub
-
-1. Copy the repository files into your cloned GitHub folder.
-2. Open terminal in your GitHub repository directory and execute:
-
-```bash
-git add .
-git commit -m "Milestone 1 & 2: Added NYC Subway Traffic 2017-2021 dataset and pre-rendered EDA & ML Notebooks"
-git push origin main
-```
