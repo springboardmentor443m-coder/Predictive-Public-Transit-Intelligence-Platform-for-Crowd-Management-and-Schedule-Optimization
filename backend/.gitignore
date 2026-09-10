@@ -1,0 +1,11 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Ignore large raw datasets (prevents GitHub 100MB limit crash)
+backend/data/crowd_data.csv
+backend/data/schedule_data.csv
+*.zip
+*.tar.gz

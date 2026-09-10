@@ -1,0 +1,7 @@
+hour,inflow,time_window,target_passenger_capacity,fleet_strategy,congestion_risk
+0,424,NIGHT_OFF_PEAK,254,Wide headway (10-12 min) + depot servicing,LOW DEMAND
+4,395,NIGHT_OFF_PEAK,237,Wide headway (10-12 min) + depot servicing,LOW DEMAND
+8,1730,MORNING_PEAK,2508,Deploy reserve trains + short headway (3 min),SURGE DEMAND
+12,1746,MIDDAY_OFF_PEAK,1746,Standard headway (6 min) + routine maintenance,NORMAL
+16,2389,MIDDAY_OFF_PEAK,2389,Standard headway (6 min) + routine maintenance,NORMAL
+20,1702,EVENING_PEAK,2553,Full fleet deployment + platform metering (3 min),CRITICAL SURGE

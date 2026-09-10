@@ -1,0 +1,122 @@
+{
+  "report_title": "MetroFlow Network Congestion & Operations Summary",
+  "generated_at": "2026-09-05T19:00:00Z",
+  "system_kpis": {
+    "chronic_bottlenecks_count": 14,
+    "highest_station_surge": 8665,
+    "extra_train_deployments_needed": 2,
+    "avg_headway_reduction_min": 1.0
+  },
+  "bottleneck_hotspots": [
+    {
+      "station_id": "1 Av",
+      "time_segment": "Evening Rush",
+      "avg_inflow": 5098,
+      "flow_volatility": 1584.6
+    },
+    {
+      "station_id": "1 Av",
+      "time_segment": "Midday Flow",
+      "avg_inflow": 3224,
+      "flow_volatility": 745.5
+    },
+    {
+      "station_id": "1 Av",
+      "time_segment": "Morning Rush",
+      "avg_inflow": 3653,
+      "flow_volatility": 1864.3
+    },
+    {
+      "station_id": "1 Av",
+      "time_segment": "Night Service",
+      "avg_inflow": 1118,
+      "flow_volatility": 928.9
+    },
+    {
+      "station_id": "103 St",
+      "time_segment": "Evening Rush",
+      "avg_inflow": 2032,
+      "flow_volatility": 1187.3
+    },
+    {
+      "station_id": "103 St",
+      "time_segment": "Midday Flow",
+      "avg_inflow": 2502,
+      "flow_volatility": 1174.5
+    },
+    {
+      "station_id": "103 St",
+      "time_segment": "Morning Rush",
+      "avg_inflow": 2064,
+      "flow_volatility": 1115.8
+    },
+    {
+      "station_id": "103 St - Corona Plaza",
+      "time_segment": "Evening Rush",
+      "avg_inflow": 2396,
+      "flow_volatility": 713.3
+    },
+    {
+      "station_id": "103 St - Corona Plaza",
+      "time_segment": "Midday Flow",
+      "avg_inflow": 3804,
+      "flow_volatility": 561.5
+    },
+    {
+      "station_id": "103 St - Corona Plaza",
+      "time_segment": "Morning Rush",
+      "avg_inflow": 6648,
+      "flow_volatility": 2310.4
+    },
+    {
+      "station_id": "103 St - Corona Plaza",
+      "time_segment": "Night Service",
+      "avg_inflow": 1242,
+      "flow_volatility": 1268.8
+    },
+    {
+      "station_id": "110 St",
+      "time_segment": "Evening Rush",
+      "avg_inflow": 2167,
+      "flow_volatility": 905.1
+    },
+    {
+      "station_id": "110 St",
+      "time_segment": "Midday Flow",
+      "avg_inflow": 2444,
+      "flow_volatility": 596.0
+    },
+    {
+      "station_id": "110 St",
+      "time_segment": "Morning Rush",
+      "avg_inflow": 3115,
+      "flow_volatility": 1434.8
+    }
+  ],
+  "fleet_dispatch_directives": [
+    {
+      "route_id": "TRIP_RT_BER_000_0000001",
+      "current_headway_min": 8,
+      "adjusted_headway_min": 3,
+      "recommended_action": "DISPATCH EXTRA TRAIN"
+    },
+    {
+      "route_id": "TRIP_RT_BER_000_0000003",
+      "current_headway_min": 8,
+      "adjusted_headway_min": 3,
+      "recommended_action": "DISPATCH EXTRA TRAIN"
+    }
+  ],
+  "peak_window_profiles": [
+    {
+      "time_window": "MORNING_PEAK",
+      "target_passenger_capacity": 2508,
+      "fleet_strategy": "Deploy reserve trains + short headway (3 min)"
+    },
+    {
+      "time_window": "EVENING_PEAK",
+      "target_passenger_capacity": 2553,
+      "fleet_strategy": "Full fleet deployment + platform metering (3 min)"
+    }
+  ]
+}

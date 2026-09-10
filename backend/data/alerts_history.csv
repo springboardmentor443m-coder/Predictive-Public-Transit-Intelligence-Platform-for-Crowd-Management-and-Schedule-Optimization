@@ -1,0 +1,12 @@
+timestamp,alert_type,severity,target,message
+2026-09-09 16:34:49,EMERGENCY_BROADCAST,CRITICAL,Red Line Express,Platform overcrowding detected. Hold trains at junction.
+2026-09-09 16:37:14,EMERGENCY_BROADCAST,CRITICAL,Red Line Express,"xyz
+"
+2026-09-09 16:38:41,EMERGENCY_BROADCAST,HIGH,Red Line Express,Platform overcrowding detected
+2026-09-09 16:50:31,EMERGENCY_BROADCAST,CRITICAL,Red Line Express,Platform overcrowding detected. Hold trains at junction.
+2026-09-09 18:53:53,EMERGENCY_BROADCAST,CRITICAL,Red Line Express,Platform overcrowding detected
+2026-09-09 19:05:36,EMERGENCY_BROADCAST,CRITICAL,Red Line Express,Milestone 4 System Verification Alert
+2026-09-09 19:17:08,EMERGENCY_BROADCAST,CRITICAL,Red Line Express,"High crowd
+"
+2026-09-09 19:23:55,EMERGENCY_BROADCAST,CRITICAL,Red Line Express,crowede
+2026-09-10 16:37:55,EMERGENCY_BROADCAST,CRITICAL,Red Line Express,platform over crowded

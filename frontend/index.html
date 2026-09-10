@@ -1,271 +1,554 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>MetroFlow Operational Intelligence</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MetroFlow Enterprise Transit Platform</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
-<body class="bg-slate-950 text-slate-100 p-6 min-h-screen">
-  <div class="max-w-7xl mx-auto space-y-6">
+<body class="bg-slate-950 text-slate-100 flex h-screen overflow-hidden font-sans">
 
-    <!-- Top Navigation Header -->
-    <div class="flex justify-between items-center pb-4 border-b border-slate-800">
-      <div>
-        <h1 class="text-3xl font-bold text-sky-400">MetroFlow Intelligence Platform</h1>
-        <p class="text-sm text-slate-400">Milestone 2: Train Scheduling, ML Demand Forecasting & AI Optimization</p>
-      </div>
-      <div class="flex items-center gap-3">
-        <span id="backend-status" class="bg-emerald-950 border border-emerald-500 text-emerald-300 text-xs px-3 py-1 rounded font-semibold">
-          FastAPI Live
-        </span>
-        <span class="bg-blue-950 border border-blue-500 text-blue-300 text-xs px-3 py-1 rounded font-semibold">
-          AI Engine Online
-        </span>
-      </div>
-    </div>
-
-    <!-- Executive KPI Summary Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div class="bg-slate-900 border border-slate-800 p-4 rounded-lg">
-        <p class="text-[11px] text-slate-400 font-semibold uppercase">Total Monitored Stations</p>
-        <p id="kpi-total-stn" class="text-2xl font-bold text-sky-400 mt-1">--</p>
-      </div>
-      <div class="bg-slate-900 border border-slate-800 p-4 rounded-lg">
-        <p class="text-[11px] text-slate-400 font-semibold uppercase">Avg Platform Inflow</p>
-        <p id="kpi-avg-inflow" class="text-2xl font-bold text-emerald-400 mt-1">--</p>
-      </div>
-      <div class="bg-slate-900 border border-slate-800 p-4 rounded-lg">
-        <p class="text-[11px] text-slate-400 font-semibold uppercase">Average Network Delay</p>
-        <p id="kpi-avg-delay" class="text-2xl font-bold text-amber-400 mt-1">--</p>
-      </div>
-      <div class="bg-slate-900 border border-slate-800 p-4 rounded-lg">
-        <p class="text-[11px] text-slate-400 font-semibold uppercase">Operational Fleet Compliance</p>
-        <p id="kpi-compliance" class="text-2xl font-bold text-purple-400 mt-1">88.4%</p>
-      </div>
-    </div>
-
-    <!-- Machine Learning Demand Forecaster & Congestion Alerts Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <!-- AI Predictor Widget -->
-      <div class="bg-slate-900 border border-slate-800 p-5 rounded-lg col-span-1 space-y-4">
+  <!-- Left Sidebar Navigation -->
+  <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0">
+    <div>
+      <div class="p-5 flex items-center space-x-3 border-b border-slate-800">
+        <div class="h-10 w-10 rounded-xl bg-indigo-600 flex items-center justify-center font-black text-xl text-white shadow-lg shadow-indigo-600/30">MF</div>
         <div>
-          <h3 class="text-base font-bold text-sky-400">Demand Forecasting</h3>
-          <p class="text-xs text-slate-400">Random Forest regression inference</p>
+          <h1 class="font-bold text-base tracking-wide text-white">MetroFlow</h1>
+          <p class="text-[11px] text-slate-400 font-medium">Transit AI Command</p>
         </div>
-        <div class="flex gap-2">
-          <div class="flex-1">
-            <label class="text-[10px] text-slate-400 uppercase font-bold">Hour (0-23)</label>
-            <input id="pred-hour" type="number" min="0" max="23" value="18" class="w-full bg-slate-800 border border-slate-700 px-2 py-1.5 rounded text-center font-bold text-sky-300">
-          </div>
-          <div class="flex-1">
-            <label class="text-[10px] text-slate-400 uppercase font-bold">Day (0-6)</label>
-            <input id="pred-day" type="number" min="0" max="6" value="2" class="w-full bg-slate-800 border border-slate-700 px-2 py-1.5 rounded text-center font-bold text-sky-300">
-          </div>
-        </div>
-        <button onclick="runPrediction()" class="w-full bg-sky-600 hover:bg-sky-500 py-2 rounded text-xs font-bold transition">
-          Run Prediction
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="p-3 space-y-1 text-sm font-medium">
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 transition-all">
+          <i class="fa-solid fa-gauge-high w-5 text-center"></i>
+          <span>Dashboard Overview</span>
         </button>
-        <div class="bg-slate-950 border border-slate-800 p-3 rounded text-center">
-          <span class="text-xs text-slate-400">Forecasted Inflow</span>
-          <p id="pred-result" class="text-xl font-bold text-emerald-400">--</p>
-          <span id="pred-risk" class="text-[11px] text-amber-400 font-semibold"></span>
+        <button onclick="switchTab('monitoring')" id="nav-monitoring" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition-all">
+          <i class="fa-solid fa-users-viewfinder w-5 text-center"></i>
+          <span>Live Monitoring</span>
+        </button>
+        <button onclick="switchTab('scheduling')" id="nav-scheduling" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition-all">
+          <i class="fa-solid fa-train-subway w-5 text-center"></i>
+          <span>Train Schedules</span>
+        </button>
+        <button onclick="switchTab('prediction')" id="nav-prediction" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition-all">
+          <i class="fa-solid fa-brain w-5 text-center"></i>
+          <span>AI Demand Forecast</span>
+        </button>
+        <button onclick="switchTab('alerts')" id="nav-alerts" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition-all">
+          <i class="fa-solid fa-triangle-exclamation w-5 text-center"></i>
+          <span>Alerts & Notifications</span>
+        </button>
+        <button onclick="switchTab('analytics')" id="nav-analytics" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition-all">
+          <i class="fa-solid fa-chart-line w-5 text-center"></i>
+          <span>Analytics & Reports</span>
+        </button>
+      </nav>
+    </div>
+
+    <div class="p-4 border-t border-slate-800">
+      <div class="flex items-center space-x-3 text-xs text-slate-400 mb-3">
+        <div class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></div>
+        <span>FastAPI v1.0 • Connected</span>
+      </div>
+      <button onclick="openEmergencyModal()" class="w-full bg-rose-600 hover:bg-rose-700 text-white py-2 rounded-lg text-xs font-semibold shadow transition-all flex items-center justify-center space-x-2">
+        <i class="fa-solid fa-bullhorn"></i>
+        <span>Broadcast Alert</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Right Main Viewport -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+
+    <!-- Top Header -->
+    <header class="h-16 bg-slate-900 border-b border-slate-800 px-6 flex justify-between items-center shrink-0">
+      <div class="flex items-center space-x-3">
+        <h2 id="viewTitle" class="text-lg font-bold text-white tracking-tight">Dashboard Overview</h2>
+        <span id="systemStatusBadge" class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">System Optimal</span>
+      </div>
+      <div class="flex items-center space-x-3">
+        <button onclick="refreshCurrentView()" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all">
+          <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
+        </button>
+      </div>
+    </header>
+
+    <!-- Emergency Announcement Banner -->
+    <div id="announcementBanner" class="hidden bg-rose-950/90 border-b border-rose-800 px-6 py-2.5 flex items-center justify-between text-xs shrink-0">
+      <div class="flex items-center space-x-2">
+        <i class="fa-solid fa-triangle-exclamation text-rose-400 animate-pulse"></i>
+        <strong class="font-bold text-rose-300">EMERGENCY BROADCAST:</strong>
+        <span id="announcementText" class="text-rose-100"></span>
+      </div>
+      <button onclick="dismissAnnouncement()" class="text-rose-400 hover:text-white underline">Dismiss</button>
+    </div>
+
+    <!-- Scrollable Content Canvas -->
+    <main class="flex-1 overflow-y-auto p-6 bg-slate-950">
+
+      <!-- ================= VIEW 1: DASHBOARD OVERVIEW ================= -->
+      <div id="view-dashboard" class="space-y-6">
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <p class="text-xs font-semibold text-slate-400 uppercase">On-Time Performance</p>
+            <h3 id="dashOnTime" class="text-2xl font-bold text-white mt-1">--%</h3>
+            <p class="text-[11px] text-emerald-400 mt-1">Target benchmark: &gt; 90%</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <p class="text-xs font-semibold text-slate-400 uppercase">Average Delay</p>
+            <h3 id="dashDelay" class="text-2xl font-bold text-white mt-1">-- min</h3>
+            <p class="text-[11px] text-indigo-400 mt-1">Dynamic buffer active</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <p class="text-xs font-semibold text-slate-400 uppercase">Fleet Capacity</p>
+            <h3 id="dashCapacity" class="text-2xl font-bold text-white mt-1">--%</h3>
+            <p class="text-[11px] text-amber-400 mt-1">Peak utilization</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <p class="text-xs font-semibold text-slate-400 uppercase">Daily Commuter Volume</p>
+            <h3 id="dashThroughput" class="text-2xl font-bold text-white mt-1">--</h3>
+            <p class="text-[11px] text-slate-400 mt-1">Aggregated turnstiles</p>
+          </div>
+        </div>
+
+        <!-- Visualizer & Heatmap summary -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-5">
+            <h3 class="font-bold text-slate-200 text-sm mb-4">Passenger Inflow vs AI Forecast Curve</h3>
+            <div class="h-64"><canvas id="dashChart"></canvas></div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between">
+            <div>
+              <h3 class="font-bold text-slate-200 text-sm mb-3">Station Congestion Index</h3>
+              <div id="dashHeatmap" class="space-y-3"></div>
+            </div>
+            <p class="text-[11px] text-slate-500 pt-3 border-t border-slate-800">Higher weights indicate platform surge risk.</p>
+          </div>
         </div>
       </div>
 
-      <!-- Live Congestion Alerts & Traffic Incident Feed -->
-      <div class="bg-slate-900 border border-slate-800 p-5 rounded-lg col-span-2 space-y-3">
-        <h3 class="text-base font-bold text-rose-400">Live Congestion Alerts</h3>
-        <div id="alert-feed" class="h-44 overflow-y-auto space-y-2 pr-1 text-xs">
-          <div class="text-slate-500">Scanning platform passenger density...</div>
+      <!-- ================= VIEW 2: LIVE MONITORING ================= -->
+      <div id="view-monitoring" class="hidden space-y-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="font-bold text-slate-200">Real-Time Station Density & Accumulation</h3>
+              <p class="text-xs text-slate-400">Processed NYC Subway Turnstile Streams</p>
+            </div>
+          </div>
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-950 text-slate-400 text-xs uppercase">
+              <tr>
+                <th class="p-3">Station Name</th>
+                <th class="p-3">Net Commuter Flow</th>
+                <th class="p-3">Congestion Level</th>
+                <th class="p-3">Operational Action</th>
+              </tr>
+            </thead>
+            <tbody id="monitoringTable" class="divide-y divide-slate-800 text-xs"></tbody>
+          </table>
         </div>
       </div>
-    </div>
 
-    <!-- Chart: Station Density vs Outflow -->
-    <div class="bg-slate-900 border border-slate-800 p-5 rounded-lg">
-      <h3 class="text-base font-bold text-sky-400 mb-2">Station Passenger Velocity</h3>
-      <div class="h-56">
-        <canvas id="trafficChart"></canvas>
+      <!-- ================= VIEW 3: TRAIN SCHEDULES ================= -->
+      <div id="view-scheduling" class="hidden space-y-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="font-bold text-slate-200">Active Dispatch Timetable & Headway Control</h3>
+              <p class="text-xs text-slate-400">Dynamic Headway Compression Engine</p>
+            </div>
+          </div>
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-950 text-slate-400 text-xs uppercase">
+              <tr>
+                <th class="p-3">Trip ID</th>
+                <th class="p-3">Transit Route</th>
+                <th class="p-3">Delay (Minutes)</th>
+                <th class="p-3">Current Headway</th>
+                <th class="p-3">Dispatch Adjustment</th>
+              </tr>
+            </thead>
+            <tbody id="schedulingTable" class="divide-y divide-slate-800 text-xs"></tbody>
+          </table>
+        </div>
       </div>
-    </div>
 
-    <!-- Tabular Section: Frequency Optimization & Headway Engine -->
-    <div class="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
-      <div class="p-4 border-b border-slate-800 flex justify-between items-center">
-        <h3 class="text-base font-bold text-amber-400">Dynamic Headway & Frequency Management</h3>
-        <span class="text-xs text-slate-400">Step 6 & 7 Integrated</span>
+      <!-- ================= VIEW 4: AI PREDICTION ================= -->
+      <div id="view-prediction" class="hidden space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+            <h3 class="font-bold text-slate-200 text-sm mb-3">On-Demand Surge Inference</h3>
+            <div class="space-y-4 text-xs">
+              <div>
+                <label class="block text-slate-400 mb-1">Target Hour (0 - 23)</label>
+                <input id="predHour" type="number" min="0" max="23" value="18" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Day of Week (0 = Mon, 6 = Sun)</label>
+                <input id="predDay" type="number" min="0" max="6" value="0" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white">
+              </div>
+              <button onclick="runInference()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded font-semibold transition-all">Predict Demand</button>
+              
+              <div id="predResult" class="hidden mt-4 p-3 bg-slate-950 border border-slate-800 rounded-lg">
+                <p class="text-slate-400">Forecast Result:</p>
+                <h4 id="predVolume" class="text-xl font-bold text-white mt-1">-- passengers</h4>
+                <span id="predRisk" class="mt-2 inline-block px-2 py-0.5 rounded text-[11px] font-semibold"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="md:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-5">
+            <h3 class="font-bold text-slate-200 text-sm mb-4">24-Hour Continuous Model Inference</h3>
+            <div class="h-64"><canvas id="predChart"></canvas></div>
+          </div>
+        </div>
       </div>
-      <table class="w-full text-left text-sm">
-        <thead class="bg-slate-800/60 text-slate-400 uppercase text-[11px]">
-          <tr>
-            <th class="p-3">Route ID</th>
-            <th>Avg Delay</th>
-            <th>Occupancy</th>
-            <th>Scheduled Headway</th>
-            <th>Optimized Headway</th>
-            <th>Dispatcher Action</th>
-          </tr>
-        </thead>
-        <tbody id="frequency-tbody" class="divide-y divide-slate-800 text-xs">
-          <tr><td colspan="6" class="p-4 text-center text-slate-500">Loading schedule records...</td></tr>
-        </tbody>
-      </table>
-    </div>
 
-    <!-- Tabular Section: Smart AI Recommendations -->
-    <div class="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
-      <div class="p-4 border-b border-slate-800 flex justify-between items-center">
-        <h3 class="text-base font-bold text-emerald-400">Autonomous AI Operational Directives</h3>
-        <span class="text-xs text-slate-400">Step 12 Engine</span>
+      <!-- ================= VIEW 5: ALERTS & NOTIFICATIONS ================= -->
+      <div id="view-alerts" class="hidden space-y-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+          <h3 class="font-bold text-slate-200 mb-3">System Notification & Incident Log</h3>
+          <div id="alertsLogContainer" class="space-y-2 text-xs"></div>
+        </div>
       </div>
-      <table class="w-full text-left text-sm">
-        <thead class="bg-slate-800/60 text-slate-400 uppercase text-[11px]">
-          <tr>
-            <th class="p-3">Target Entity</th>
-            <th>Domain</th>
-            <th>Priority</th>
-            <th>Required Operational Action</th>
-            <th>Expected Impact</th>
-          </tr>
-        </thead>
-        <tbody id="recommendations-tbody" class="divide-y divide-slate-800 text-xs">
-          <tr><td colspan="5" class="p-4 text-center text-slate-500">Retrieving recommendations...</td></tr>
-        </tbody>
-      </table>
-    </div>
 
+      <!-- ================= VIEW 6: ANALYTICS & REPORTS ================= -->
+      <div id="view-analytics" class="hidden space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+            <h3 class="font-bold text-slate-200 text-sm mb-3">Operational Efficiency Indicators</h3>
+            <div class="space-y-3 text-xs">
+              <div class="flex justify-between p-2.5 bg-slate-950 rounded border border-slate-800">
+                <span class="text-slate-400">Headway Adherence</span>
+                <span class="text-emerald-400 font-bold">96.2%</span>
+              </div>
+              <div class="flex justify-between p-2.5 bg-slate-950 rounded border border-slate-800">
+                <span class="text-slate-400">Peak Surge Buffer Multiplier</span>
+                <span class="text-indigo-400 font-bold">1.48x</span>
+              </div>
+              <div class="flex justify-between p-2.5 bg-slate-950 rounded border border-slate-800">
+                <span class="text-slate-400">Turnstile Ingestion Rate</span>
+                <span class="text-slate-200 font-bold">1,200 records / batch</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+            <h3 class="font-bold text-slate-200 text-sm mb-3">Corridor Volatility Summary</h3>
+            <div id="corridorSummary" class="space-y-2 text-xs text-slate-300">
+              <p>• Central Transfer Hubs (Penn St, Grand Central): <span class="text-rose-400 font-semibold">High Variance</span></p>
+              <p>• Residential Feeder Lines: <span class="text-emerald-400 font-semibold">Low Variance</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
 
+  <!-- Emergency Modal -->
+  <div id="emergencyModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 space-y-4">
+      <h3 class="text-base font-bold text-white">Broadcast Emergency Announcement</h3>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Transit Corridor</label>
+          <input id="modalLine" type="text" value="Red Line Express" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Severity Tier</label>
+          <select id="modalSeverity" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white">
+            <option value="CRITICAL">CRITICAL</option>
+            <option value="HIGH">HIGH</option>
+            <option value="MODERATE">MODERATE</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Operational Message</label>
+          <textarea id="modalMessage" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-white" placeholder="e.g. Surge detected; restricting turnstiles."></textarea>
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 pt-2 text-xs">
+        <button onclick="closeEmergencyModal()" class="px-3 py-1.5 text-slate-400 hover:text-white">Cancel</button>
+        <button onclick="sendEmergencyBroadcast()" class="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded">Publish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPA Logic & API Fetching -->
   <script>
-    let chartInstance = null;
+    const API_BASE = "http://127.0.0.1:8000/api/v1";
+    let dashChart = null;
+    let predChart = null;
+    let activeTab = 'dashboard';
 
-    async function initializeDashboard() {
-      // 1. Fetch Live Crowd & KPI Metrics
-      try {
-        const cRes = await fetch("http://127.0.0.1:8000/api/v1/crowd/live");
-        const crowd = await cRes.json();
-        
-        if (crowd && crowd.length > 0) {
-          document.getElementById("kpi-total-stn").innerText = crowd.length;
-          const avgIn = Math.round(crowd.reduce((a, b) => a + (Number(b.inflow) || 0), 0) / crowd.length);
-          document.getElementById("kpi-avg-inflow").innerText = "+" + avgIn + " /hr";
-
-          // Populate Alerts Feed
-          const alertsDiv = document.getElementById("alert-feed");
-          alertsDiv.innerHTML = "";
-          const criticals = crowd.filter(c => c.congestion_level === "CRITICAL" || c.congestion_level === "HIGH");
-          if (criticals.length === 0) {
-            alertsDiv.innerHTML = '<div class="p-2 bg-emerald-950/40 text-emerald-300 border border-emerald-800 rounded">Nominal flow across all stations.</div>';
-          } else {
-            criticals.forEach(c => {
-              alertsDiv.innerHTML += `
-                <div class="p-2.5 rounded border border-rose-800 bg-rose-950/40 flex justify-between items-center">
-                  <div>
-                    <span class="font-bold text-rose-300">${c.station_id}</span>
-                    <span class="text-slate-400 ml-2">Net Load: ${c.net_occupancy} (+${c.inflow} entries)</span>
-                  </div>
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-800 text-white">${c.congestion_level}</span>
-                </div>`;
-            });
-          }
-
-          // Populate Velocity Chart
-          const sample = crowd.slice(0, 7);
-          const ctx = document.getElementById('trafficChart').getContext('2d');
-          if (chartInstance) chartInstance.destroy();
-          chartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-              labels: sample.map(s => s.station_id),
-              datasets: [
-                { label: 'Inflow', data: sample.map(s => s.inflow), backgroundColor: '#38bdf8' },
-                { label: 'Outflow', data: sample.map(s => s.outflow), backgroundColor: '#f43f5e' }
-              ]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: { legend: { labels: { color: '#94a3b8' } } },
-              scales: {
-                x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
-                y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } }
-              }
-            }
-          });
+    // Tab Navigation Logic
+    function switchTab(tabId) {
+      activeTab = tabId;
+      const views = ['dashboard', 'monitoring', 'scheduling', 'prediction', 'alerts', 'analytics'];
+      
+      views.forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        const nav = document.getElementById(`nav-${v}`);
+        if (v === tabId) {
+          el.classList.remove('hidden');
+          nav.className = "nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 transition-all";
+        } else {
+          el.classList.add('hidden');
+          nav.className = "nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition-all";
         }
-      } catch (e) { console.error("Crowd fetch error:", e); }
+      });
 
-      // 2. Fetch Frequency Adjustments & Delays
-      try {
-        const fRes = await fetch("http://127.0.0.1:8000/api/v1/scheduling/frequency");
-        const freq = await fRes.json();
-        const fBody = document.getElementById("frequency-tbody");
-        fBody.innerHTML = "";
-        
-        if (freq && freq.length > 0) {
-          const meanDelay = (freq.reduce((a, b) => a + (Number(b.delay_minutes) || 0), 0) / freq.length).toFixed(1);
-          document.getElementById("kpi-avg-delay").innerText = meanDelay + " min";
-
-          freq.slice(0, 8).forEach(r => {
-            const badge = r.recommended_action.includes("DISPATCH") ? "bg-red-900/60 text-red-300 border-red-700" :
-                         (r.recommended_action.includes("INCREASE") ? "bg-amber-900/60 text-amber-300 border-amber-700" : "bg-emerald-900/60 text-emerald-300 border-emerald-700");
-            fBody.innerHTML += `
-              <tr class="hover:bg-slate-800/40">
-                <td class="p-3 font-semibold text-slate-200">${r.route_id}</td>
-                <td class="text-rose-400 font-semibold">${r.delay_minutes} min</td>
-                <td>${r.occupancy_pct}%</td>
-                <td class="text-slate-400">${r.current_headway_min} min</td>
-                <td class="text-sky-300 font-bold">${r.adjusted_headway_min} min</td>
-                <td><span class="border px-2 py-0.5 rounded text-[11px] font-semibold ${badge}">${r.recommended_action}</span></td>
-              </tr>`;
-          });
-        }
-      } catch (e) { console.error("Frequency fetch error:", e); }
-
-      // 3. Fetch AI Recommendations
-      try {
-        const rRes = await fetch("http://127.0.0.1:8000/api/v1/ai/recommendations");
-        const recs = await rRes.json();
-        const rBody = document.getElementById("recommendations-tbody");
-        rBody.innerHTML = "";
-
-        if (recs && recs.length > 0) {
-          recs.slice(0, 8).forEach(rec => {
-            const priBadge = rec.priority === "CRITICAL" ? "bg-red-900/70 text-red-200 border-red-700" :
-                            (rec.priority === "HIGH" ? "bg-amber-900/70 text-amber-200 border-amber-700" : "bg-blue-900/70 text-blue-200 border-blue-700");
-            rBody.innerHTML += `
-              <tr class="hover:bg-slate-800/40">
-                <td class="p-3 font-semibold text-sky-300">${rec.target_entity}</td>
-                <td class="text-slate-400 font-mono text-[11px]">${rec.domain}</td>
-                <td><span class="border px-2 py-0.5 rounded text-[10px] font-bold ${priBadge}">${rec.priority}</span></td>
-                <td class="text-slate-200">${rec.action_required}</td>
-                <td class="text-slate-400">${rec.estimated_impact}</td>
-              </tr>`;
-          });
-        }
-      } catch (e) { console.error("Recs fetch error:", e); }
+      const titles = {
+        dashboard: "Dashboard Overview",
+        monitoring: "Live Crowd Monitoring",
+        scheduling: "Train Schedule & Headway Management",
+        prediction: "AI Passenger Demand Forecasting",
+        alerts: "Alerts & Emergency Notifications",
+        analytics: "Transportation Analytics & Reporting"
+      };
+      document.getElementById("viewTitle").innerText = titles[tabId];
+      refreshCurrentView();
     }
 
-    async function runPrediction() {
-      const h = parseInt(document.getElementById("pred-hour").value) || 18;
-      const d = parseInt(document.getElementById("pred-day").value) || 2;
+    async function fetchAPI(endpoint, options = {}) {
       try {
-        const res = await fetch("http://127.0.0.1:8000/api/v1/predict/demand", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ target_hour: h, day_of_week: d })
-        });
-        const data = await res.json();
-        document.getElementById("pred-result").innerText = data.predicted_inflow + " pass/hr";
-        document.getElementById("pred-risk").innerText = "Surge Assessment: " + data.surge_risk;
-      } catch (e) {
-        console.error("Prediction error:", e);
+        const res = await fetch(`${API_BASE}${endpoint}`, options);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      } catch (err) {
+        console.warn(`[API] ${endpoint} error:`, err);
+        return null;
       }
     }
 
-    initializeDashboard();
-    runPrediction();
+    async function loadKPIs() {
+      const data = await fetchAPI("/analytics/kpis");
+      if (data) {
+        document.getElementById("dashOnTime").innerText = `${data.on_time_performance_pct}%`;
+        document.getElementById("dashDelay").innerText = `${data.network_avg_delay_min} min`;
+        document.getElementById("dashCapacity").innerText = `${data.fleet_capacity_utilization_pct}%`;
+        document.getElementById("dashThroughput").innerText = `${(data.daily_throughput_est / 1000).toFixed(1)}k`;
+      }
+    }
+
+    async function loadHeatmap() {
+      const data = await fetchAPI("/analytics/heatmap");
+      const container = document.getElementById("dashHeatmap");
+      if (data && data.points) {
+        container.innerHTML = "";
+        data.points.slice(0, 5).forEach(pt => {
+          const color = pt.intensity > 0.7 ? "bg-rose-500" : pt.intensity > 0.4 ? "bg-amber-500" : "bg-emerald-500";
+          container.innerHTML += `
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-300 font-medium">${pt.station_name}</span>
+                <span class="text-slate-400 font-bold">${pt.net_flow} pass. (${pt.intensity})</span>
+              </div>
+              <div class="w-full bg-slate-800 rounded-full h-1.5">
+                <div class="${color} h-1.5 rounded-full" style="width: ${Math.round(pt.intensity * 100)}%"></div>
+              </div>
+            </div>
+          `;
+        });
+      }
+    }
+
+    async function loadMonitoring() {
+      const data = await fetchAPI("/crowd/live-summary");
+      const tbody = document.getElementById("monitoringTable");
+      if (data && data.stations) {
+        tbody.innerHTML = "";
+        data.stations.forEach(st => {
+          const badge = st.status === "CRITICAL" ? "bg-rose-500/20 text-rose-400 border-rose-500/30"
+            : st.status === "HIGH" ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
+            : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+
+          tbody.innerHTML += `
+            <tr class="hover:bg-slate-900/40">
+              <td class="p-3 font-medium text-slate-200">${st.station_name}</td>
+              <td class="p-3 text-slate-300 font-mono">${st.net_flow}</td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded border ${badge}">${st.status}</span></td>
+              <td class="p-3">
+                <button onclick="triggerHeadway('${st.station_name}', 3)" class="text-indigo-400 hover:text-indigo-300 underline font-semibold">Dispatch Extra Train (3m)</button>
+              </td>
+            </tr>
+          `;
+        });
+      }
+    }
+
+    async function loadSchedules() {
+      const data = await fetchAPI("/scheduling/timetable");
+      const tbody = document.getElementById("schedulingTable");
+      if (data && data.timetable) {
+        tbody.innerHTML = "";
+        data.timetable.forEach(sc => {
+          tbody.innerHTML += `
+            <tr class="hover:bg-slate-900/40">
+              <td class="p-3 font-mono text-slate-400">${sc.trip_id}</td>
+              <td class="p-3 text-slate-200 font-medium">${sc.route}</td>
+              <td class="p-3 ${sc.delay_min > 3 ? 'text-amber-400 font-bold' : 'text-slate-300'}">${sc.delay_min} min</td>
+              <td class="p-3 font-semibold text-white">${sc.headway} min</td>
+              <td class="p-3">
+                <button onclick="triggerHeadway('${sc.trip_id}', 4)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-200">Compress to 4m</button>
+              </td>
+            </tr>
+          `;
+        });
+      }
+    }
+
+    async function loadAlerts() {
+      const data = await fetchAPI("/alerts/live");
+      const container = document.getElementById("alertsLogContainer");
+      if (data && data.alerts) {
+        container.innerHTML = "";
+        data.alerts.forEach(alt => {
+          container.innerHTML += `
+            <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 flex justify-between items-center">
+              <div>
+                <span class="font-bold text-rose-400 mr-2">[${alt.severity}]</span>
+                <span class="text-slate-200">${alt.message}</span>
+              </div>
+              <span class="text-slate-500 text-[10px]">${alt.timestamp || 'Just now'}</span>
+            </div>
+          `;
+        });
+      }
+
+      const annData = await fetchAPI("/alerts/announcements");
+      if (annData && annData.announcements && annData.announcements.length > 0) {
+        const top = annData.announcements[0];
+        document.getElementById("announcementText").innerText = `${top.line}: ${top.message}`;
+        document.getElementById("announcementBanner").classList.remove("hidden");
+      }
+    }
+
+    async function loadChart(canvasId, isPredView = false) {
+      const forecastData = await fetchAPI("/prediction/forecast-24h");
+      const labels = forecastData ? forecastData.labels : ["06:00", "08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"];
+      const actuals = forecastData ? forecastData.actual_inflow : [320, 1150, 780, 490, 520, 940, 1380, 810, 410];
+      const predicted = forecastData ? forecastData.ai_forecast : [300, 1100, 750, 510, 500, 910, 1320, 790, 390];
+
+      const ctx = document.getElementById(canvasId).getContext("2d");
+      return new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: "Actual Turnstile Inflow",
+              data: actuals,
+              borderColor: "#6366f1",
+              backgroundColor: "rgba(99, 102, 241, 0.1)",
+              fill: true,
+              tension: 0.35
+            },
+            {
+              label: "Random Forest Prediction",
+              data: predicted,
+              borderColor: "#10b981",
+              borderDash: [5, 5],
+              fill: false,
+              tension: 0.35
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { grid: { color: "#1e293b" }, ticks: { color: "#64748b" } },
+            x: { grid: { color: "#1e293b" }, ticks: { color: "#64748b" } }
+          },
+          plugins: { legend: { labels: { color: "#cbd5e1" } } }
+        }
+      });
+    }
+
+    async function runInference() {
+      const hour = parseInt(document.getElementById("predHour").value);
+      const day = parseInt(document.getElementById("predDay").value);
+
+      const res = await fetchAPI("/predict/demand", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target_hour: hour, day_of_week: day })
+      });
+
+      if (res) {
+        document.getElementById("predResult").classList.remove("hidden");
+        document.getElementById("predVolume").innerText = `${res.predicted_inflow} commuters`;
+        const risk = document.getElementById("predRisk");
+        risk.innerText = res.surge_risk;
+        risk.className = res.surge_risk === "HIGH PEAK" ? "bg-rose-500/20 text-rose-400 border border-rose-500/30" : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+      }
+    }
+
+    async function triggerHeadway(target, headway) {
+      await fetchAPI("/scheduling/update-headway", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trip_id: target, new_headway_minutes: headway, reason: "Operator manual override" })
+      });
+      loadSchedules();
+      loadAlerts();
+    }
+
+    function openEmergencyModal() { document.getElementById("emergencyModal").classList.remove("hidden"); }
+    function closeEmergencyModal() { document.getElementById("emergencyModal").classList.add("hidden"); }
+    function dismissAnnouncement() { document.getElementById("announcementBanner").classList.add("hidden"); }
+
+    async function sendEmergencyBroadcast() {
+      const line = document.getElementById("modalLine").value;
+      const severity = document.getElementById("modalSeverity").value;
+      const message = document.getElementById("modalMessage").value;
+      if (!message.trim()) return;
+
+      await fetchAPI("/alerts/emergency", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ line, severity, message, operator_id: "OP-MASTER" })
+      });
+
+      closeEmergencyModal();
+      loadAlerts();
+    }
+
+    function refreshCurrentView() {
+      loadKPIs();
+      if (activeTab === 'dashboard') {
+        loadHeatmap();
+        if (!dashChart) dashChart = loadChart("dashChart");
+      } else if (activeTab === 'monitoring') {
+        loadMonitoring();
+      } else if (activeTab === 'scheduling') {
+        loadSchedules();
+      } else if (activeTab === 'prediction') {
+        if (!predChart) predChart = loadChart("predChart");
+      } else if (activeTab === 'alerts') {
+        loadAlerts();
+      }
+    }
+
+   window.addEventListener("DOMContentLoaded", () => {
+  refreshCurrentView();
+  loadAlerts();
+
+  // Auto-poll the backend every 5 seconds for live real-time updates
+  setInterval(() => {
+    refreshCurrentView();
+    loadAlerts();
+  }, 5000);
+});
   </script>
+ 
 </body>
 </html>
