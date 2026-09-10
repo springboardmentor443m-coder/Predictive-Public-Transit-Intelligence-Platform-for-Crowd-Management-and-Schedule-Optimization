@@ -400,6 +400,26 @@ def get_analytics():
             "total_trips": int(row['total_trips'])
         })
         
+    # Hourly station rankings breakdown
+    hourly_station_breakdown = {}
+    for h in sorted(analytics_df['Entry_Hour'].unique()):
+        h_df = analytics_df[analytics_df['Entry_Hour'] == h]
+        st_group = h_df.groupby('From_Station')['Train_Occupancy_Count'].agg(
+            avg_occupancy='mean',
+            total_trips='count'
+        ).reset_index()
+        station_ranks = []
+        for _, s_row in st_group.iterrows():
+            pax = round(float(s_row['avg_occupancy']), 1)
+            station_ranks.append({
+                "station": str(s_row['From_Station']),
+                "avg_occupancy": pax,
+                "total_trips": int(s_row['total_trips']),
+                "tier": "SEVERE_RUSH" if pax >= 1500 else ("MODERATE_TRAFFIC" if pax >= 800 else "OFF_PEAK")
+            })
+        station_ranks.sort(key=lambda x: x['avg_occupancy'], reverse=True)
+        hourly_station_breakdown[int(h)] = station_ranks
+
     # Line distribution
     line_avg = analytics_df.groupby('Line_Color')['Train_Occupancy_Count'].agg(
         avg_occupancy='mean',
@@ -419,6 +439,7 @@ def get_analytics():
         "overall_avg_occupancy": round(float(analytics_df['Train_Occupancy_Count'].mean()), 1),
         "peak_max_occupancy": int(analytics_df['Train_Occupancy_Count'].max()),
         "hourly_distribution": sorted(hourly_data, key=lambda x: x['hour']),
+        "hourly_station_breakdown": hourly_station_breakdown,
         "station_distribution": sorted(station_data, key=lambda x: x['avg_occupancy'], reverse=True),
         "line_distribution": line_data,
         "critical_threshold": 1500,

@@ -14,7 +14,8 @@ import {
   Train,
   ChevronLeft,
   ChevronRight,
-  Check
+  Check,
+  X
 } from 'lucide-react';
 import { LINES, STATIONS } from '../data/constants';
 
@@ -61,7 +62,7 @@ export default function ScheduleAdvisoryTable() {
     const rows = [];
     const tierCounts = { SEVERE_RUSH: 0, MODERATE_TRAFFIC: 0, OFF_PEAK: 0 };
 
-    for (let i = 1; i <= 50; i++) {
+    for (let i = 1; i <= 60; i++) {
       const hour = (6 + (i % 18));
       const isRush = (hour >= 8 && hour <= 11) || (hour >= 17 && hour <= 20);
       const pax = isRush ? Math.floor(1520 + Math.random() * 450) : (hour >= 12 && hour <= 16 ? Math.floor(820 + Math.random() * 450) : Math.floor(250 + Math.random() * 450));
@@ -115,13 +116,39 @@ export default function ScheduleAdvisoryTable() {
     loadData();
   }, []);
 
-  // Filter and sort
+  // Multi-field intelligent search across train ID, station name, code, trip ID, line, tier, hour
   const filtered = (data.directives || []).filter(item => {
-    const matchesSearch = 
-      (item.from_station && item.from_station.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.to_station && item.to_station.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.train_id && item.train_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.line_color && item.line_color.toLowerCase().includes(searchTerm.toLowerCase()));
+    const rawSearch = searchTerm.trim().toLowerCase();
+    
+    // Check if matches search term
+    let matchesSearch = true;
+    if (rawSearch) {
+      const fromSt = String(item.from_station || '').toLowerCase();
+      const toSt = String(item.to_station || '').toLowerCase();
+      const stId = String(item.station_id || '').toLowerCase();
+      const trainId = String(item.train_id || '').toLowerCase();
+      const tripId = String(item.trip_id || '').toLowerCase();
+      const lineColor = String(item.line_color || '').toLowerCase();
+      const trafficTier = String(item.traffic_tier || '').toLowerCase();
+      const hourStr = String(item.entry_hour || '').toLowerCase();
+      const fleetAction = String(item.fleet_action || '').toLowerCase();
+
+      // Station codes
+      const stObj = STATIONS.find(s => s.name.toLowerCase() === fromSt);
+      const stCode = (stObj?.code || '').toLowerCase();
+
+      matchesSearch = 
+        fromSt.includes(rawSearch) ||
+        toSt.includes(rawSearch) ||
+        stId.includes(rawSearch) ||
+        stCode.includes(rawSearch) ||
+        trainId.includes(rawSearch) ||
+        tripId.includes(rawSearch) ||
+        lineColor.includes(rawSearch) ||
+        trafficTier.includes(rawSearch) ||
+        hourStr.includes(rawSearch) ||
+        fleetAction.includes(rawSearch);
+    }
 
     const matchesTier = tierFilter === 'ALL' || item.traffic_tier === tierFilter;
     const matchesLine = lineFilter === 'ALL' || item.line_color === lineFilter;
@@ -185,7 +212,7 @@ export default function ScheduleAdvisoryTable() {
   return (
     <div className="space-y-8">
       
-      {/* Top Header & Metrics Bar with Generous Padding */}
+      {/* Top Header & Metrics Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
         {/* Total Instances */}
@@ -263,24 +290,32 @@ export default function ScheduleAdvisoryTable() {
       </div>
 
       {/* Table Container Card */}
-      <div className="glass-panel rounded-3xl border border-slate-800 overflow-hidden shadow-2xl space-y-0">
+      <div className="glass-panel rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
         
-        {/* Controls Bar with Refresh Feedback */}
+        {/* Controls Bar with Dynamic Search Input */}
         <div className="p-6 border-b border-slate-800 bg-slate-900/60 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           
-          {/* Search Input */}
+          {/* Universal Search Input */}
           <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 text-slate-400 absolute left-4 top-3.5" />
             <input
               type="text"
-              placeholder="Search station, train ID, or line..."
+              placeholder="Search by Station Name (e.g. Rajiv, Kashmere), Station ID/Code (RC, BG), Train ID (TR_3887), Line or Tier..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full bg-slate-950/90 border border-slate-700/80 text-white rounded-2xl pl-10 pr-4 py-2.5 text-xs focus:border-cyan-400 focus:outline-none placeholder:text-slate-500 font-mono shadow-inner"
+              className="w-full bg-slate-950/90 border border-slate-700/80 text-white rounded-2xl pl-10 pr-10 py-2.5 text-xs focus:border-cyan-400 focus:outline-none placeholder:text-slate-500 font-mono shadow-inner"
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3.5 top-3 text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
 
           {/* Filters & Actions */}
@@ -316,7 +351,7 @@ export default function ScheduleAdvisoryTable() {
               ))}
             </select>
 
-            {/* Refresh Action Button with Live Visual Feedback */}
+            {/* Refresh Action Button */}
             <button
               onClick={loadData}
               disabled={loading}
@@ -477,7 +512,7 @@ export default function ScheduleAdvisoryTable() {
               ) : (
                 <tr>
                   <td colSpan="9" className="py-12 text-center text-slate-500 font-mono text-sm">
-                    No transit scheduling records match current filter criteria.
+                    No transit scheduling records matching "{searchTerm}".
                   </td>
                 </tr>
               )}
@@ -485,10 +520,10 @@ export default function ScheduleAdvisoryTable() {
           </table>
         </div>
 
-        {/* Pagination Bar with Enhanced Padding */}
+        {/* Pagination Bar */}
         <div className="p-6 border-t border-slate-800 bg-slate-950/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-mono">
           <div>
-            Showing <span className="text-white font-bold">{Math.min(sorted.length, (currentPage - 1) * pageSize + 1)}</span> to <span className="text-white font-bold">{Math.min(sorted.length, currentPage * pageSize)}</span> of <span className="text-white font-bold">{sorted.length}</span> directives
+            Showing <span className="text-white font-bold">{Math.min(sorted.length, (currentPage - 1) * pageSize + 1)}</span> to <span className="text-white font-bold">{Math.min(sorted.length, currentPage * pageSize)}</span> of <span className="text-white font-bold">{sorted.length}</span> matching directives
           </div>
 
           <div className="flex items-center space-x-3">

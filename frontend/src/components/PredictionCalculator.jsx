@@ -22,7 +22,10 @@ import {
   AlertOctagon,
   RefreshCw,
   Info,
-  Check
+  Check,
+  ShieldCheck,
+  Zap,
+  Gauge
 } from 'lucide-react';
 
 export default function PredictionCalculator() {
@@ -39,20 +42,41 @@ export default function PredictionCalculator() {
   const [prediction, setPrediction] = useState(null);
   const [activePresetIndex, setActivePresetIndex] = useState(null);
   const [autoCalculate, setAutoCalculate] = useState(true);
+  const [autoRecommendCapacity, setAutoRecommendCapacity] = useState(true);
   const [justCalculated, setJustCalculated] = useState(false);
   const [lastCalculatedAt, setLastCalculatedAt] = useState(null);
 
   // Compute cyclical mathematical values on the fly for transparency
   const hourSin = Math.sin(2 * Math.PI * formData.entry_hour / 24.0).toFixed(4);
   const hourCos = Math.cos(2 * Math.PI * formData.entry_hour / 24.0).toFixed(4);
+  
+  // Consistent peak hour definition matching transit schedule (08-11 AM and 17-20 PM)
   const isPeak = (formData.entry_hour >= 8 && formData.entry_hour <= 11) || 
                  (formData.entry_hour >= 17 && formData.entry_hour <= 20);
 
   const handlePredict = async (overrideData) => {
     setLoading(true);
     try {
-      const dataToSend = overrideData || formData;
-      const res = await predictOccupancy(dataToSend);
+      const currentData = overrideData || formData;
+      const res = await predictOccupancy(currentData);
+      
+      // If Auto-Recommend Capacity is ON, automatically align train capacity to optimal rake
+      if (autoRecommendCapacity && res && res.predicted_occupancy) {
+        const pax = res.predicted_occupancy;
+        let optimalCap = 2400;
+        if (pax < 800) {
+          optimalCap = 1500;
+        } else if (pax < 1500) {
+          optimalCap = 1800;
+        } else {
+          optimalCap = 2400;
+        }
+
+        if (optimalCap !== currentData.train_capacity && !overrideData) {
+          setFormData(prev => ({ ...prev, train_capacity: optimalCap }));
+        }
+      }
+
       setPrediction(res);
       setJustCalculated(true);
       setLastCalculatedAt(new Date().toLocaleTimeString());
@@ -72,7 +96,7 @@ export default function PredictionCalculator() {
       }, 150);
       return () => clearTimeout(timer);
     }
-  }, [formData, autoCalculate]);
+  }, [formData.from_station, formData.to_station, formData.line_color, formData.day_of_week, formData.entry_hour, formData.train_capacity, autoCalculate]);
 
   const handleStationSwap = () => {
     setFormData(prev => ({
@@ -97,6 +121,18 @@ export default function PredictionCalculator() {
     handlePredict(updated);
   };
 
+  const currentPax = prediction?.predicted_occupancy_int || prediction?.predicted_occupancy || 0;
+
+  // Determine AI recommended capacity rake based on predicted passenger count
+  let aiRecommendedCap = 2400;
+  if (currentPax < 800) {
+    aiRecommendedCap = 1500;
+  } else if (currentPax < 1500) {
+    aiRecommendedCap = 1800;
+  } else {
+    aiRecommendedCap = 2400;
+  }
+
   const selectedFromStation = STATIONS.find(s => s.id === Number(formData.from_station));
   const selectedToStation = STATIONS.find(s => s.id === Number(formData.to_station));
   const selectedLine = LINES.find(l => l.id === Number(formData.line_color));
@@ -105,7 +141,7 @@ export default function PredictionCalculator() {
   return (
     <div className="space-y-10">
       
-      {/* Top Banner / Title with More Breathing Room */}
+      {/* Top Banner / Title */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 glass-panel rounded-3xl p-8 border border-cyan-500/20 shadow-2xl">
         <div className="space-y-2">
           <div className="flex items-center space-x-3">
@@ -117,7 +153,7 @@ export default function PredictionCalculator() {
             </h2>
           </div>
           <p className="text-sm text-slate-300 leading-relaxed max-w-3xl">
-            Select any station route or time below. The <span className="text-cyan-400 font-mono font-semibold">XGBoost Regressor</span> computes cyclical time features in real time to forecast passenger loads, platform crowd risks, and optimal train dispatch headways.
+            Select any station route or time below. The <span className="text-cyan-400 font-mono font-semibold">XGBoost Regressor</span> computes cyclical time features and dynamically recommends optimal train capacity formations and headway intervals in real time.
           </p>
         </div>
 
@@ -164,10 +200,10 @@ export default function PredictionCalculator() {
         />
       </div>
 
-      {/* Main Grid: Form Inputs & Result Visualizer with Enhanced Spacing */}
+      {/* Main Grid: Form Inputs & Result Visualizer */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        {/* LEFT FORM COLUMN: Custom Simulation Parameters (7 cols) */}
+        {/* LEFT FORM COLUMN: Custom Station Sandbox (7 cols) */}
         <div className="lg:col-span-7 glass-panel rounded-3xl p-8 border border-slate-800 space-y-8 shadow-xl">
           
           <div className="flex items-center justify-between border-b border-slate-800/90 pb-4">
@@ -175,11 +211,11 @@ export default function PredictionCalculator() {
               <div className="flex items-center space-x-2.5">
                 <Sliders className="w-5 h-5 text-cyan-400" />
                 <h3 className="text-base font-bold uppercase tracking-wider text-slate-100 font-display">
-                  Custom Simulation Parameters
+                  Custom Station Sandbox Parameters
                 </h3>
               </div>
               <p className="text-xs text-slate-400">
-                Configure any Origin/Destination station, line corridor, day, and time
+                Manually set Origin/Destination stations, corridor, day, and time to trigger real-time AI recalculation
               </p>
             </div>
             
@@ -252,7 +288,7 @@ export default function PredictionCalculator() {
 
             <p className="text-[11px] text-slate-400 italic pt-1 flex items-center gap-1.5">
               <Info className="w-3.5 h-3.5 text-cyan-400" />
-              Route: <span className="text-slate-200 font-semibold">{selectedFromStation?.name}</span> ➔ <span className="text-slate-200 font-semibold">{selectedToStation?.name}</span>
+              Active Route: <span className="text-slate-200 font-semibold">{selectedFromStation?.name}</span> ➔ <span className="text-slate-200 font-semibold">{selectedToStation?.name}</span>
             </p>
           </div>
 
@@ -323,7 +359,7 @@ export default function PredictionCalculator() {
             </div>
           </div>
 
-          {/* 24-Hour Interactive Slider with Rich Feedback */}
+          {/* 24-Hour Interactive Slider */}
           <div className="space-y-4 p-6 rounded-3xl bg-slate-900/80 border border-slate-800 shadow-inner">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <label className="text-xs font-bold text-slate-200 flex items-center gap-2">
@@ -335,11 +371,12 @@ export default function PredictionCalculator() {
                 {isPeak ? (
                   <span className="px-3 py-1 text-[11px] font-bold uppercase rounded-xl bg-red-500/20 text-red-300 border border-red-500/40 flex items-center gap-1.5 animate-pulse">
                     <AlertOctagon className="w-3.5 h-3.5 text-red-400" />
-                    Rush Hour (Peak Flag = 1)
+                    RUSH HOUR (PEAK FLAG = 1)
                   </span>
                 ) : (
-                  <span className="px-3 py-1 text-[11px] font-bold uppercase rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                    Off-Peak (Peak Flag = 0)
+                  <span className="px-3 py-1 text-[11px] font-bold uppercase rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    OFF-PEAK (PEAK FLAG = 0)
                   </span>
                 )}
                 
@@ -364,39 +401,90 @@ export default function PredictionCalculator() {
 
             {/* Time markers bar */}
             <div className="flex justify-between text-[11px] font-mono text-slate-400 px-1 pt-1">
-              <span>00:00 (Night)</span>
+              <span>00:00</span>
               <span className="text-red-400 font-semibold">08:00–11:00 (AM Peak)</span>
-              <span>12:00 (Midday)</span>
+              <span>12:00</span>
               <span className="text-red-400 font-semibold">17:00–20:00 (PM Peak)</span>
-              <span>23:00 (Late Night)</span>
+              <span>23:00</span>
             </div>
           </div>
 
-          {/* Train Capacity Selector */}
-          <div className="space-y-3">
-            <label className="text-xs font-bold text-slate-300 flex items-center gap-2">
-              <Train className="w-4 h-4 text-cyan-400" />
-              Train Formation / Capacity Rake
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* DYNAMIC TRAIN CAPACITY FORMATION & MULTI-LEVEL COMPARISON */}
+          <div className="space-y-4 p-6 rounded-3xl bg-slate-900/60 border border-slate-800 shadow-lg">
+            <div className="flex items-center justify-between flex-wrap gap-2 border-b border-slate-800 pb-3">
+              <div className="space-y-0.5">
+                <label className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                  <Train className="w-4 h-4 text-cyan-400" />
+                  Train Formation / Capacity Rake Analysis (All 3 Levels)
+                </label>
+                <p className="text-[11px] text-slate-400">
+                  AI automatically evaluates crowd load across 4-Coach, 6-Coach, and 8-Coach rakes
+                </p>
+              </div>
+
+              <span className="px-2.5 py-1 text-[11px] font-mono rounded-lg bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1">
+                <Zap className="w-3 h-3 text-cyan-400" />
+                AI Optimal: {aiRecommendedCap} pax rake
+              </span>
+            </div>
+
+            {/* 3-Level Rake Comparison Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
               {CAPACITIES.map((cap) => {
                 const isSelected = Number(formData.train_capacity) === cap.value;
+                const isRecommended = cap.value === aiRecommendedCap;
+                const loadPct = currentPax > 0 ? Math.round((currentPax / cap.value) * 100) : 0;
+                const isOverloaded = loadPct > 100;
+                const isOptimalLoad = loadPct >= 60 && loadPct <= 95;
+
                 return (
                   <button
                     key={cap.value}
                     type="button"
                     onClick={() => {
                       setFormData({ ...formData, train_capacity: cap.value });
-                      setActivePresetIndex(null);
+                      setAutoRecommendCapacity(false);
                     }}
-                    className={`p-4 rounded-2xl border text-left transition-all ${
+                    className={`p-4 rounded-2xl border text-left transition-all duration-300 relative overflow-hidden group ${
                       isSelected
-                        ? 'bg-cyan-500/15 border-cyan-400 text-cyan-200 ring-2 ring-cyan-400 shadow-md'
-                        : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                        ? 'bg-cyan-950/50 border-cyan-400 ring-2 ring-cyan-400 shadow-lg'
+                        : (isRecommended 
+                            ? 'bg-slate-900/90 border-cyan-500/40 hover:border-cyan-400' 
+                            : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700')
                     }`}
                   >
-                    <p className="text-xs font-bold text-white">{cap.label}</p>
-                    <p className="text-[11px] text-slate-400 mt-1">{cap.desc}</p>
+                    {/* Recommended Badge */}
+                    {isRecommended && (
+                      <div className="flex items-center space-x-1 mb-2 text-[10px] font-mono font-bold text-cyan-300 bg-cyan-500/20 px-2 py-0.5 rounded-md border border-cyan-500/40 w-fit">
+                        <Sparkles className="w-3 h-3 text-cyan-400" />
+                        <span>AI Recommended</span>
+                      </div>
+                    )}
+
+                    <div className="flex items-baseline justify-between">
+                      <p className="text-xs font-bold text-white font-display">{cap.label}</p>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">{cap.desc}</p>
+
+                    {/* Calculated Load at this capacity level */}
+                    <div className="mt-3 pt-2.5 border-t border-slate-800 flex items-center justify-between font-mono text-[11px]">
+                      <span className="text-slate-400">Projected Load:</span>
+                      <span className={`font-bold ${
+                        isOverloaded ? 'text-red-400 animate-pulse' : (isOptimalLoad ? 'text-emerald-400' : 'text-amber-400')
+                      }`}>
+                        {loadPct}% {isOverloaded ? '(Crush)' : ''}
+                      </span>
+                    </div>
+
+                    {/* Mini Load Bar */}
+                    <div className="w-full h-1.5 bg-slate-800 rounded-full mt-2 overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          isOverloaded ? 'bg-red-500' : (loadPct >= 80 ? 'bg-amber-400' : 'bg-emerald-400')
+                        }`}
+                        style={{ width: `${Math.min(100, loadPct)}%` }}
+                      ></div>
+                    </div>
                   </button>
                 );
               })}
@@ -413,6 +501,7 @@ export default function PredictionCalculator() {
             <OccupancyGauge 
               prediction={prediction} 
               capacity={formData.train_capacity} 
+              isPeakHour={isPeak}
             />
           </div>
 
@@ -436,7 +525,7 @@ export default function PredictionCalculator() {
             <div className="grid grid-cols-2 gap-3 text-xs text-slate-300 pt-1">
               <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
                 <span className="text-slate-500 block text-[10px]">Entry_Hour:</span>
-                <span className="font-bold text-white">{formData.entry_hour}</span>
+                <span className="font-bold text-white">{formData.entry_hour}:00</span>
               </div>
 
               <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
@@ -446,7 +535,9 @@ export default function PredictionCalculator() {
 
               <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
                 <span className="text-slate-500 block text-[10px]">Is_Peak_Hour:</span>
-                <span className={`font-bold ${isPeak ? 'text-red-400' : 'text-emerald-400'}`}>{isPeak ? '1 (Peak)' : '0 (Off-Peak)'}</span>
+                <span className={`font-bold ${isPeak ? 'text-red-400' : 'text-emerald-400'}`}>
+                  {isPeak ? '1 (Peak Rush Window)' : '0 (Off-Peak Standard)'}
+                </span>
               </div>
 
               <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
