@@ -1,57 +1,73 @@
-## Contributing Guidelines (For Interns / Collaborators)
+# MetroFlow Seoul — AI Metro Crowd Management & Scheduling
 
-All interns added as collaborators to this repository must follow the branch workflow below. **Direct commits or pushes to the `main` branch are not allowed.**
+MetroFlow is a working Milestone 1 & 2 prototype built around the **actual Seoul Metro 2015 passenger-flow log supplied for this project**.
 
-> Note: `main` only contains the `LICENSE` and `README.md` — it is not used for active development. There is no need to pull the latest `main` into your branch at any point.
+## Dataset used
+File: `data/seoul-metro-2015.logs.csv`
 
-### 1. Branch Naming
+The supplied file contains:
+- 2,007,500 records
+- 275 station codes
+- timestamps from 2015-01-01 05:00 KST through 2016-01-01 00:00 KST
+- `timestamp`
+- `station_code`
+- `people_in`
+- `people_out`
 
-- Every intern must create their own branch off `main`, named after themselves.
-- Suggested naming convention: `firstname-lastname` (all lowercase, hyphen-separated).
-  - Example: `john-doe`, `aisha-khan`
+The dataset is a refined Seoul Metro usage dataset. Public documentation for this dataset states that its yearly log files use `station_code` to join station metadata and contain hourly station boarding/alighting records. It covers Seoul Metro Lines 1–8. See the project source reference in `docs/data_source.md`.
 
-### 2. How to Create Your Branch
+## Milestone 1 — Week 1 & 2
+Aligned to the project brief:
+- Project initialization and architecture
+- Role-based authentication (Admin / Operator)
+- Crowd monitoring dashboard
+- Station-wise passenger flow
+- Line-wise filtering
+- Peak-hour analysis
+- Database/schema planning
+- UI/workflow documentation
 
-**Option A — Clone and push (recommended)**
+## Milestone 2 — Week 3 & 4
+- AI passenger-flow prediction
+- Random Forest regression
+- Model evaluation (MAE, RMSE, R²)
+- Train-frequency recommendation
+- Peak-demand analysis
+- Traffic analysis report
+- CSV report export
+- Operational monitoring view
 
+## Important timetable note
+The supplied passenger-flow log does **not** contain actual train arrival/departure timetable fields. MetroFlow therefore does not invent real train timings. Instead, the Schedule Planner provides an **AI frequency/headway recommendation** from predicted passenger demand and shows the observed passenger-activity window.
+
+## Run
 ```bash
-# Clone the repository
-git clone https://github.com/springboardmentor443m-coder/Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization.git
-
-# Move into the project folder
-cd Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization
-
-# Create and switch to your own branch (off main)
-git checkout -b your-name
-
-# ... make your changes ...
-
-# Stage, commit, and push your changes to YOUR branch only
-git add .
-git commit -m "Describe your change here"
-git push origin your-name
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+streamlit run app/streamlit_app.py
 ```
 
-**Option B — GitHub UI upload**
+Demo login:
+- Admin: `admin` / `admin123`
+- Operator: `operator` / `operator123`
 
-1. Go to the repository on GitHub.
-2. Switch the branch dropdown from `main` to your own branch (create it first via **Branch: main → View all branches → New branch**, named after yourself).
-3. Once on your branch, use **Add file → Upload files** to upload your code.
-4. Commit directly to your branch (not `main`).
-
-### 3. Rules
-
-- ❌ Do **not** push or upload code directly to `main`.
-- ❌ Do **not** push code to another intern's branch.
-- ✅ Only push/upload code to the branch that carries your own name.
-- Keep uploading/pushing your code to your branch regularly as you make progress. No pull requests are required — your branch itself is the deliverable.
-
-### 4. Summary
-
-| Action | Allowed? |
-|---|---|
-| Push to `main` directly | ❌ No |
-| Create your own branch from `main` | ✅ Yes |
-| Push/upload code to your own branch | ✅ Yes |
-| Push/upload code to someone else's branch | ❌ No |
-| Open a Pull Request | Not required |
+## Folder structure
+```text
+MetroFlow_Seoul_Milestone1_2_Final/
+├── app/
+│   └── streamlit_app.py
+├── data/
+│   ├── seoul-metro-2015.logs.csv
+│   └── hourly_line_summary.csv
+├── docs/
+│   ├── architecture.md
+│   ├── database_schema.md
+│   ├── milestone_report.md
+│   └── data_source.md
+├── models/
+│   ├── crowd_forecast_rf.joblib
+│   └── metrics.json
+├── requirements.txt
+└── README.md
+```
