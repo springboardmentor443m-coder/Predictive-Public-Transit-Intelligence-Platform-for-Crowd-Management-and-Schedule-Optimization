@@ -54,8 +54,7 @@ Demo login:
 
 ## Folder structure
 ```text
-MetroFlow_Seoul_Milestone1_2_Final/
-├── app/
+MetroFlow_Seoul_Project
 │   └── streamlit_app.py
 ├── data/
 │   ├── seoul-metro-2015.logs.csv
