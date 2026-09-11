@@ -1,0 +1,50 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Environment variables
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor configs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Trained model files (large binaries — regenerate with train_model.py)
+models/*.joblib
+models/*.pkl
+models/model_metadata.json
+
+# Data files — the CSV is committed; exclude any raw/external dumps
+data/raw/
+data/external/
+
+# Test artefacts
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Build artefacts
+dist/
+build/
+*.egg-info/

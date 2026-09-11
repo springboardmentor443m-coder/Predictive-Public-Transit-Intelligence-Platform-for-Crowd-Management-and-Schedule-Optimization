@@ -1,57 +1,279 @@
-## Contributing Guidelines (For Interns / Collaborators)
+# Predictive Public Transit Intelligence Platform
+### Crowd Management and Schedule Optimisation
 
-All interns added as collaborators to this repository must follow the branch workflow below. **Direct commits or pushes to the `main` branch are not allowed.**
+> **Note — Data**: This project uses a clearly labelled **synthetic dataset** generated from realistic urban transit demand models. All observations are tagged `data_source = SYNTHETIC`. The architecture is designed so a real GTFS/AVL dataset can be substituted without changing any model or UI code.
 
-> Note: `main` only contains the `LICENSE` and `README.md` — it is not used for active development. There is no need to pull the latest `main` into your branch at any point.
+---
 
-### 1. Branch Naming
+## Table of Contents
+1. [Project Overview](#project-overview)
+2. [Problem Statement](#problem-statement)
+3. [Objectives](#objectives)
+4. [Features](#features)
+5. [Architecture](#architecture)
+6. [Technology Stack](#technology-stack)
+7. [Dataset Description](#dataset-description)
+8. [ML Methodology](#ml-methodology)
+9. [Model Evaluation](#model-evaluation)
+10. [Installation](#installation)
+11. [How to Run](#how-to-run)
+12. [Project Structure](#project-structure)
+13. [Screenshots](#screenshots)
+14. [Limitations](#limitations)
+15. [Future Improvements](#future-improvements)
 
-- Every intern must create their own branch off `main`, named after themselves.
-- Suggested naming convention: `firstname-lastname` (all lowercase, hyphen-separated).
-  - Example: `john-doe`, `aisha-khan`
+---
 
-### 2. How to Create Your Branch
+## Project Overview
 
-**Option A — Clone and push (recommended)**
+A web-based intelligent platform that uses historical transit data and machine learning to predict passenger demand, classify crowding levels, and generate actionable schedule recommendations — for both operators and passengers.
 
-```bash
-# Clone the repository
-git clone https://github.com/springboardmentor443m-coder/Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization.git
+---
 
-# Move into the project folder
-cd Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization
+## Problem Statement
 
-# Create and switch to your own branch (off main)
-git checkout -b your-name
+Public transit networks suffer from uneven demand distribution:
+- Some routes/times are critically overcrowded, reducing safety and comfort.
+- Others run near-empty, wasting fuel and driver hours.
+- Operators currently react to problems *after* they occur, not in advance.
+- Passengers have no visibility into expected crowding before they travel.
 
-# ... make your changes ...
+---
 
-# Stage, commit, and push your changes to YOUR branch only
-git add .
-git commit -m "Describe your change here"
-git push origin your-name
+## Objectives
+
+1. Predict passenger demand for any route, time, and conditions using ML.
+2. Classify predicted crowding as Low / Moderate / High / Critical.
+3. Generate plain-language schedule recommendations for operators.
+4. Give passengers a tool to find less-crowded travel times.
+5. Provide operators an analytics dashboard with Plotly visualisations.
+6. Provide a model-transparency page (metrics + feature importance).
+
+---
+
+## Features
+
+| Feature | Description |
+|---|---|
+| **Demand Prediction** | ML model predicts passenger count from route, hour, day, weather, event inputs |
+| **Crowd Classification** | Utilisation ratio mapped to Low / Moderate / High / Critical |
+| **Schedule Recommendations** | Rule-based engine with human-readable reasoning per route/hour |
+| **Passenger Dashboard** | Route + time selector → predicted crowd + alternative times |
+| **Operator Dashboard** | KPIs, 6 Plotly charts, route comparison, peak-hour analysis |
+| **Model Analytics** | MAE, RMSE, R², feature importance, predicted vs actual chart |
+| **Configurable** | All thresholds and capacities in `src/config.py` |
+
+---
+
+## Architecture
+
+```
+User (Browser)
+     │
+     ▼
+Streamlit App (app/main.py)
+     │
+     ├─ Passenger Page  (app/pages/passenger.py)
+     ├─ Operator Page   (app/pages/operator.py)
+     └─ Model Page      (app/pages/model.py)
+             │
+             ▼
+     Business Logic Layer (src/)
+             │
+     ┌───────┼───────────────────────────┐
+     │       │                           │
+data_   feature_    prediction.py   crowd_       schedule_
+process engineer   (inference)     management   optimizer
+ing.py  ing.py                     .py          .py
+     │       │
+     └───────┘
+     data/transit_data.csv ──► models/best_model.joblib
 ```
 
-**Option B — GitHub UI upload**
+---
 
-1. Go to the repository on GitHub.
-2. Switch the branch dropdown from `main` to your own branch (create it first via **Branch: main → View all branches → New branch**, named after yourself).
-3. Once on your branch, use **Add file → Upload files** to upload your code.
-4. Commit directly to your branch (not `main`).
+## Technology Stack
 
-### 3. Rules
-
-- ❌ Do **not** push or upload code directly to `main`.
-- ❌ Do **not** push code to another intern's branch.
-- ✅ Only push/upload code to the branch that carries your own name.
-- Keep uploading/pushing your code to your branch regularly as you make progress. No pull requests are required — your branch itself is the deliverable.
-
-### 4. Summary
-
-| Action | Allowed? |
+| Layer | Technology |
 |---|---|
-| Push to `main` directly | ❌ No |
-| Create your own branch from `main` | ✅ Yes |
-| Push/upload code to your own branch | ✅ Yes |
-| Push/upload code to someone else's branch | ❌ No |
-| Open a Pull Request | Not required |
+| Language | Python 3.10+ |
+| ML | scikit-learn (LinearRegression, RandomForest, GradientBoosting) |
+| Data | Pandas, NumPy |
+| Model persistence | Joblib |
+| UI | Streamlit |
+| Charts | Plotly Express / Graph Objects |
+| Tests | pytest |
+
+---
+
+## Dataset Description
+
+| Property | Value |
+|---|---|
+| **Source** | Synthetic (generated by `scripts/generate_dataset.py`) |
+| **Rows** | ~5,500 |
+| **Routes** | 10 (City Centre Express, Airport Link, University Shuttle, …) |
+| **Time coverage** | All 24 hours × 7 days |
+| **Features** | route, hour, day_of_week, is_weekend, is_peak_hour, temperature, is_raining, nearby_event, prev_passenger_count, route_avg_demand |
+| **Target** | passenger_count (0 – ~150) |
+| **Label** | `data_source = SYNTHETIC` in every row |
+
+Demand is shaped by:
+- Realistic AM/PM peak curves per route type
+- Weekend ridership factors
+- Weather (rain → +10%; temperature deviation from 22 °C → mild reduction)
+- Nearby events → +50% spike
+- Gaussian noise (σ ≈ 10%) to make the ML problem non-trivial
+
+---
+
+## ML Methodology
+
+### Models Compared
+1. **Linear Regression** — Baseline; shows if relationships are simply linear
+2. **Random Forest Regressor** — Ensemble of trees; handles non-linearity naturally
+3. **Gradient Boosting Regressor** — Sequential boosting; usually best on tabular data
+
+### Features
+`route_encoded`, `hour`, `day_of_week`, `is_weekend`, `is_peak_hour`,
+`temperature`, `is_raining`, `nearby_event`, `prev_passenger_count`, `route_avg_demand`
+
+### Selection
+The model with the lowest RMSE on the held-out test set (20%) is saved as `best_model.joblib`.
+
+### Why these models?
+- Linear Regression establishes a performance floor and aids interpretability.
+- Random Forest is robust, resistant to overfitting, and provides feature importance.
+- Gradient Boosting typically achieves the highest accuracy on structured tabular data.
+
+---
+
+## Model Evaluation
+
+Metrics are computed on a 20% held-out test split. Actual values are printed during training and displayed on the Model Analytics page.
+
+| Metric | Meaning |
+|---|---|
+| **MAE** | Average absolute prediction error (passengers) |
+| **RMSE** | Root-mean-squared error — penalises large errors more |
+| **R²** | Proportion of variance explained (1.0 = perfect) |
+
+> Evaluation results depend on the trained model. Run `python src/train_model.py` to see current metrics.
+
+---
+
+## Installation
+
+```bash
+# 1. Clone the repository and switch to this branch
+git clone https://github.com/springboardmentor443m-coder/Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization.git
+cd Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization
+git checkout pratham-p
+
+# 2. Create a virtual environment (recommended)
+python -m venv venv
+source venv/bin/activate      # Windows: venv\Scripts\activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+```
+
+---
+
+## How to Run
+
+```bash
+# Step 1 — Generate the dataset (first time only)
+python scripts/generate_dataset.py
+
+# Step 2 — Train the ML model (first time only, or after data changes)
+python src/train_model.py
+
+# Step 3 — Launch the Streamlit application
+streamlit run app/main.py
+```
+
+Open your browser at `http://localhost:8501`
+
+### Running Tests
+
+```bash
+pytest tests/ -v
+```
+
+---
+
+## Project Structure
+
+```
+transit-platform/
+├── app/
+│   ├── main.py                  ← Streamlit entry point + navigation
+│   └── pages/
+│       ├── passenger.py         ← Passenger demand tool
+│       ├── operator.py          ← Operator analytics dashboard
+│       └── model.py             ← ML model metrics page
+│
+├── data/
+│   └── transit_data.csv         ← Synthetic dataset
+│
+├── models/
+│   └── best_model.joblib        ← Trained model (auto-generated)
+│
+├── src/
+│   ├── config.py                ← All thresholds, paths, capacities
+│   ├── data_processing.py       ← Load & validate data
+│   ├── feature_engineering.py   ← Build ML feature matrix
+│   ├── train_model.py           ← Train, compare, save models
+│   ├── prediction.py            ← Inference API for the UI
+│   ├── crowd_management.py      ← Utilisation + crowd classification
+│   └── schedule_optimizer.py    ← Recommendation engine
+│
+├── scripts/
+│   └── generate_dataset.py      ← Synthetic data generator
+│
+├── tests/
+│   ├── test_data_processing.py
+│   ├── test_feature_engineering.py
+│   ├── test_crowd_management.py
+│   ├── test_schedule_optimizer.py
+│   └── test_prediction.py
+│
+├── requirements.txt
+├── README.md
+└── .gitignore
+```
+
+---
+
+## Screenshots
+
+> Screenshots will be added after the application is running.
+
+| Page | Description |
+|---|---|
+| Passenger Dashboard | Route selector, crowd prediction, alternative times |
+| Operator Dashboard | KPI cards, 6 analytics charts |
+| Model Analytics | Metrics table, feature importance, predicted vs actual |
+
+---
+
+## Limitations
+
+- Dataset is synthetic; real-world accuracy depends on actual transit data.
+- The model does not account for real-time incidents (road closures, breakdowns).
+- Schedule recommendations are rule-based, not mathematically optimised.
+- No user authentication — both dashboards are publicly accessible.
+- Weather and event data are user-provided inputs, not pulled from a live API.
+
+---
+
+## Future Improvements
+
+- Integrate real GTFS/AVL feeds (e.g. from city transit APIs).
+- Add time-series models (LSTM, Prophet) for sequential demand forecasting.
+- Connect to a live weather API (e.g. OpenWeatherMap) for automatic weather features.
+- Add a notification system to alert operators when crowding is predicted to go Critical.
+- Implement true mathematical schedule optimisation (e.g. mixed-integer programming).
+- Add user authentication to separate operator and passenger roles.
+- Deploy to a cloud platform (Streamlit Community Cloud, Heroku, GCP).
