@@ -32,7 +32,8 @@ Thumbs.db
 # Trained model files (large binaries — regenerate with train_model.py)
 models/*.joblib
 models/*.pkl
-models/model_metadata.json
+# Allow the small metadata JSON so metrics are visible on GitHub
+!models/model_metadata.json
 
 # Data files — the CSV is committed; exclude any raw/external dumps
 data/raw/
