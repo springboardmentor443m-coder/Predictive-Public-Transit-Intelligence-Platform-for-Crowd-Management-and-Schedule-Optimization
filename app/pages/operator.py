@@ -285,7 +285,7 @@ def render():
         # Colour-coded rows
         def highlight_crowd(row):
             colours = {"Critical": "#fde8e8", "High": "#fef3e2"}
-            bg = colours.get(row["crowd_level"], "")
+            bg = colours.get(row["Crowd Level"], "")
             return [f"background-color: {bg}"] * len(row)
 
         display_df = recs_df[[
