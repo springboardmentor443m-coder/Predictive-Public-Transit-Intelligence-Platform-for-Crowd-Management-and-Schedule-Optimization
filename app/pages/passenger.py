@@ -202,23 +202,23 @@ def render():
         if mask.any():
             subset = hours_df[mask]
             fig.add_trace(go.Bar(
-                x=subset["hour_label"],
+                x=subset["hour"],
                 y=subset["predicted_count"],
+                customdata=subset["hour_label"],
                 name=level,
                 marker_color=colour_hex,
                 text=subset["predicted_count"].astype(int),
                 textposition="outside",
                 hovertemplate=(
-                    "<b>%{x}</b><br>"
+                    "<b>%{customdata}</b><br>"
                     "Passengers: %{y}<br>"
                     f"Level: {level}<extra></extra>"
                 ),
             ))
 
     # Mark selected hour
-    selected_label = f"{selected_hour:02d}:00"
     fig.add_vline(
-        x=selected_label, line_dash="dash", line_color="navy",
+        x=selected_hour, line_dash="dash", line_color="navy",
         annotation_text="Your time", annotation_position="top right",
     )
     fig.add_hline(
@@ -228,7 +228,12 @@ def render():
 
     fig.update_layout(
         barmode="stack",
-        xaxis_title="Hour of Day",
+        xaxis=dict(
+            title="Hour of Day",
+            tickmode="array",
+            tickvals=list(range(24)),
+            ticktext=[f"{h:02d}:00" for h in range(24)]
+        ),
         yaxis_title="Predicted Passengers",
         legend_title="Crowd Level",
         height=420,
