@@ -55,7 +55,10 @@ def main():
 
     # Execute the page file in a safe namespace
     with open(page_path) as f:
-        exec(compile(f.read(), str(page_path), "exec"), {"__name__": "__main__"})
+        exec(compile(f.read(), str(page_path), "exec"), {
+            "__name__": "__main__",
+            "__file__": str(page_path)
+        })
 
 
 if __name__ == "__main__":
