@@ -1,10 +1,13 @@
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 
 import socketio
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.api import api_router
 from app.core.config import settings
@@ -44,15 +47,20 @@ async def lifespan(app: FastAPI):
     from app.ml.model_wrappers import load_models
 
     load_models()
-    broadcast_task = asyncio.create_task(broadcast_loop())
-    logger.info("MetroFlow startup complete; realtime broadcast started")
+    broadcast_task = None
+    if os.environ.get("METROFLOW_ENABLE_REALTIME", "1") not in ("0", "", "false", "False"):
+        broadcast_task = asyncio.create_task(broadcast_loop())
+        logger.info("MetroFlow startup complete; realtime broadcast started")
+    else:
+        logger.info("MetroFlow startup complete; realtime broadcast disabled")
     yield
     logger.info("MetroFlow shutting down")
-    broadcast_task.cancel()
-    try:
-        await broadcast_task
-    except asyncio.CancelledError:
-        pass
+    if broadcast_task is not None:
+        broadcast_task.cancel()
+        try:
+            await broadcast_task
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(
@@ -71,6 +79,25 @@ app.add_middleware(
     allow_headers=["*"],
     allow_credentials=False,
 )
+
+
+@app.exception_handler(SQLAlchemyError)
+async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
+    logger.error("Database error on %s %s: %s", request.method, request.url.path, exc)
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "Database is temporarily unavailable. Please retry shortly."},
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error. Please try again."},
+    )
+
 
 app.include_router(api_router, prefix="/api/v1")
 

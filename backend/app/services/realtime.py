@@ -10,6 +10,20 @@ logger = logging.getLogger(__name__)
 _MAX_TRACKED_ALERT_IDS = 1000
 _emitted_alert_ids: OrderedDict[str, None] = OrderedDict()
 
+_BASE_BROADCAST_INTERVAL = 5.0
+_MAX_BROADCAST_BACKOFF = 120.0
+
+
+def _broadcast_backoff(consecutive_failures: int) -> float:
+    """Exponential backoff between broadcast cycles after repeated failures."""
+    if consecutive_failures <= 0:
+        return _BASE_BROADCAST_INTERVAL
+    return min(_BASE_BROADCAST_INTERVAL * (2 ** (consecutive_failures - 1)), _MAX_BROADCAST_BACKOFF)
+
+
+def _should_log_failure(consecutive_failures: int) -> bool:
+    return consecutive_failures in (1, 2, 4, 8, 16, 32, 64)
+
 
 async def broadcast_loop() -> None:
     sio = socketio_state.get_sio()
@@ -17,6 +31,7 @@ async def broadcast_loop() -> None:
         logger.warning("Socket.IO not initialized; realtime broadcast disabled")
         return
     logger.info("Realtime broadcast loop started (crowd updates + alert engine)")
+    consecutive_failures = 0
     while True:
         try:
             from app.core.database import SessionLocal
@@ -41,6 +56,10 @@ async def broadcast_loop() -> None:
 
             snapshots, fresh_alerts = await asyncio.to_thread(collect)
 
+            if consecutive_failures > 0:
+                logger.info("Realtime broadcast recovered; resuming normal cadence")
+            consecutive_failures = 0
+
             for snap in snapshots or []:
                 await sio.emit("crowd_update", snap, room=None)
 
@@ -53,5 +72,7 @@ async def broadcast_loop() -> None:
                     _emitted_alert_ids.popitem(last=False)
                 await sio.emit("alert", alert, room=None)
         except Exception as e:
-            logger.warning(f"broadcast error: {e}")
-        await asyncio.sleep(5)
+            consecutive_failures += 1
+            if _should_log_failure(consecutive_failures):
+                logger.warning(f"broadcast error ({consecutive_failures} consecutive): {e}")
+        await asyncio.sleep(_broadcast_backoff(consecutive_failures))

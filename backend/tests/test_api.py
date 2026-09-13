@@ -4,6 +4,7 @@ import sys
 os.environ["DATABASE_URL"] = "sqlite:///./test_metroflow.db"
 os.environ["MONGODB_URL"] = ""
 os.environ["REDIS_URL"] = ""
+os.environ["METROFLOW_ENABLE_REALTIME"] = ""
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -357,3 +358,51 @@ def test_station_performance(client, viewer_headers):
 def test_traffic_series(client, viewer_headers):
     tr = client.get("/api/v1/analytics/traffic?hours=12", headers=viewer_headers).json()
     assert len(tr) == 12
+
+
+# ---------- Resilience (graceful degradation, no raw 500s) ----------
+
+def test_db_down_returns_clean_503(client, monkeypatch):
+    from sqlalchemy.exc import OperationalError
+
+    from app.core import database as core_database
+
+    def _db_down():
+        raise OperationalError("select 1", None, Exception("connection refused"))
+
+    monkeypatch.setattr(core_database, "SessionLocal", _db_down)
+    res = client.post("/api/v1/auth/login", data={"username": "admin@test.io", "password": "Admin@123"})
+    assert res.status_code == 503
+    assert "temporarily unavailable" in res.json()["detail"].lower()
+
+
+def test_model_endpoint_also_clean_503_when_db_down(client, viewer_headers, monkeypatch):
+    from sqlalchemy.exc import OperationalError
+
+    from app.core import database as core_database
+
+    def _db_down():
+        raise OperationalError("select 1", None, Exception("connection refused"))
+
+    monkeypatch.setattr(core_database, "SessionLocal", _db_down)
+    res = client.get("/api/v1/predictions/crowd?hours=3", headers=viewer_headers)
+    assert res.status_code == 503
+    assert "temporarily unavailable" in res.json()["detail"].lower()
+
+
+def test_broadcast_backoff_exponential():
+    from app.services.realtime import _broadcast_backoff, _should_log_failure
+
+    assert _broadcast_backoff(0) == 5.0
+    assert _broadcast_backoff(1) == 5.0
+    assert _broadcast_backoff(2) == 10.0
+    assert _broadcast_backoff(3) == 20.0
+    assert _broadcast_backoff(4) == 40.0
+    assert _broadcast_backoff(5) == 80.0
+    assert _broadcast_backoff(6) == 120.0
+    assert _broadcast_backoff(99) == 120.0
+    # Failure logging is throttled to doubling thresholds, not every cycle.
+    assert _should_log_failure(1) and _should_log_failure(2)
+    assert not _should_log_failure(3)
+    assert _should_log_failure(4)
+    assert not _should_log_failure(5)
