@@ -51,6 +51,24 @@ def row_features(hour: int, weekday: int, station_id: str | None = None, capacit
     return np.concatenate([hour_to_features(hour, weekday), station_to_features(station_id, capacity_per_hour)])
 
 
+def kaggle_row_features(
+    hour: int,
+    weekday: int,
+    station_code: str | None,
+    capacity_per_hour: float | None,
+    stations: list[str],
+    cap_norm_scale: float,
+) -> np.ndarray:
+    """Build one inference row in the Kaggle training schema:
+    [7 temporal][one-hot over the artifact's station codes][capacity_norm]."""
+    temporal = hour_to_features(hour, weekday)
+    one_hot = np.zeros(len(stations))
+    if station_code and station_code in stations:
+        one_hot[stations.index(station_code)] = 1.0
+    cap_norm = np.array([min(1.5, max(0.0, (capacity_per_hour or 0.0) / max(1e-9, cap_norm_scale)))])
+    return np.concatenate([temporal, one_hot, cap_norm])
+
+
 def station_baseline_occupancy_pct(hour: int) -> float:
     return BASELINE_OCCUPANCY[hour]
 
@@ -83,6 +101,7 @@ __all__ = [
     "hour_to_features",
     "station_to_features",
     "row_features",
+    "kaggle_row_features",
     "station_baseline_occupancy_pct",
     "demand_base_entries",
     "feature_matrix_for_station",

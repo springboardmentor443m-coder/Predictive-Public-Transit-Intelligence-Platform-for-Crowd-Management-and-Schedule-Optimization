@@ -19,6 +19,48 @@ Interpretation: crowd model explains ~98% of occupancy variance; demand model tr
 hourly entries closely on synthetic data (expected — strong generated signal).
 Both degrade gracefully to heuristic baselines if artifacts are missing.
 
+### 1.1 Real-world Kaggle-trained models (Seoul / Hangzhou)
+
+Trained with `kaggle/01_seoul_crowd_demand.py` and `kaggle/02_hangzhou_crowd_demand.py`
+(XGBoost, held-out 20% split).
+
+| Dataset | Model | R² | MAE | Peak-hour MAE |
+|---|---|---|---|---|
+| Seoul | Crowd | 0.472 | 0.102 (occupancy) | 0.148 |
+| Seoul | Demand | 0.689 | 331 pax/hour | 483 |
+| Hangzhou | Crowd | 0.896 | 0.053 (occupancy) | 0.102 |
+| Hangzhou | Demand | 0.923 | 149 pax/hour | — |
+
+Served by the API through `model_wrappers`: the `METROFLOW_MODEL_CITY` env var selects
+`{city}_crowd_model.joblib` / `{city}_demand_model.joblib` from `models_store/` (default
+`hangzhou`). The feature schema is read from each artifact's own metadata
+(`stations`, `cap_norm_scale`), so inference builds the exact trained vector width
+(Seoul 108, Hangzhou 88). Backend stations ST01–ST10 map to real station codes in
+`app/ml/registry.py`. To refresh, rerun the Kaggle scripts (early stopping enabled,
+`early_stopping_rounds=25`) and drop the zipped outputs into `models_store/`.
+
+### 1.2 NJ Transit delay models (real-world)
+
+Trained with `kaggle/03_nj_transit_delay.py` (XGBoost, 3M stop-level rows from
+2018-03 .. 2020-05, held-out 20%).
+
+| Model | Metric | Value |
+|---|---|---|
+| Delay classifier (on_time / minor_delay / delayed) | accuracy | 0.535 |
+| | macro ROC-AUC | 0.733 (on_time 0.76, minor 0.69, delayed 0.75) |
+| | delayed class F1 | 0.45 |
+| Delay regressor (minutes) | R² | 0.216 |
+| | MAE | 3.15 min |
+| | delayed-only MAE | 7.43 min |
+
+Served via `POST /api/v1/predictions/delay`. Inputs are the model's real feature
+space (line, from/to station, stop sequence, scheduled time, weekday, train type);
+top features are `line` (Princeton Shuttle, Atl. City Line, Northeast Corridor),
+schedule phase (`sched_sin`) and weekend flag. There is no synthetic fallback —
+the endpoint returns 503 only if artifacts are missing. Refreshing does not require
+retraining: the current model already reflects the dataset ceiling for a
+line/schedule level delay target.
+
 ## 2. API Latency (local, warm)
 
 | Endpoint | Typical response |

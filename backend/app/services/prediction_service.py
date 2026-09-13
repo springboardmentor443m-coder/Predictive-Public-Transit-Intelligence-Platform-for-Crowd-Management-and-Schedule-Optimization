@@ -1,7 +1,40 @@
 from datetime import datetime
 
-from app.ml.model_wrappers import get_crowd_model, get_demand_model
+from app.ml.model_wrappers import get_crowd_model, get_delay_model, get_demand_model
 from app.services import scheduling_service
+
+
+def _resolve_time(hour: int | None, weekday: int | None, scheduled_time: str | None) -> tuple[int, int, float]:
+    now = datetime.utcnow()
+    if hour is None:
+        hour = now.hour
+    if weekday is None:
+        weekday = now.weekday()
+    minutes = hour * 60 + 30
+    if scheduled_time:
+        hh_mm = scheduled_time.split(":")
+        if len(hh_mm) >= 2:
+            try:
+                minutes = (int(hh_mm[0]) % 24) * 60 + int(hh_mm[1])
+            except ValueError:
+                pass
+    return int(hour) % 24, int(weekday) % 7, float(minutes)
+
+
+def predict_delay(req) -> dict:
+    """NJ Transit ML delay forecast. If the delay artifacts are unavailable,
+    raises RuntimeError (no synthetic fallback for delay models)."""
+    hour, weekday, minutes = _resolve_time(req.hour, req.weekday, req.scheduled_time)
+    return get_delay_model().predict(
+        hour=hour,
+        weekday=weekday,
+        sched_minutes=minutes,
+        stop_sequence=float(req.stop_sequence),
+        line=req.line,
+        from_station=req.from_station,
+        to_station=req.to_station,
+        train_type=req.train_type,
+    )
 
 
 def _station_ctx(db, station_id: str | None) -> dict | None:
