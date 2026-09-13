@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   AlertTriangle,
   Building2,
@@ -181,9 +182,9 @@ function Overview() {
         <div className="card">
           <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
             <h3 className="font-semibold text-slate-900">Recent Alerts</h3>
-            <a href="/dashboard/alerts" className="text-xs font-semibold text-brand-600 hover:text-brand-700">
+            <Link href="/dashboard/alerts" className="text-xs font-semibold text-brand-600 hover:text-brand-700">
               View all →
-            </a>
+            </Link>
           </div>
           <div className="divide-y divide-slate-100">
             {alerts.length === 0 && (

@@ -16,9 +16,14 @@ out/
 .env.local
 .env*.local
 
-# Data & models
-backend/models_store/*.joblib
+# Data
 data/*.csv
+
+# Large transient Kaggle/notebook outputs (keep source scripts tracked)
+kaggle/**/checkpoint_*.pkl
+kaggle/*_outputs/
+notebooks/
+nj_transit_delay_outputs/
 
 # Local dev artifacts
 *.db

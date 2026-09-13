@@ -46,7 +46,7 @@ MetroFlow/
 │   │   ├── train_models.py       # trains crowd + demand models -> models_store/
 │   │   └── seed_db.py            # seeds stations/trains/users/schedules/history
 │   ├── data/                     # generated datasets (CSV)
-│   ├── models_store/             # trained .joblib artifacts
+│   ├── models_store/             # trained .joblib artifacts (legacy synthetic, {seoul,hangzhou}, nj delay)
 │   ├── requirements.txt
 │   └── Dockerfile
 ├── frontend/
@@ -85,6 +85,9 @@ python scripts/generate_data.py             # create synthetic datasets in data/
 python scripts/train_models.py              # train AI models
 python scripts/seed_db.py                   # seed stations, trains, users, schedules
 
+# Real-world (Kaggle-trained) models are served per city. Default is hangzhou.
+set METROFLOW_MODEL_CITY=seoul              # or hangzhou (default)
+
 uvicorn app.main:socket_app --reload --port 8000   # serves API + Socket.IO
 ```
 
@@ -119,6 +122,20 @@ docker compose up --build
 
 Services: `frontend` (:3000), `backend` (:8000), `postgres` (:5432), `mongo` (:27017), `redis` (:6379).
 
+## Operational Resilience (no Docker / partial services)
+
+The backend runs and degrades gracefully even when an optional dependency is
+down — end users never see raw stack traces (DB failures return a clean `503`):
+
+| Dependency down  | Behavior |
+|---|---|
+| PostgreSQL       | DB-backed endpoints return `503 {"detail": "Database is temporarily unavailable..."}`; realtime loop backs off exponentially (5s → 120s) |
+| Redis            | Auto-falls back to an in-memory cache, re-probes every 60s |
+| MongoDB          | Sensor-event storage is skipped/disabled; no impact on APIs |
+| No Docker at all | Use SQLite: `DATABASE_URL=sqlite:///./metroflow_dev.db`, then `python scripts/seed_db.py` |
+
+`METROFLOW_ENABLE_REALTIME=0` disables the Socket.IO broadcast loop (used in tests/CI).
+
 ## Milestone Mapping (PRD)
 
 * **Milestone 1 (Wk 1-2):** architecture, DB schema, auth + RBAC, crowd monitoring dashboard - [docs/MILESTONE_1.md](docs/MILESTONE_1.md)
@@ -134,8 +151,11 @@ for measured model/API benchmarks, and `docs/DEPLOYMENT.md` for AWS/Azure/K8s de
 ```bash
 cd backend
 pip install -r requirements-dev.txt
-pytest tests/test_api.py -v        # 32 end-to-end API tests
+pytest tests -v        # API suite (39 tests) + model wrapper suite (7 tests)
 ```
+
+CI runs the same suite inside the built Docker image (Linux, pinned deps) plus
+`npm run lint`/`npm run build` for the frontend (see `.github/workflows/ci.yml`).
 
 ## Contributing Guidelines
 

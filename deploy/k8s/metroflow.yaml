@@ -13,6 +13,7 @@ stringData:
   DATABASE_URL: postgresql+psycopg2://metroflow:metroflow@postgres:5432/metroflow
   MONGODB_URL: mongodb://mongo:27017
   REDIS_URL: redis://redis:6379/0
+  # Rotate before real deployments (kubectl create secret / eyes to KMS/SOPS).
   JWT_SECRET_KEY: change-me-in-production
 ---
 apiVersion: apps/v1
@@ -132,6 +133,8 @@ spec:
           image: metroflow/backend:latest
           envFrom:
             - secretRef: { name: metroflow-secrets }
+          env:
+            - { name: METROFLOW_MODEL_CITY, value: hangzhou }
           ports: [{ containerPort: 8000 }]
           readinessProbe:
             httpGet: { path: /api/v1/health, port: 8000 }
@@ -169,9 +172,11 @@ spec:
         - name: frontend
           image: metroflow/frontend:latest
           env:
-            # Browser bundle uses same-origin URLs; the Next server proxies
-            # /api/v1 and /socket.io to the in-cluster backend service.
-            - { name: NEXT_PUBLIC_API_URL, value: "" }
+            # NEXT_PUBLIC_* values are baked at IMAGE BUILD time. Build the
+            # frontend image with `--build-arg NEXT_PUBLIC_API_URL=""` so the
+            # client bundle uses same-origin URLs. The Next server (next start)
+            # reads BACKEND_INTERNAL_URL at runtime to proxy /api/v1 and
+            # /socket.io to the in-cluster backend.
             - { name: BACKEND_INTERNAL_URL, value: http://backend.metroflow.svc.cluster.local:8000 }
           ports: [{ containerPort: 3000 }]
 ---

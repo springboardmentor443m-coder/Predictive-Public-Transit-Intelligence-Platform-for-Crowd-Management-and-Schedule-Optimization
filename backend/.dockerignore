@@ -9,8 +9,6 @@ __pycache__
 *.db
 *.sqlite3
 data/
-models_store/
-tests/
 docs/
 Dockerfile
 .dockerignore

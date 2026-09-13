@@ -35,8 +35,9 @@ services:
       DATABASE_URL: postgresql+psycopg2://metroflow:metroflow@postgres:5432/metroflow
       MONGODB_URL: mongodb://mongo:27017
       REDIS_URL: redis://redis:6379/0
-      JWT_SECRET_KEY: change-me-in-production
-      CORS_ORIGINS: http://localhost:3000
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      METROFLOW_MODEL_CITY: ${METROFLOW_MODEL_CITY:-hangzhou}
     ports:
       - "8000:8000"
     depends_on:
