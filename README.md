@@ -95,3 +95,52 @@ See [CONTRIBUTING.md](../README.md) for guidelines.
 
 ### License
 MIT License
+
+---
+
+## 🚇 MetroFlow Live Platform (FastAPI + React) — NEW
+
+Full operational app built on top of the analysis pipeline above, covering all
+MetroFlow modules (auth/RBAC, crowd monitoring, scheduling, AI prediction,
+alerts WS, analytics dashboards). Dataset choice documented in `data/README.md`:
+**NYC Subway Traffic 2017–21** (hourly entries+exits, 469 stations) over Seoul
+Metro Usage — the in/out split enables net-flow, density bands, and headway mapping.
+
+### Run live platform (no Kaggle login needed)
+```bash
+# 1. sample NYC-style data
+pip install pandas numpy
+python data/generate_sample.py --stations 12 --days 90
+
+# 2. backend (FastAPI :8000)
+cd backend
+pip install -r requirements.txt
+python -m app.ml.train_model   # RandomForest R² ≈ 0.93, acc ≈ 90%
+python -m app.db.seed
+uvicorn app.main:app --reload --port 8000   # docs at /docs, login admin/admin123
+
+# 3. frontend (new terminal, :5173 proxies /api → :8000)
+cd frontend
+npm install; npm run dev
+```
+
+### Docker
+```bash
+docker compose up --build
+# frontend http://localhost:5173 | backend http://localhost:8000/docs
+```
+
+### API map
+| Module | Endpoints |
+|---|---|
+| Auth/users | POST /api/auth/register, POST /api/auth/login, GET /api/auth/me (JWT, admin/operator/viewer) |
+| Crowd | GET /api/stations, /api/crowd/current, /history, /heatmap, /inflow-outflow |
+| Scheduling | GET/POST /api/schedules, POST /api/schedules/{id}/delay, GET /api/schedules/optimize |
+| AI prediction | GET /api/predictions/crowd, /demand, /peak-hours, /recommendations |
+| Alerts | GET/POST /api/alerts, POST /api/alerts/{id}/ack, WS /api/alerts/ws/alerts |
+| Analytics | GET /api/analytics/traffic, /station-performance, /operational, /kpis |
+
+### Verified
+- Backend TestClient: auth → stations(12) → heatmap → 5h forecast → optimize → kpis → alert post — ALL PASSED
+- ML: MAE ≈ 238 pax, R² ≈ 0.927 on 25,920-row sample; peak 8am ≈ 4,897 pax/hr
+- Frontend: `vite build` clean; pages: Overview, Crowd, Scheduling, Predictions, Alerts, Analytics

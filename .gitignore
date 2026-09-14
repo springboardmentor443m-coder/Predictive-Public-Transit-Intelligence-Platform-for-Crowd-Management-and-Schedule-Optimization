@@ -10,3 +10,8 @@ __pycache__/
 *~$
 .DS_Store
 Thumbs.db
+# MetroFlow generated artifacts (recreated via seed/train scripts)
+backend/metroflow.db
+backend/app/ml/model.pkl
+frontend/node_modules/
+frontend/dist/

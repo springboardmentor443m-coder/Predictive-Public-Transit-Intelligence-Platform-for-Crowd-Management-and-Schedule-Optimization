@@ -1,0 +1,16 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data:ro
+      - ./backend/app/ml/model.pkl:/code/app/ml/model.pkl
+    environment:
+      - PYTHONPATH=/code
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend

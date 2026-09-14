@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+body { @apply bg-slate-950 text-slate-100; }
+.card { @apply bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow; }
+.btn { @apply px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold; }
+.input { @apply w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 outline-none; }
+.badge-low { @apply bg-emerald-600/20 text-emerald-300 border border-emerald-600/40; }
+.badge-medium { @apply bg-amber-600/20 text-amber-300 border border-amber-600/40; }
+.badge-high { @apply bg-orange-600/20 text-orange-300 border border-orange-600/40; }
+.badge-critical { @apply bg-red-600/20 text-red-300 border border-red-600/40; }
