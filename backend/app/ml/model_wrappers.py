@@ -9,7 +9,7 @@ from app.ml import registry
 
 logger = logging.getLogger(__name__)
 
-_KAGGLE_CITIES = {"seoul", "hangzhou"}
+_KAGGLE_CITIES = {"seoul", "hangzhou", "nyc", "tfl", "beijing"}
 
 _store_dir = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),

@@ -85,8 +85,9 @@ python scripts/generate_data.py             # create synthetic datasets in data/
 python scripts/train_models.py              # train AI models
 python scripts/seed_db.py                   # seed stations, trains, users, schedules
 
-# Real-world (Kaggle-trained) models are served per city. Default is hangzhou.
-set METROFLOW_MODEL_CITY=seoul              # or hangzhou (default)
+# Real-world (Kaggle-trained) models are served per city. Default is hangzhou
+# (best validation: crowd R² 0.896, demand R² 0.923).
+set METROFLOW_MODEL_CITY=hangzhou           # or seoul | nyc | tfl | beijing
 
 uvicorn app.main:socket_app --reload --port 8000   # serves API + Socket.IO
 ```
@@ -151,7 +152,7 @@ for measured model/API benchmarks, and `docs/DEPLOYMENT.md` for AWS/Azure/K8s de
 ```bash
 cd backend
 pip install -r requirements-dev.txt
-pytest tests -v        # API suite (39 tests) + model wrapper suite (7 tests)
+pytest tests -v        # API suite (41 tests) + model wrapper suite (7 tests)
 ```
 
 CI runs the same suite inside the built Docker image (Linux, pinned deps) plus

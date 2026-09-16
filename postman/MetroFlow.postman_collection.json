@@ -79,13 +79,23 @@
         { "name": "Live Density", "request": { "method": "GET", "url": "{{base_url}}/crowd/live" } },
         { "name": "Live Station", "request": { "method": "GET", "url": "{{base_url}}/crowd/live/ST01" } },
         { "name": "Heatmap", "request": { "method": "GET", "url": "{{base_url}}/crowd/heatmap" } },
-        { "name": "Station History", "request": { "method": "GET", "url": "{{base_url}}/crowd/station/ST01/history?hours=24" } }
+        { "name": "Station History", "request": { "method": "GET", "url": "{{base_url}}/crowd/station/ST01/history?hours=24" } },
+        {
+          "name": "Ingest Sensor Reading (Operator)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"station_id\":\"ST01\",\"entries\":120,\"exits\":110,\"occupancy\":320}" },
+            "url": "{{base_url}}/crowd/ingest"
+          }
+        }
       ]
     },
     {
       "name": "Scheduling",
       "item": [
         { "name": "List Schedules", "request": { "method": "GET", "url": "{{base_url}}/scheduling/schedules?limit=50" } },
+        { "name": "Get Schedule", "request": { "method": "GET", "url": "{{base_url}}/scheduling/schedules/SCH-T1" } },
         {
           "name": "Create Schedule",
           "request": {
@@ -122,13 +132,24 @@
         { "name": "Crowd Forecast", "request": { "method": "GET", "url": "{{base_url}}/predictions/crowd?station_id=ST01&hours=12" } },
         { "name": "Demand Forecast", "request": { "method": "GET", "url": "{{base_url}}/predictions/demand?station_id=ST01&hours=12" } },
         { "name": "Smart Recommendations", "request": { "method": "GET", "url": "{{base_url}}/predictions/recommendations" } },
-        { "name": "Traffic Patterns", "request": { "method": "GET", "url": "{{base_url}}/predictions/patterns" } }
+        { "name": "Traffic Patterns", "request": { "method": "GET", "url": "{{base_url}}/predictions/patterns" } },
+        { "name": "Model Info (live provenance)", "request": { "method": "GET", "url": "{{base_url}}/predictions/model-info" } },
+        {
+          "name": "Delay Prediction (NJ XGBoost)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\"line\":\"Northeast Corrdr\",\"from_station\":\"NY Penn\",\"to_station\":\"Newark Penn\",\"stop_sequence\":5,\"hour\":8,\"weekday\":1,\"scheduled_time\":\"08:30\",\"train_type\":\"NJ Transit\"}" },
+            "url": "{{base_url}}/predictions/delay"
+          }
+        }
       ]
     },
     {
       "name": "Alerts",
       "item": [
         { "name": "List Alerts", "request": { "method": "GET", "url": "{{base_url}}/alerts/?limit=50" } },
+        { "name": "Filter Alerts (type/severity/station)", "request": { "method": "GET", "url": "{{base_url}}/alerts/?type=delay&severity=high&station_id=ST01&limit=50" } },
         { "name": "Acknowledge Alert", "request": { "method": "POST", "url": "{{base_url}}/alerts/:alert_id/acknowledge" } },
         {
           "name": "Emergency Broadcast (Admin)",
@@ -142,11 +163,20 @@
       ]
     },
     {
+      "name": "Stations & Users",
+      "item": [
+        { "name": "List Stations", "request": { "method": "GET", "url": "{{base_url}}/stations" } },
+        { "name": "Get Station", "request": { "method": "GET", "url": "{{base_url}}/stations/ST01" } },
+        { "name": "Update Own Profile", "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"full_name\":\"Jordan Lee\"}" }, "url": "{{base_url}}/users/me" } }
+      ]
+    },
+    {
       "name": "Analytics",
       "item": [
         { "name": "Overview KPIs", "request": { "method": "GET", "url": "{{base_url}}/analytics/overview" } },
         { "name": "Traffic Series", "request": { "method": "GET", "url": "{{base_url}}/analytics/traffic?hours=24" } },
-        { "name": "Station Performance", "request": { "method": "GET", "url": "{{base_url}}/analytics/station-performance?limit=10" } }
+        { "name": "Station Performance", "request": { "method": "GET", "url": "{{base_url}}/analytics/station-performance?limit=10" } },
+        { "name": "AI Insights Panel", "request": { "method": "GET", "url": "{{base_url}}/analytics/insights" } }
       ]
     }
   ]

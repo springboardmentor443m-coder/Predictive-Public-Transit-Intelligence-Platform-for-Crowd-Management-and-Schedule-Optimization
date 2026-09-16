@@ -6,8 +6,11 @@
 
 ## 1. Real-Time Crowd Monitoring
 
-- **Socket.IO channel** (`app/services/realtime.py`): background loop every 10s
-  broadcasts `crowd_update` events with all station snapshots to the dashboard.
+- **Socket.IO channel** (`app/services/realtime.py`): background loop every 5s
+  broadcasts `crowd_update` events (global + per-station `station:{id}` rooms)
+  with all station snapshots to the dashboard. Clients authenticate via
+  Socket.IO `auth.token` (JWT, optional) and join rooms with
+  `join_station` / `leave_station`.
 - Snapshot pipeline: DB ridership + Redis-cached latest values (`crowd:latest:{sid}`,
   30s TTL) → `app/core/cache.py` (in-memory fallback when Redis is absent).
 - Sensor ingestion: density snapshots are sampled into MongoDB

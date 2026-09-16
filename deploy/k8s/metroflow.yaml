@@ -130,7 +130,8 @@ spec:
     spec:
       containers:
         - name: backend
-          image: metroflow/backend:latest
+          # Pin tags in production (e.g. metroflow/backend:1.0); :latest is dev-only.
+          image: metroflow/backend:1.0
           envFrom:
             - secretRef: { name: metroflow-secrets }
           env:
@@ -170,7 +171,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: metroflow/frontend:latest
+          image: metroflow/frontend:1.0
           env:
             # NEXT_PUBLIC_* values are baked at IMAGE BUILD time. Build the
             # frontend image with `--build-arg NEXT_PUBLIC_API_URL=""` so the
@@ -189,3 +190,60 @@ spec:
   type: LoadBalancer
   selector: { app: frontend }
   ports: [{ port: 80, targetPort: 3000 }]
+---
+# Production hardening: autoscale stateless API + frontend on CPU.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend-hpa
+  namespace: metroflow
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: backend }
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 60 } }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: frontend-hpa
+  namespace: metroflow
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: frontend }
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 65 } }
+---
+# Production ingress with TLS (cert-manager). Replace host, keep sticky
+# sessions for Socket.IO affinity.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: metroflow
+  namespace: metroflow
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "metroflow-affinity"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: ["metroflow.example.com"]
+      secretName: metroflow-tls
+  rules:
+    - host: metroflow.example.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend: { service: { name: backend, port: { number: 8000 } } }
+          - path: /socket.io
+            pathType: Prefix
+            backend: { service: { name: backend, port: { number: 8000 } } }
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: frontend, port: { number: 80 } } }

@@ -1,43 +1,37 @@
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Download, Loader2, Printer, Sparkles } from "lucide-react";
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Line,
-  LineChart,
-  PolarAngleAxis,
-  PolarGrid,
-  Radar,
-  RadarChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
+  Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart,
+  PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import DashboardLayout from "../../components/DashboardLayout";
+import InsightPanel from "../../components/InsightPanel";
 import KpiCard from "../../components/KpiCard";
 import { congestionColor } from "../../components/StatusBadge";
 import { withAuth } from "../../lib/auth";
+import { useToast } from "../../components/ToastContext";
 import api from "../../lib/api";
+import { downloadCsv } from "../../lib/csv";
 
 function Analytics() {
+  const { showToast } = useToast();
   const [overview, setOverview] = useState(null);
   const [traffic, setTraffic] = useState([]);
   const [perf, setPerf] = useState([]);
+  const [insights, setInsights] = useState(null);
 
   useEffect(() => {
     Promise.all([
       api.get("/analytics/overview"),
       api.get("/analytics/traffic?hours=24"),
       api.get("/analytics/station-performance?limit=10"),
+      api.get("/analytics/insights").catch(() => null),
     ])
-      .then(([ov, tr, pf]) => {
+      .then(([ov, tr, pf, ins]) => {
         setOverview(ov.data);
         setTraffic(tr.data.map((t) => ({ ...t, label: `${String(t.hour).padStart(2, "0")}:00` })));
         setPerf(pf.data);
+        if (ins) setInsights(ins.data);
       })
       .catch(() => {});
   }, []);
@@ -48,109 +42,164 @@ function Analytics() {
     punctuality: p.punctuality_pct,
   }));
 
+  function exportPerf() {
+    downloadCsv(`metroflow-station-performance-${Date.now()}.csv`, perf, [
+      { label: "station_id", key: "station_id" },
+      { label: "station_name", key: "station_name" },
+      { label: "avg_occupancy_pct", key: "avg_occupancy_pct" },
+      { label: "peak_occupancy_pct", key: "peak_occupancy_pct" },
+      { label: "congestion_score", key: "congestion_score" },
+      { label: "entries_total", key: "entries_total" },
+      { label: "exits_total", key: "exits_total" },
+      { label: "punctuality_pct", key: "punctuality_pct" },
+    ]);
+    showToast("Exported station performance report CSV", "success");
+  }
+
+  function exportTraffic() {
+    downloadCsv(`metroflow-traffic-${Date.now()}.csv`, traffic, [
+      { label: "hour", key: "hour" },
+      { label: "label", key: "label" },
+      { label: "passenger_k", key: "passenger_k" },
+      { label: "congestion_level", key: "congestion_level" },
+    ]);
+    showToast("Exported hourly traffic CSV", "success");
+  }
+
   return (
-    <DashboardLayout
-      title="Analytics & Reports"
-      subtitle="Traffic analytics · station performance · operational monitoring"
-    >
-      {/* KPIs */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <DashboardLayout title="Analytics & Executive Reports" subtitle="Network performance metrics · traffic volume analysis · station health radar">
+      {/* Overview KPIs */}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard label="On-time Performance" value={overview ? `${overview.on_time_pct}%` : "—"} accent="emerald" />
         <KpiCard label="Avg Network Occupancy" value={overview ? `${overview.avg_occupancy_pct}%` : "—"} accent="brand" />
         <KpiCard label="Delayed Services" value={overview ? overview.delayed_count ?? "—" : "—"} accent="amber" />
         <KpiCard label="Open Alerts" value={overview?.active_alerts ?? "—"} accent={overview?.active_alerts > 3 ? "rose" : "sky"} />
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
-        {/* Traffic line */}
-        <div className="card card-pad">
-          <h3 className="font-semibold text-slate-900">Hourly Passenger Traffic</h3>
-          <p className="mb-3 text-xs text-slate-500">Network-wide estimated passengers (thousands)</p>
+      {/* AI Operational Insights */}
+      <div className="mt-5">
+        <InsightPanel insights={insights} />
+      </div>
+
+      {/* Export Bar Card */}
+      <div className="mt-5 card card-pad border-slate-800 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h3 className="font-extrabold tracking-tight text-white flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-brand-400" /> Operational Data Export & Reporting
+          </h3>
+          <p className="text-xs text-slate-400">Download auditable datasets in CSV format or print executive reports</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button onClick={exportPerf} className="btn-ghost text-xs py-2 px-3 font-bold">
+            <Download className="h-3.5 w-3.5 text-brand-400" /> Station Performance CSV
+          </button>
+          <button onClick={exportTraffic} className="btn-ghost text-xs py-2 px-3 font-bold">
+            <Download className="h-3.5 w-3.5 text-emerald-400" /> Traffic Volume CSV
+          </button>
+          <button onClick={() => window.print()} className="btn-ghost text-xs py-2 px-3 font-bold no-print">
+            <Printer className="h-3.5 w-3.5 text-slate-400" /> Print PDF Report
+          </button>
+        </div>
+      </div>
+
+      {/* Charts Grid */}
+      <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
+        {/* Hourly Passenger Traffic Chart */}
+        <div className="card card-pad border-slate-800">
+          <h3 className="font-extrabold tracking-tight text-white">Hourly Passenger Throughput Volume</h3>
+          <p className="mb-4 text-xs text-slate-400">Estimated passenger volume (thousands per hour) · 24h rolling</p>
+          
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={traffic} margin={{ left: -12, right: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={2} stroke="#94a3b8" />
-              <YAxis unit="k" tick={{ fontSize: 11 }} stroke="#94a3b8" />
-              <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-              <Line type="monotone" dataKey="passenger_k" name="Passengers (k)" stroke="#3382fc" strokeWidth={2.5} dot={false} />
+            <LineChart data={traffic} margin={{ left: -10, right: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+              <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#94a3b8" }} interval={2} stroke="#334155" />
+              <YAxis unit="k" tick={{ fontSize: 11, fill: "#94a3b8" }} stroke="#334155" />
+              <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }} />
+              <Line type="monotone" dataKey="passenger_k" name="Passengers (k)" stroke="#3b82f6" strokeWidth={3} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Station radar */}
-        <div className="card card-pad">
-          <h3 className="font-semibold text-slate-900">Station Health Radar</h3>
-          <p className="mb-3 text-xs text-slate-500">Congestion score vs punctuality (top 6 stations)</p>
+        {/* Station Health Radar */}
+        <div className="card card-pad border-slate-800">
+          <h3 className="font-extrabold tracking-tight text-white">Station Health Radar</h3>
+          <p className="mb-4 text-xs text-slate-400">Congestion Score vs Punctuality % (Top 6 major stations)</p>
+
           <ResponsiveContainer width="100%" height={300}>
-            <RadarChart data={radarData} outerRadius="72%">
-              <PolarGrid stroke="#e2e8f0" />
-              <PolarAngleAxis dataKey="station" tick={{ fontSize: 10 }} />
-              <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+            <RadarChart data={radarData} outerRadius="70%">
+              <PolarGrid stroke="#1e293b" />
+              <PolarAngleAxis dataKey="station" tick={{ fontSize: 10, fill: "#94a3b8" }} />
+              <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
-              <Radar name="Congestion score" dataKey="congestion" stroke="#f97316" fill="#f97316" fillOpacity={0.25} />
-              <Radar name="Punctuality %" dataKey="punctuality" stroke="#3382fc" fill="#3382fc" fillOpacity={0.25} />
+              <Radar name="Congestion Score" dataKey="congestion" stroke="#f97316" fill="#f97316" fillOpacity={0.3} />
+              <Radar name="Punctuality %" dataKey="punctuality" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.3} />
             </RadarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Station performance table */}
-      <div className="card mt-4">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+      {/* Station Performance Detailed Report Table */}
+      <div className="card mt-5 border-slate-800">
+        <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
           <div>
-            <h3 className="font-semibold text-slate-900">Station Performance Report</h3>
-            <p className="text-xs text-slate-500">Ranked by congestion score — worst first</p>
+            <h3 className="font-extrabold tracking-tight text-white">Station Performance Detailed Report</h3>
+            <p className="text-xs text-slate-400">Ranked by congestion score — worst performing stations first (48h rolling)</p>
           </div>
-          <button onClick={() => window.print()} className="btn-ghost py-1.5 text-xs">
-            Export / Print
+          <button onClick={exportPerf} className="btn-ghost no-print py-1.5 text-xs font-bold">
+            <Download className="h-3.5 w-3.5 text-brand-400" /> Export CSV
           </button>
         </div>
+
         <div className="overflow-x-auto">
           <table className="table-base">
             <thead>
               <tr>
                 <th>#</th>
                 <th>Station</th>
-                <th>Avg occupancy</th>
-                <th>Peak occupancy</th>
-                <th>Congestion score</th>
-                <th>Entries (48h)</th>
-                <th>Exits (48h)</th>
-                <th>Punctuality</th>
+                <th>Avg Occupancy</th>
+                <th>Peak Occupancy</th>
+                <th>Congestion Score</th>
+                <th>Entries Total (48h)</th>
+                <th>Exits Total (48h)</th>
+                <th>Punctuality Rate</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-800/80">
               {perf.map((p, i) => (
-                <tr key={p.station_id}>
-                  <td className="text-slate-400">{i + 1}</td>
-                  <td className="font-semibold text-slate-800">{p.station_name}</td>
-                  <td>{p.avg_occupancy_pct}%</td>
-                  <td>{p.peak_occupancy_pct}%</td>
+                <tr key={p.station_id} className="hover:bg-slate-850/60 transition">
+                  <td className="font-mono text-slate-500">{i + 1}</td>
+                  <td className="font-extrabold text-white">{p.station_name}</td>
+                  <td className="font-mono text-slate-300">{p.avg_occupancy_pct}%</td>
+                  <td className="font-mono font-bold text-white">{p.peak_occupancy_pct}%</td>
                   <td>
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-100">
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-800">
                         <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${Math.min(100, p.congestion_score)}%`,
-                            backgroundColor: congestionColor(p.congestion_score),
-                          }}
+                          className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500"
+                          style={{ width: `${Math.min(100, p.congestion_score)}%` }}
                         />
                       </div>
-                      <span className="text-xs tabular-nums text-slate-500">{p.congestion_score}</span>
+                      <span className="text-xs font-mono text-slate-400">{p.congestion_score}</span>
                     </div>
                   </td>
-                  <td className="tabular-nums">{p.entries_total.toLocaleString()}</td>
-                  <td className="tabular-nums">{p.exits_total.toLocaleString()}</td>
-                  <td className={p.punctuality_pct >= 90 ? "font-semibold text-emerald-600" : "font-semibold text-amber-600"}>
-                    {p.punctuality_pct}%
+                  <td className="font-mono">{p.entries_total.toLocaleString()}</td>
+                  <td className="font-mono">{p.exits_total.toLocaleString()}</td>
+                  <td>
+                    <span
+                      className={`font-mono font-extrabold ${
+                        p.punctuality_pct >= 90 ? "text-emerald-400" : "text-amber-400"
+                      }`}
+                    >
+                      {p.punctuality_pct}%
+                    </span>
                   </td>
                 </tr>
               ))}
               {perf.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-10 text-center text-sm text-slate-400">
-                    <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> Loading report…
+                  <td colSpan={8} className="py-12 text-center text-sm text-slate-500">
+                    <Loader2 className="mr-2 inline h-4 w-4 animate-spin text-brand-400" /> Loading performance report...
                   </td>
                 </tr>
               )}
@@ -159,17 +208,18 @@ function Analytics() {
         </div>
       </div>
 
-      {/* Congestion distribution */}
-      <div className="card card-pad mt-4">
-        <h3 className="font-semibold text-slate-900">Average Occupancy by Station</h3>
-        <p className="mb-3 text-xs text-slate-500">48-hour rolling average</p>
+      {/* Bar chart */}
+      <div className="card card-pad mt-5 border-slate-800">
+        <h3 className="font-extrabold tracking-tight text-white">48-Hour Average Occupancy per Station</h3>
+        <p className="mb-4 text-xs text-slate-400">Color mapped by congestion level</p>
+
         <ResponsiveContainer width="100%" height={260}>
-          <BarChart data={perf.slice().reverse()} margin={{ left: -12, right: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-            <XAxis dataKey="station_name" tick={{ fontSize: 9 }} interval={0} angle={-20} textAnchor="end" height={50} stroke="#94a3b8" />
-            <YAxis unit="%" tick={{ fontSize: 11 }} stroke="#94a3b8" domain={[0, 100]} />
-            <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-            <Bar dataKey="avg_occupancy_pct" name="Avg occupancy %" radius={[6, 6, 0, 0]} barSize={26}>
+          <BarChart data={perf.slice().reverse()} margin={{ left: -10, right: 10 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
+            <XAxis dataKey="station_name" tick={{ fontSize: 9, fill: "#94a3b8" }} interval={0} angle={-20} textAnchor="end" height={50} stroke="#334155" />
+            <YAxis unit="%" tick={{ fontSize: 11, fill: "#94a3b8" }} stroke="#334155" domain={[0, 100]} />
+            <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }} />
+            <Bar dataKey="avg_occupancy_pct" name="Avg Occupancy %" radius={[8, 8, 0, 0]} barSize={24}>
               {perf.slice().reverse().map((p) => (
                 <Cell key={p.station_id} fill={congestionColor(p.avg_occupancy_pct)} />
               ))}

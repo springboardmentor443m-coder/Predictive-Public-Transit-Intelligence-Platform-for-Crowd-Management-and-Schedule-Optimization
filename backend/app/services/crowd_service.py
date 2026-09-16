@@ -114,7 +114,7 @@ def get_live_snapshot(db: Session, station_id: str) -> dict:
 
 def get_all_live_snapshots(db: Session) -> list[dict]:
     stations = db.query(Station).all()
-    return [get_live_snapshot(db, s.id) for s in stations if s]
+    return [snap for s in stations if (snap := get_live_snapshot(db, s.id)) is not None]
 
 
 def get_heatmap(db: Session) -> list[dict]:
@@ -189,3 +189,58 @@ def get_station_history(db: Session, station_id: str, hours: int = 24) -> list[d
         }
         for r in records
     ]
+
+
+def ingest_crowd_record(
+    db: Session,
+    station_id: str,
+    entries: int = 0,
+    exits: int = 0,
+    occupancy: int = 0,
+    timestamp=None,
+) -> dict:
+    """Sensor/gate ingest: persists a ridership record, refreshes the live
+    cache snapshot and returns the new live snapshot dict."""
+    import uuid as _uuid
+
+    station = db.query(Station).filter(Station.id == station_id).first()
+    if not station:
+        return None
+    ts = timestamp or datetime.utcnow()
+    # Derive congestion from occupancy vs capacity when not supplied.
+    pct = min(1.2, max(0.0, occupancy / max(1, station.capacity_per_hour)))
+    congestion = compute_congestion_level(pct)
+    rec = RidershipRecord(
+        id=f"RR-ING-{_uuid.uuid4().hex[:10]}",
+        station_id=station_id,
+        timestamp=ts,
+        entries=int(entries),
+        exits=int(exits),
+        occupancy=int(occupancy),
+        congestion_level=congestion,
+    )
+    db.add(rec)
+    db.commit()
+    # Invalidate cached snapshot so next read reflects the ingest.
+    try:
+        from app.core.cache import cache_set
+
+        now = datetime.utcnow()
+        occupancy_pct = round(min(1.0, occupancy / max(1, station.capacity_per_hour)) * 100, 1)
+        snapshot = {
+            "station_id": station.id,
+            "station_name": station.name,
+            "line": station.line,
+            "occupancy": int(occupancy),
+            "capacity": station.capacity_per_hour,
+            "occupancy_pct": occupancy_pct,
+            "congestion_level": congestion,
+            "inflow_rate": round(int(entries) / 15.0, 1),
+            "outflow_rate": round(int(exits) / 15.0, 1),
+            "last_updated": now.isoformat() + "Z",
+        }
+        cache_set(f"crowd:latest:{station_id}", snapshot, ttl=30)
+        log_sensor_event(snapshot)
+        return snapshot
+    except Exception:
+        return get_live_snapshot(db, station_id)

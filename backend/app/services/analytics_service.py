@@ -151,3 +151,86 @@ def station_performance(db: Session, limit: int = 15) -> list[dict]:
 
     perf.sort(key=lambda x: x["congestion_score"], reverse=True)
     return perf[:limit]
+
+
+def ai_insights(db: Session) -> dict:
+    """Consolidated AI insight panel for the analytics dashboard (PRD §4.6).
+
+    Combines live congestion, predicted peak, smart recommendations,
+    traffic patterns and open-alert summary into one payload so the
+    frontend can render operational recommendations without N round-trips.
+    """
+    from app.services import prediction_service
+    from app.services.scheduling_service import get_optimization_recommendations
+
+    ov = overview(db)
+    try:
+        recs = get_optimization_recommendations(db)
+    except Exception:
+        recs = []
+    try:
+        patterns = prediction_service.traffic_patterns(db)
+    except Exception:
+        patterns = []
+
+    snapshots = get_all_live_snapshots(db)
+    critical = [s for s in snapshots if s.get("congestion_level") in ("high", "critical")]
+    critical.sort(key=lambda s: s.get("occupancy_pct", 0), reverse=True)
+
+    # Top actions: stations needing frequency increase first.
+    top_actions = []
+    for r in recs:
+        try:
+            if r.get("recommended_headway_min", 99) < r.get("current_headway_min", 0):
+                top_actions.append({
+                    "station_id": r.get("station_id"),
+                    "station_name": r.get("station_name"),
+                    "action": f"Reduce headway {r.get('current_headway_min')}→{r.get('recommended_headway_min')} min",
+                    "reason": r.get("reason", ""),
+                    "utilization_pct": r.get("capacity_utilization_pct"),
+                })
+        except Exception:
+            continue
+    top_actions = top_actions[:5]
+
+    # Demand outlook: next-hour predicted entries for the busiest station.
+    demand_outlook = []
+    try:
+        from app.ml.model_wrappers import get_demand_model
+
+        model = get_demand_model()
+        for s in critical[:3]:
+            fc = model.forecast_hourly(
+                __import__("datetime").datetime.utcnow().hour,
+                hours_ahead=3,
+                station={"id": s["station_id"], "capacity_per_hour": s.get("capacity")},
+            )
+            demand_outlook.append({
+                "station_id": s["station_id"],
+                "station_name": s.get("station_name"),
+                "next_3h_entries": [p["predicted_entries"] for p in fc],
+            })
+    except Exception:
+        demand_outlook = []
+
+    open_alerts = db.query(Alert).filter(Alert.is_acknowledged.is_(False)).count()
+    return {
+        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "network_status": "strained" if critical else ("watch" if ov.get("active_alerts") else "healthy"),
+        "predicted_peak_hour": ov.get("predicted_peak_hour"),
+        "on_time_pct": ov.get("on_time_pct"),
+        "critical_stations": critical[:5],
+        "top_actions": top_actions,
+        "demand_outlook": demand_outlook,
+        "patterns_summary": [
+            {
+                "station_id": p.get("station_id"),
+                "station_name": p.get("station_name"),
+                "peak_hour": p.get("peak_hour"),
+                "peak_occupancy_pct": p.get("peak_occupancy_pct"),
+            }
+            for p in (patterns or [])[:5]
+        ],
+        "open_alerts": open_alerts,
+        "recommendations_count": len(recs),
+    }

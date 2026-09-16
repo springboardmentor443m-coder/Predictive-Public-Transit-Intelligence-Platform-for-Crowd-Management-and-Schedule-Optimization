@@ -1,19 +1,13 @@
 import { useEffect, useState } from "react";
-import { BrainCircuit, Lightbulb, Loader2, TrendingUp } from "lucide-react";
+import { BrainCircuit, Clock3, Lightbulb, Loader2, Sparkles, TrainFront, TrendingUp } from "lucide-react";
 import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  Legend,
-  Line,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
+  Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import DashboardLayout from "../../components/DashboardLayout";
+import ModelBadge from "../../components/ModelBadge";
 import StatusBadge from "../../components/StatusBadge";
 import { withAuth } from "../../lib/auth";
+import { useToast } from "../../components/ToastContext";
 import api from "../../lib/api";
 
 function CrowdTooltip({ active, payload, label }) {
@@ -22,51 +16,62 @@ function CrowdTooltip({ active, payload, label }) {
   const width = payload.find((p) => p.dataKey === "bandWidth")?.value ?? 0;
   const predicted = payload.find((p) => p.dataKey === "predicted")?.value;
   return (
-    <div className="rounded-lg bg-white px-3 py-2 text-xs shadow-lg ring-1 ring-slate-200">
-      <p className="font-semibold text-slate-700">{label}</p>
-      {predicted != null && <p className="text-slate-600">Predicted: {predicted}%</p>}
-      {width > 0 && (
-        <p className="text-slate-400">
-          Range: {Math.round(base)}–{Math.round(base + width)}%
-        </p>
-      )}
+    <div className="rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2.5 text-xs text-white shadow-xl backdrop-blur-xl">
+      <p className="font-extrabold text-brand-400">{label}</p>
+      {predicted != null && <p className="text-slate-200 mt-0.5">Predicted Occupancy: <span className="font-mono font-bold text-white">{predicted}%</span></p>}
+      {width > 0 && <p className="text-slate-400 text-[11px] font-mono">Confidence Band: {Math.round(base)}–{Math.round(base + width)}%</p>}
     </div>
   );
 }
 
+const NJ_LINES = [
+  "Northeast Corrdr",
+  "North Jersey Coast",
+  "Morristown Line",
+  "Montclair-Boonton",
+  "Gladstone Branch",
+  "Raritan Valley",
+  "Main Line",
+  "Bergen Co. Line",
+  "Pascack Valley",
+  "Atl. City Line",
+  "Princeton Shuttle",
+];
+
 function Predictions() {
+  const { showToast } = useToast();
   const [stations, setStations] = useState([]);
   const [stationId, setStationId] = useState("");
   const [crowd, setCrowd] = useState([]);
   const [demand, setDemand] = useState([]);
   const [recs, setRecs] = useState([]);
-  const [recsState, setRecsState] = useState("loading");
   const [patterns, setPatterns] = useState([]);
-  const [patternsState, setPatternsState] = useState("loading");
+  const [modelInfo, setModelInfo] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const [delayForm, setDelayForm] = useState({
+    line: "Northeast Corrdr",
+    from_station: "NY Penn",
+    to_station: "Newark Penn",
+    stop_sequence: 5,
+    hour: 8,
+    weekday: 1,
+    scheduled_time: "08:30",
+    train_type: "NJ Transit",
+  });
+  const [delayRes, setDelayRes] = useState(null);
+  const [delayBusy, setDelayBusy] = useState(false);
+  const [delayErr, setDelayErr] = useState("");
+
   useEffect(() => {
-    api
-      .get("/stations/")
-      .then((res) => {
-        setStations(res.data);
-        if (res.data.length) setStationId(res.data[0].id);
-      })
-      .catch(() => {});
-    api
-      .get("/predictions/recommendations")
-      .then((res) => {
-        setRecs(res.data);
-        setRecsState("loaded");
-      })
-      .catch(() => setRecsState("error"));
-    api
-      .get("/predictions/patterns")
-      .then((res) => {
-        setPatterns(res.data);
-        setPatternsState("loaded");
-      })
-      .catch(() => setPatternsState("error"));
+    api.get("/stations/").then((res) => {
+      setStations(res.data);
+      if (res.data.length) setStationId(res.data[0].id);
+    }).catch(() => {});
+
+    api.get("/predictions/recommendations").then((res) => setRecs(res.data)).catch(() => {});
+    api.get("/predictions/patterns").then((res) => setPatterns(res.data)).catch(() => {});
+    api.get("/predictions/model-info").then((res) => setModelInfo(res.data)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -95,7 +100,6 @@ function Predictions() {
     label: `${String(p.hour).padStart(2, "0")}:00`,
     entries: p.predicted_entries,
     exits: p.predicted_exits,
-    peakProb: Math.round(p.peak_probability * 100),
   }));
 
   const peakHour = demand.reduce(
@@ -103,207 +107,362 @@ function Predictions() {
     demand[0] || { hour: "--", predicted_entries: 0 }
   );
 
+  async function runDelay(e) {
+    e.preventDefault();
+    setDelayBusy(true);
+    setDelayErr("");
+    setDelayRes(null);
+    try {
+      const res = await api.post("/predictions/delay", {
+        line: delayForm.line,
+        from_station: delayForm.from_station,
+        to_station: delayForm.to_station,
+        stop_sequence: Number(delayForm.stop_sequence),
+        hour: Number(delayForm.hour),
+        weekday: Number(delayForm.weekday),
+        scheduled_time: delayForm.scheduled_time,
+        train_type: delayForm.train_type,
+      });
+      setDelayRes(res.data);
+      showToast(`Predicted delay bucket: ${res.data.delay_bucket}`, "info");
+    } catch (err) {
+      setDelayErr(err?.response?.data?.detail || "Delay model offline. Ensure model artifacts exist.");
+    } finally {
+      setDelayBusy(false);
+    }
+  }
+
   return (
-    <DashboardLayout
-      title="AI Predictions"
-      subtitle="Crowd forecasting · demand prediction · smart recommendations"
-    >
-      {/* Summary strip */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="card card-pad flex items-center gap-4">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-            <BrainCircuit className="h-5 w-5" />
-          </span>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Model</p>
-            <p className="font-bold text-slate-900">GradientBoosting · R² 0.98</p>
-          </div>
+    <DashboardLayout title="AI Predictions & Delay Predictor" subtitle="Crowd forecasting · passenger demand inference · XGBoost delay models">
+      {/* Model Specs Header Grid */}
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <div className="xl:col-span-2">
+          <ModelBadge info={modelInfo} />
         </div>
-        <div className="card card-pad flex items-center gap-4">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-            <TrendingUp className="h-5 w-5" />
-          </span>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Forecast Peak</p>
-            <p className="font-bold text-slate-900">
-              {String(peakHour.hour).padStart(2, "0")}:00 · {peakHour.predicted_entries?.toLocaleString()} pax
+
+        <div className="grid grid-cols-1 gap-4">
+          <div className="card card-pad border-slate-800 flex items-center gap-4">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+              <TrendingUp className="h-6 w-6" />
+            </span>
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-400">Forecasted Peak Demand</p>
+              <p className="text-xl font-extrabold font-mono text-white mt-0.5">
+                {String(peakHour.hour).padStart(2, "0")}:00 · {peakHour.predicted_entries?.toLocaleString()} pax
+              </p>
+            </div>
+          </div>
+
+          <div className="card card-pad border-slate-800">
+            <label className="label">Target Station for AI Inference</label>
+            <select className="input" value={stationId} onChange={(e) => setStationId(e.target.value)}>
+              {stations.map((s) => (
+                <option key={s.id} value={s.id}>{s.name} ({s.id})</option>
+              ))}
+            </select>
+            <p className="mt-2 text-[11px] text-slate-400">
+              One-hot feature encoding + hourly capacity features · {modelInfo?.crowd?.algorithm}
             </p>
           </div>
         </div>
-        <div className="card card-pad">
-          <label className="label">Station under analysis</label>
-          <select className="input" value={stationId} onChange={(e) => setStationId(e.target.value)}>
-            {stations.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
-        {/* Crowd forecast */}
-        <div className="card card-pad">
-          <h3 className="font-semibold text-slate-900">Crowd Density Forecast — Next 12h</h3>
-          <p className="mb-3 text-xs text-slate-500">Predicted occupancy % with confidence band</p>
+      {/* Forecast Charts Row */}
+      <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
+        {/* Crowd Density Forecast Area Chart */}
+        <div className="card card-pad border-slate-800">
+          <h3 className="font-extrabold tracking-tight text-white">12-Hour Crowd Density Forecast</h3>
+          <p className="mb-4 text-xs text-slate-400">Predicted occupancy % with confidence upper/lower bounds</p>
+
           {loading ? (
-            <div className="flex h-[300px] items-center justify-center text-slate-400">
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Running inference…
+            <div className="flex h-[300px] items-center justify-center text-slate-500">
+              <Loader2 className="mr-2 h-5 w-5 animate-spin text-brand-400" /> Running AI crowd inference...
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={crowdChart} margin={{ left: -12, right: 8 }}>
+              <AreaChart data={crowdChart} margin={{ left: -10, right: 10 }}>
                 <defs>
                   <linearGradient id="predGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3382fc" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="#3382fc" stopOpacity={0.02} />
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.4} />
+                    <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="#94a3b8" />
-                <YAxis unit="%" tick={{ fontSize: 11 }} stroke="#94a3b8" domain={[0, 100]} />
-                <Tooltip content={<CrowdTooltip />} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#94a3b8" }} stroke="#334155" />
+                <YAxis unit="%" tick={{ fontSize: 11, fill: "#94a3b8" }} stroke="#334155" domain={[0, 100]} />
+                <Tooltip content={<CrowdTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                {/* Confidence band: stacked invisible base (lower) + shaded width
-                    renders an area between lower and upper bounds. */}
-                <Area
-                  name="bandBase"
-                  dataKey="bandBase"
-                  stackId="band"
-                  stroke="none"
-                  fill="none"
-                  legendType="none"
-                  isAnimationActive={false}
-                />
-                <Area
-                  name="Confidence band"
-                  dataKey="bandWidth"
-                  stackId="band"
-                  stroke="none"
-                  fill="#3382fc"
-                  fillOpacity={0.12}
-                  legendType="none"
-                />
-                <Area
-                  name="Predicted occupancy"
-                  dataKey="predicted"
-                  type="monotone"
-                  stroke="#3382fc"
-                  strokeWidth={2.5}
-                  fill="url(#predGrad)"
-                />
+                <Area name="bandBase" dataKey="bandBase" stackId="band" stroke="none" fill="none" legendType="none" isAnimationActive={false} />
+                <Area name="Confidence Band" dataKey="bandWidth" stackId="band" stroke="none" fill="#3b82f6" fillOpacity={0.15} legendType="none" />
+                <Area name="Predicted Occupancy" dataKey="predicted" type="monotone" stroke="#3b82f6" strokeWidth={3} fill="url(#predGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           )}
         </div>
 
-        {/* Demand forecast */}
-        <div className="card card-pad">
-          <h3 className="font-semibold text-slate-900">Passenger Demand Forecast — Next 12h</h3>
-          <p className="mb-3 text-xs text-slate-500">Predicted gate entries vs exits</p>
+        {/* Passenger Demand Forecast Area Chart */}
+        <div className="card card-pad border-slate-800">
+          <h3 className="font-extrabold tracking-tight text-white">12-Hour Passenger Demand Forecast</h3>
+          <p className="mb-4 text-xs text-slate-400">Predicted gate entries vs exits volume</p>
+
           {loading ? (
-            <div className="flex h-[300px] items-center justify-center text-slate-400">
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Running inference…
+            <div className="flex h-[300px] items-center justify-center text-slate-500">
+              <Loader2 className="mr-2 h-5 w-5 animate-spin text-emerald-400" /> Running AI demand inference...
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={demandChart} margin={{ left: -8, right: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="#94a3b8" />
-                <YAxis tick={{ fontSize: 11 }} stroke="#94a3b8" />
-                <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
+              <AreaChart data={demandChart} margin={{ left: -10, right: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#94a3b8" }} stroke="#334155" />
+                <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} stroke="#334155" />
+                <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Area type="monotone" name="Entries" dataKey="entries" stroke="#3382fc" strokeWidth={2} fill="#3382fc" fillOpacity={0.08} />
-                <Area type="monotone" name="Exits" dataKey="exits" stroke="#10b981" strokeWidth={2} fill="#10b981" fillOpacity={0.08} />
+                <Area type="monotone" name="Entries Forecast" dataKey="entries" stroke="#3b82f6" strokeWidth={2.5} fill="#3b82f6" fillOpacity={0.1} />
+                <Area type="monotone" name="Exits Forecast" dataKey="exits" stroke="#10b981" strokeWidth={2.5} fill="#10b981" fillOpacity={0.1} />
               </AreaChart>
             </ResponsiveContainer>
           )}
         </div>
       </div>
 
-      {/* Recommendations table */}
-      <div className="card mt-4">
-        <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-4">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+      {/* Delay Predictor Widget */}
+      <div className="card mt-5 border-slate-800 overflow-hidden">
+        <div className="flex items-center gap-3 border-b border-slate-800 bg-gradient-to-r from-indigo-950/40 to-transparent px-5 py-4">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400">
+            <TrainFront className="h-5 w-5" />
+          </span>
+          <div>
+            <h3 className="font-extrabold tracking-tight text-white">Live Delay Inference Machine — NJ Transit & Amtrak</h3>
+            <p className="text-xs text-slate-400">
+              Dual-stage XGBoost Classifier & Regressor · AUC 0.733 · MAE 3.15 min
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-0 lg:grid-cols-2 divide-y divide-slate-800 lg:divide-y-0 lg:divide-x">
+          {/* Form */}
+          <form onSubmit={runDelay} className="grid grid-cols-2 gap-3.5 p-5">
+            <div className="col-span-2">
+              <label className="label">Transit Line</label>
+              <select
+                className="input"
+                value={delayForm.line}
+                onChange={(e) => setDelayForm({ ...delayForm, line: e.target.value })}
+              >
+                {NJ_LINES.map((l) => (
+                  <option key={l} value={l}>{l}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="label">Origin Station</label>
+              <input
+                className="input"
+                value={delayForm.from_station}
+                onChange={(e) => setDelayForm({ ...delayForm, from_station: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="label">Destination Station</label>
+              <input
+                className="input"
+                value={delayForm.to_station}
+                onChange={(e) => setDelayForm({ ...delayForm, to_station: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="label">Stop Sequence #</label>
+              <input
+                type="number"
+                className="input font-mono"
+                value={delayForm.stop_sequence}
+                onChange={(e) => setDelayForm({ ...delayForm, stop_sequence: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="label">Hour & Weekday (0-6)</label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  max={23}
+                  className="input font-mono"
+                  value={delayForm.hour}
+                  onChange={(e) => setDelayForm({ ...delayForm, hour: e.target.value })}
+                />
+                <input
+                  type="number"
+                  min={0}
+                  max={6}
+                  className="input font-mono"
+                  value={delayForm.weekday}
+                  onChange={(e) => setDelayForm({ ...delayForm, weekday: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="label">Scheduled Time (HH:MM)</label>
+              <input
+                className="input font-mono"
+                value={delayForm.scheduled_time}
+                onChange={(e) => setDelayForm({ ...delayForm, scheduled_time: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="label">Operator Type</label>
+              <select
+                className="input"
+                value={delayForm.train_type}
+                onChange={(e) => setDelayForm({ ...delayForm, train_type: e.target.value })}
+              >
+                <option>NJ Transit</option>
+                <option>Amtrak</option>
+              </select>
+            </div>
+
+            <button type="submit" disabled={delayBusy} className="btn-primary col-span-2 py-3 text-xs font-extrabold mt-1">
+              {delayBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock3 className="h-4 w-4" />}
+              Run Delay Prediction Inference
+            </button>
+
+            {delayErr && (
+              <p className="col-span-2 rounded-xl bg-rose-500/10 p-3 text-xs font-semibold text-rose-400 border border-rose-500/30">
+                {delayErr}
+              </p>
+            )}
+          </form>
+
+          {/* Results Panel */}
+          <div className="p-5 bg-slate-950/60 flex flex-col justify-center">
+            {!delayRes ? (
+              <div className="text-center py-12 text-slate-500 space-y-2">
+                <BrainCircuit className="mx-auto h-8 w-8 text-slate-600" />
+                <p className="text-xs font-medium">Run inference to view predicted delay minutes & probability distribution.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div>
+                    <p className="text-xs font-extrabold uppercase text-slate-400">Prediction Outcome</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <StatusBadge
+                        value={
+                          delayRes.delay_bucket === "delayed"
+                            ? "critical"
+                            : delayRes.delay_bucket === "minor_delay"
+                            ? "medium"
+                            : "low"
+                        }
+                      />
+                      <span className="text-lg font-extrabold text-white">{delayRes.delay_bucket}</span>
+                    </div>
+                  </div>
+                  <span className="text-3xl font-extrabold font-mono text-white">
+                    +{delayRes.predicted_delay_minutes} <span className="text-xs font-sans text-slate-400">min delay</span>
+                  </span>
+                </div>
+
+                <div className="space-y-2.5">
+                  <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Bucket Probabilities</p>
+                  {Object.entries(delayRes.probabilities || {}).map(([k, v]) => (
+                    <div key={k} className="flex items-center gap-3 text-xs">
+                      <span className="w-28 font-bold text-slate-300 capitalize">{k.replace("_", " ")}</span>
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-800">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-brand-500 to-indigo-500 transition-all duration-500"
+                          style={{ width: `${Math.round(v * 100)}%` }}
+                        />
+                      </div>
+                      <span className="w-10 text-right font-mono font-extrabold text-slate-300">{Math.round(v * 100)}%</span>
+                    </div>
+                  ))}
+                </div>
+
+                <p className="mt-3 text-[11px] text-slate-500 font-mono">
+                  {delayRes.line} · {delayRes.from_station} → {delayRes.to_station}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Smart Recommendations Matrix Table */}
+      <div className="card mt-5 border-slate-800">
+        <div className="flex items-center gap-3 border-b border-slate-800 px-5 py-4">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400">
             <Lightbulb className="h-4 w-4" />
           </span>
           <div>
-            <h3 className="font-semibold text-slate-900">Smart Recommendations</h3>
-            <p className="text-xs text-slate-500">AI-generated scheduling actions to prevent overcrowding</p>
+            <h3 className="font-extrabold tracking-tight text-white">Smart Frequency Recommendations Matrix</h3>
+            <p className="text-xs text-slate-400">Demand-driven headway adjustments calculated per station</p>
           </div>
         </div>
+
         <div className="overflow-x-auto">
           <table className="table-base">
             <thead>
               <tr>
                 <th>Station</th>
-                <th>Current headway</th>
-                <th>Recommended</th>
-                <th>Capacity utilization</th>
-                <th>Rationale</th>
+                <th>Current Headway</th>
+                <th>Recommended Headway</th>
+                <th>Capacity Utilization</th>
+                <th>AI Rationale</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-800/80">
               {recs.map((r) => (
-                <tr key={r.station_id}>
-                  <td className="font-semibold text-slate-800">{r.station_name}</td>
-                  <td>{r.current_headway_min} min</td>
+                <tr key={r.station_id} className="hover:bg-slate-850/60 transition">
+                  <td className="font-extrabold text-white">{r.station_name}</td>
+                  <td className="font-mono text-slate-400">{r.current_headway_min}m</td>
                   <td>
                     <span
-                      className={`inline-flex rounded-md px-2 py-0.5 text-sm font-bold ${
+                      className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-mono font-extrabold border ${
                         r.recommended_headway_min < r.current_headway_min
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-slate-100 text-slate-600"
+                          ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                          : "bg-slate-800 text-slate-300 border-slate-700"
                       }`}
                     >
-                      {r.recommended_headway_min} min
+                      {r.recommended_headway_min}m
                     </span>
                   </td>
                   <td>
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-100">
+                    <div className="flex items-center gap-2.5">
+                      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-800">
                         <div
-                          className="h-full rounded-full bg-brand-500"
+                          className="h-full rounded-full bg-gradient-to-r from-brand-500 to-emerald-400"
                           style={{ width: `${Math.min(100, r.capacity_utilization_pct)}%` }}
                         />
                       </div>
-                      <span className="text-xs tabular-nums text-slate-500">{r.capacity_utilization_pct}%</span>
+                      <span className="text-xs font-mono text-slate-400">{r.capacity_utilization_pct}%</span>
                     </div>
                   </td>
-                  <td className="max-w-xs whitespace-normal text-xs text-slate-500">{r.reason}</td>
+                  <td className="max-w-xs whitespace-normal text-xs text-slate-400">{r.reason}</td>
                 </tr>
               ))}
-              {recs.length === 0 && recsState !== "loaded" && (
-                <tr>
-                  <td colSpan={5} className="py-10 text-center text-sm text-slate-400">
-                    {recsState === "error" ? "Could not load recommendations." : "Loading recommendations…"}
-                  </td>
-                </tr>
-              )}
-              {recs.length === 0 && recsState === "loaded" && (
-                <tr>
-                  <td colSpan={5} className="py-10 text-center text-sm text-slate-400">
-                    No recommendations available — all stations are within capacity targets.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Traffic pattern analysis */}
-      <div className="card mt-4">
-        <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-4">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+      {/* Traffic Pattern Analysis Table */}
+      <div className="card mt-5 border-slate-800">
+        <div className="flex items-center gap-3 border-b border-slate-800 px-5 py-4">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/15 border border-sky-500/30 text-sky-400">
             <TrendingUp className="h-4 w-4" />
           </span>
           <div>
-            <h3 className="font-semibold text-slate-900">Traffic Pattern Analysis</h3>
-            <p className="text-xs text-slate-500">Historical peak-hour detection and weekday/weekend profiling per station</p>
+            <h3 className="font-extrabold tracking-tight text-white">Historical Traffic Pattern Analysis</h3>
+            <p className="text-xs text-slate-400">Peak hour detection & weekday vs weekend multiplier factors</p>
           </div>
         </div>
+
         <div className="overflow-x-auto">
           <table className="table-base">
             <thead>
@@ -317,53 +476,27 @@ function Predictions() {
                 <th>Weekend Factor</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-800/80">
               {patterns.map((p) => (
-                <tr key={p.station_id}>
-                  <td className="font-semibold text-slate-800">{p.station_name}</td>
-                  <td>{p.line}</td>
-                  <td>{String(p.am_peak_hour).padStart(2, "0")}:00</td>
-                  <td>{String(p.pm_peak_hour).padStart(2, "0")}:00</td>
+                <tr key={p.station_id} className="hover:bg-slate-850/60 transition">
+                  <td className="font-extrabold text-white">{p.station_name}</td>
+                  <td className="text-slate-400">{p.line}</td>
+                  <td className="font-mono">{String(p.am_peak_hour).padStart(2, "0")}:00</td>
+                  <td className="font-mono">{String(p.pm_peak_hour).padStart(2, "0")}:00</td>
                   <td>
-                    <span className="rounded-md bg-brand-50 px-2 py-0.5 text-sm font-bold text-brand-700">
+                    <span className="rounded-lg bg-brand-500/20 border border-brand-500/30 px-2 py-0.5 text-xs font-mono font-extrabold text-brand-300">
                       {String(p.peak_hour).padStart(2, "0")}:00
                     </span>
                   </td>
-                  <td>{p.peak_occupancy_pct}%</td>
-                  <td className={p.weekend_factor < 0.8 ? "text-emerald-600" : "text-slate-600"}>
+                  <td className="font-mono font-bold text-white">{p.peak_occupancy_pct}%</td>
+                  <td className={p.weekend_factor < 0.8 ? "font-mono font-bold text-emerald-400" : "font-mono text-slate-400"}>
                     {p.weekend_factor}×
                   </td>
                 </tr>
               ))}
-              {patterns.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="py-10 text-center text-sm text-slate-400">
-                    {patternsState === "error"
-                      ? "Could not analyze traffic patterns."
-                      : patternsState === "loading"
-                        ? "Analyzing traffic patterns…"
-                        : "No ridership history available yet."}
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
-      </div>
-
-      {/* Hourly detail cards */}
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        {crowd.slice(0, 6).map((p) => (
-          <div key={p.hour} className="card p-4 text-center">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-              {String(p.hour).padStart(2, "0")}:00
-            </p>
-            <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">{p.predicted_occupancy_pct}%</p>
-            <div className="mt-1.5 flex justify-center">
-              <StatusBadge value={p.congestion_level} />
-            </div>
-          </div>
-        ))}
       </div>
     </DashboardLayout>
   );

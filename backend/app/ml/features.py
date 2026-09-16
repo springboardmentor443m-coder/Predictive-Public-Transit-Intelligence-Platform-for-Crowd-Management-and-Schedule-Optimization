@@ -77,8 +77,8 @@ def demand_base_entries(hour: int) -> float:
     return BASELINE_OCCUPANCY[hour] * 1200
 
 
-def feature_matrix_for_station(station_id: str, hours: list[int], weekday: int) -> np.ndarray:
-    rows = [hour_to_features(h, weekday) for h in hours]
+def feature_matrix_for_station(station_id: str, hours: list[int], weekday: int, capacity_per_hour: float | None = None) -> np.ndarray:
+    rows = [row_features(h, weekday, station_id, capacity_per_hour) for h in hours]
     return np.array(rows)
 
 

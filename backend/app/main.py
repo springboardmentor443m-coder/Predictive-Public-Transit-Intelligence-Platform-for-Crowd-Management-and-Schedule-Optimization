@@ -29,14 +29,56 @@ sio = socketio.AsyncServer(
 
 
 @sio.event
-async def connect(sid, environ):
-    logger.info(f"Socket.IO client connected: {sid}")
-    await sio.emit("connected", {"status": "ok"}, to=sid)
+async def connect(sid, environ, auth=None):
+    # Optional JWT auth: browsers may pass {token} via Socket.IO auth.
+    # Anonymous connections still allowed (dashboards poll otherwise),
+    # but authenticated sockets get role info + per-station rooms.
+    user_email = None
+    try:
+        token = None
+        if isinstance(auth, dict):
+            token = auth.get("token")
+        if token:
+            from app.core.security import decode_access_token
+
+            payload = decode_access_token(token)
+            user_email = payload.get("sub")
+    except Exception:
+        user_email = None
+    logger.info(f"Socket.IO client connected: {sid} user={user_email or 'anonymous'}")
+    try:
+        await sio.save_session(sid, {"user": user_email})
+    except Exception:
+        pass
+    await sio.emit("connected", {"status": "ok", "user": user_email}, to=sid)
 
 
 @sio.event
 async def disconnect(sid):
     logger.info(f"Socket.IO client disconnected: {sid}")
+
+
+@sio.event
+async def join_station(sid, data):
+    """Join a per-station room: client emits {station_id} to receive only
+    that station's crowd_update events (plus global feed)."""
+    station_id = data.get("station_id") if isinstance(data, dict) else data
+    if station_id:
+        try:
+            await sio.enter_room(sid, f"station:{station_id}")
+            await sio.emit("joined", {"station_id": station_id}, to=sid)
+        except Exception as e:
+            logger.warning(f"join_station failed: {e}")
+
+
+@sio.event
+async def leave_station(sid, data):
+    station_id = data.get("station_id") if isinstance(data, dict) else data
+    if station_id:
+        try:
+            await sio.leave_room(sid, f"station:{station_id}")
+        except Exception:
+            pass
 
 
 socketio_state.set_sio(sio)

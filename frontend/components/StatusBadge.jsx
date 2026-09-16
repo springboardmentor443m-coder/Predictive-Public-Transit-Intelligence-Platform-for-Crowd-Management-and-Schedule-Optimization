@@ -1,15 +1,18 @@
 const STYLES = {
-  low: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  medium: "bg-amber-50 text-amber-700 ring-amber-200",
-  high: "bg-orange-50 text-orange-700 ring-orange-200",
-  critical: "bg-rose-50 text-rose-700 ring-rose-200",
-  on_time: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  delayed: "bg-amber-50 text-amber-700 ring-amber-200",
-  cancelled: "bg-rose-50 text-rose-700 ring-rose-200",
-  overcrowding: "bg-rose-50 text-rose-700 ring-rose-200",
-  delay: "bg-amber-50 text-amber-700 ring-amber-200",
-  emergency: "bg-rose-100 text-rose-800 ring-rose-300",
-  info: "bg-sky-50 text-sky-700 ring-sky-200",
+  low: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+  medium: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+  high: "bg-orange-500/15 text-orange-300 border-orange-500/30",
+  critical: "bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse",
+  on_time: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+  delayed: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+  cancelled: "bg-rose-500/20 text-rose-300 border-rose-500/40",
+  overcrowding: "bg-rose-500/20 text-rose-300 border-rose-500/40",
+  delay: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+  emergency: "bg-rose-600/30 text-rose-200 border-rose-500/60 font-extrabold animate-pulse",
+  info: "bg-sky-500/15 text-sky-300 border-sky-500/30",
+  admin: "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
+  operator: "bg-brand-500/20 text-brand-300 border-brand-500/30",
+  viewer: "bg-slate-500/20 text-slate-300 border-slate-500/30",
 };
 
 const LABELS = {
@@ -18,17 +21,17 @@ const LABELS = {
 
 export default function StatusBadge({ value }) {
   const key = String(value || "").toLowerCase();
-  const style = STYLES[key] || "bg-slate-100 text-slate-600 ring-slate-200";
+  const style = STYLES[key] || "bg-slate-800 text-slate-300 border-slate-700";
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ring-1 ${style}`}>
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize border backdrop-blur-sm ${style}`}>
       {LABELS[key] || value}
     </span>
   );
 }
 
 export function congestionColor(pct) {
-  if (pct >= 90) return "#e11d48";
-  if (pct >= 75) return "#f97316";
-  if (pct >= 55) return "#f59e0b";
-  return "#10b981";
+  if (pct >= 90) return "#f43f5e"; // rose-500
+  if (pct >= 75) return "#f97316"; // orange-500
+  if (pct >= 55) return "#eab308"; // yellow-500
+  return "#10b981"; // emerald-500
 }

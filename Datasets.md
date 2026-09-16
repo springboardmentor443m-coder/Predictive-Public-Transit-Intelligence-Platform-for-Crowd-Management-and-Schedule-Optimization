@@ -7,6 +7,12 @@
 **Total Datasets: 7** (all verified pre-2021, real observational data, working Kaggle links.
 Excludes Ridership / Ticketing / Smart Card datasets per request.)
 
+> Training coverage: 7/7 — `kaggle/01_seoul*`, `02_hangzhou*`, `03_nj_transit*`,
+> `04_nyc*`, `05_tfl*`, `06_beijing*`, `07_railway_delay.py` (+ `notebooks/01..07`).
+> Copy any `{city}_model_outputs/*_model.joblib` into `backend/models_store/` as
+> `{city}_crowd/demand_model.joblib` and set `METROFLOW_MODEL_CITY` (seoul/hangzhou/nyc/tfl/beijing).
+> Live provenance: `GET /predictions/model-info` → ModelBadge on all dashboards.
+
 ---
 
 ## Crowd Monitoring / Passenger Density / Station Footfall

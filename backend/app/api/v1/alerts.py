@@ -14,8 +14,16 @@ router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 
 @router.get("", response_model=list[dict])
-async def get_alerts(acknowledged: bool = Query(None), limit: int = Query(100, le=500), db: Session = Depends(get_db), _=Depends(require_roles())):
-    return [_alert_to_dict(a) for a in list_alerts(db, acknowledged, limit)]
+async def get_alerts(
+    acknowledged: bool = Query(None),
+    limit: int = Query(100, le=500),
+    type: str = Query(None, description="Filter by alert type: overcrowding/delay/emergency/info"),
+    severity: str = Query(None, description="Filter by severity: low/medium/high/critical"),
+    station_id: str = Query(None, description="Filter by station id"),
+    db: Session = Depends(get_db),
+    _=Depends(require_roles()),
+):
+    return [_alert_to_dict(a) for a in list_alerts(db, acknowledged, limit, type, severity, station_id)]
 
 
 @router.post("/{alert_id}/acknowledge")

@@ -17,7 +17,7 @@
 
 ## 2. End-to-End Testing
 
-Automated suite: `backend/tests/test_api.py` (32 tests, all passing) run with:
+Automated suite: `backend/tests/test_api.py` (41 tests, all passing) run with:
 
 ```bash
 cd backend && pip install -r requirements-dev.txt
@@ -33,7 +33,8 @@ Coverage by module:
 | Predictions | crowd forecast shape, demand ≥ 0, recommendations, traffic patterns |
 | Scheduling | viewer blocked, CRUD round-trip, delay→alert linkage, apply-headway |
 | Alerts | broadcast admin-only, acknowledge flow |
-| Analytics | overview counts, station performance bounds, traffic series |
+| Analytics | overview counts, station performance bounds, traffic series, AI insights panel |
+| System | crowd ingest RBAC, alert type/severity/station filters, single-schedule fetch, model-info provenance, delay 503 fallback |
 
 Manual E2E: seeded demo data (10 stations, 12 trains, ~170 schedules, 60 days of
 ridership), three demo roles; frontend production build passes (`npm run build`).
@@ -71,8 +72,8 @@ Measured results in [`PERFORMANCE_METRICS.md`](PERFORMANCE_METRICS.md). Key leve
 
 | Criterion | Status |
 |---|---|
-| Analytics dashboard delivering actionable insights | ✅ |
-| System tested end-to-end with reliable AI outputs | ✅ 32 automated tests |
+| Analytics dashboard delivering actionable insights | ✅ insights + model badge (AI Predictions page) + CSV/print |
+| System tested end-to-end with reliable AI outputs | ✅ 41 automated API tests + 7 model tests |
 | Platform deployed and accessible via Docker/cloud setup | ✅ compose + k8s + cloud docs |
 | Complete documentation and presentation delivered | ✅ |
 

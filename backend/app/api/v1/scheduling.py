@@ -20,6 +20,14 @@ async def get_schedules(limit: int = Query(100, le=500), db: Session = Depends(g
     return list_schedules(db, limit)
 
 
+@router.get("/schedules/{schedule_id}", response_model=ScheduleRead)
+async def get_schedule(schedule_id: str, db: Session = Depends(get_db), _=Depends(require_roles())):
+    sched = db.query(TrainSchedule).filter(TrainSchedule.id == schedule_id).first()
+    if not sched:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    return sched
+
+
 @router.post("/schedules", response_model=ScheduleRead)
 async def create_schedule(s: ScheduleCreate, db: Session = Depends(get_db), operator=Depends(require_roles("admin", "operator"))):
     existing = db.query(TrainSchedule).filter(TrainSchedule.id == s.id).first()

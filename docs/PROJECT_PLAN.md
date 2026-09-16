@@ -90,19 +90,26 @@ Redis keys: `crowd:latest:{station_id}` snapshots, `alerts:recent` list.
 | GET | /api/v1/crowd/live | any | live density per station |
 | GET | /api/v1/crowd/heatmap | any | heatmap matrix (station × hour) |
 | GET | /api/v1/crowd/station/{id}/history | any | inflow/outflow history |
-| GET/POST/PUT/DELETE | /api/v1/scheduling/schedules | operator+ | schedule management |
+| POST | /api/v1/crowd/ingest | operator+ | sensor/gate ingest (live snapshot refresh) |
+| GET/POST/PUT/DELETE | /api/v1/scheduling/schedules | operator+ | schedule management (PUT = full edit) |
+| GET | /api/v1/scheduling/schedules/{id} | any | single schedule (edit form) |
 | GET | /api/v1/scheduling/optimization | operator+ | frequency recommendations |
 | POST | /api/v1/scheduling/delay/{schedule_id} | operator+ | report/handle delay |
+| POST | /api/v1/scheduling/apply-headway/{station_id} | operator+ | frequency adjustment execution |
 | GET | /api/v1/predictions/crowd?station_id&hours | any | crowd forecast |
 | GET | /api/v1/predictions/demand?station_id&hours | any | demand forecast |
+| POST | /api/v1/predictions/delay | any | NJ/Railway delay inference (503 if model missing) |
 | GET | /api/v1/predictions/recommendations | any | smart recommendations |
-| GET | /api/v1/alerts | any | alerts feed |
+| GET | /api/v1/predictions/patterns | any | traffic pattern analysis |
+| GET | /api/v1/predictions/model-info | any | live model provenance (city/algorithm/R²/datasets) |
+| GET | /api/v1/alerts?type&severity&station_id | any | alerts feed with filters |
 | POST | /api/v1/alerts/{id}/acknowledge | operator+ | acknowledge |
 | POST | /api/v1/alerts/broadcast | admin | emergency announcement |
 | GET | /api/v1/analytics/overview | any | KPI summary |
 | GET | /api/v1/analytics/traffic | any | traffic analytics series |
 | GET | /api/v1/analytics/station-performance | any | station report cards |
-| WS | /socket.io | any | live crowd + alert events |
+| GET | /api/v1/analytics/insights | any | consolidated AI insight panel |
+| WS | /socket.io | any (JWT optional) | live crowd + alert events; rooms station:{id} via join_station |
 
 ## 6. Performance Targets (PRD §8–9)
 

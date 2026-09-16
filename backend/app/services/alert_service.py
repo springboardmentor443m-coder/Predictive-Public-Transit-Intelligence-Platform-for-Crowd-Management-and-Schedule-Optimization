@@ -104,10 +104,23 @@ def raise_delay_alert(db: Session, schedule, delay_min: int) -> Alert:
     return alert
 
 
-def list_alerts(db: Session, acknowledged: bool | None = None, limit: int = 100) -> list[Alert]:
+def list_alerts(
+    db: Session,
+    acknowledged: bool | None = None,
+    limit: int = 100,
+    type: str | None = None,
+    severity: str | None = None,
+    station_id: str | None = None,
+) -> list[Alert]:
     q = db.query(Alert).order_by(Alert.created_at.desc())
     if acknowledged is not None:
         q = q.filter(Alert.is_acknowledged.is_(acknowledged))
+    if type:
+        q = q.filter(Alert.type == type)
+    if severity:
+        q = q.filter(Alert.severity == severity)
+    if station_id:
+        q = q.filter(Alert.station_id == station_id)
     return q.limit(limit).all()
 
 

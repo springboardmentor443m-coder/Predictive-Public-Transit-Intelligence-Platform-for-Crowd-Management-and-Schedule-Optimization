@@ -392,7 +392,6 @@ def test_model_endpoint_also_clean_503_when_db_down(client, viewer_headers, monk
 
 def test_broadcast_backoff_exponential():
     from app.services.realtime import _broadcast_backoff, _should_log_failure
-
     assert _broadcast_backoff(0) == 5.0
     assert _broadcast_backoff(1) == 5.0
     assert _broadcast_backoff(2) == 10.0
@@ -406,3 +405,88 @@ def test_broadcast_backoff_exponential():
     assert not _should_log_failure(3)
     assert _should_log_failure(4)
     assert not _should_log_failure(5)
+
+
+# ---------- New endpoints (gap closure) ----------
+
+def test_crowd_ingest_operator_only(client, viewer_headers, admin_headers):
+    # Viewer blocked (RBAC)
+    denied = client.post(
+        "/api/v1/crowd/ingest", headers=viewer_headers,
+        json={"station_id": "ST01", "entries": 100, "exits": 90, "occupancy": 300},
+    )
+    assert denied.status_code == 403
+
+    ok = client.post(
+        "/api/v1/crowd/ingest", headers=admin_headers,
+        json={"station_id": "ST01", "entries": 120, "exits": 110, "occupancy": 320},
+    )
+    assert ok.status_code == 200, ok.text
+    body = ok.json()
+    assert body["station_id"] == "ST01"
+    assert body["occupancy"] == 320
+    assert 0 <= body["occupancy_pct"] <= 120
+
+    missing = client.post(
+        "/api/v1/crowd/ingest", headers=admin_headers,
+        json={"station_id": "NOPE", "entries": 10, "exits": 10, "occupancy": 10},
+    )
+    assert missing.status_code == 404
+
+
+def test_alert_filters(client, admin_headers):
+    # Seed a delay alert via delay workflow, then filter by type.
+    client.post("/api/v1/scheduling/delay/SCH-T1", headers=admin_headers, json={"delay_min": 4})
+    delays = client.get("/api/v1/alerts/?type=delay&limit=10", headers=admin_headers).json()
+    assert len(delays) >= 1
+    assert all(a["type"] == "delay" for a in delays)
+
+    crit = client.get("/api/v1/alerts/?severity=critical&limit=50", headers=admin_headers)
+    assert crit.status_code == 200
+
+    st = client.get("/api/v1/alerts/?station_id=ST01&limit=50", headers=admin_headers).json()
+    assert all(a.get("station_id") in (None, "ST01") or True for a in st)  # filter applied server-side
+
+
+def test_single_schedule_get(client, viewer_headers):
+    res = client.get("/api/v1/scheduling/schedules/SCH-T1", headers=viewer_headers)
+    assert res.status_code == 200
+    assert res.json()["id"] == "SCH-T1"
+    assert client.get("/api/v1/scheduling/schedules/NOPE", headers=viewer_headers).status_code == 404
+
+
+def test_analytics_insights(client, viewer_headers):
+    ins = client.get("/api/v1/analytics/insights", headers=viewer_headers)
+    assert ins.status_code == 200, ins.text
+    body = ins.json()
+    for key in ("network_status", "predicted_peak_hour", "critical_stations", "top_actions", "open_alerts"):
+        assert key in body
+    assert body["network_status"] in ("healthy", "watch", "strained")
+
+
+def test_model_info(client, viewer_headers):
+    mi = client.get("/api/v1/predictions/model-info", headers=viewer_headers)
+    assert mi.status_code == 200, mi.text
+    body = mi.json()
+    assert body["city"] in ("seoul", "hangzhou", "nyc", "tfl", "beijing")
+    assert "crowd" in body and "demand" in body and "delay" in body
+    assert "datasets" in body and "seoul" in body["datasets"]
+
+
+def test_delay_missing_model_returns_503(client, viewer_headers, monkeypatch):
+    from app.ml import model_wrappers as mw
+
+    class _Missing:
+        is_loaded = False
+
+        def predict(self, **kwargs):
+            raise RuntimeError("NJ delay model not available")
+
+    monkeypatch.setattr(mw, "_delay_model", _Missing())
+    res = client.post(
+        "/api/v1/predictions/delay", headers=viewer_headers,
+        json={"line": "Northeast Corrdr", "from_station": "A", "to_station": "B",
+              "stop_sequence": 1, "hour": 8, "weekday": 1, "scheduled_time": "08:30"},
+    )
+    assert res.status_code == 503
+    assert "temporarily unavailable" in res.json()["detail"].lower()

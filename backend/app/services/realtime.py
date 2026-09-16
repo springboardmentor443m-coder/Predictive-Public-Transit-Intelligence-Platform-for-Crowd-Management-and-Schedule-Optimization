@@ -61,7 +61,13 @@ async def broadcast_loop() -> None:
             consecutive_failures = 0
 
             for snap in snapshots or []:
+                # Global feed (existing dashboards) + per-station room
+                # so clients can subscribe to a single station channel.
                 await sio.emit("crowd_update", snap, room=None)
+                try:
+                    await sio.emit("crowd_update", snap, room=f"station:{snap.get('station_id')}")
+                except Exception:
+                    pass
 
             for alert in fresh_alerts:
                 alert_id = alert["id"]

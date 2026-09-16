@@ -19,10 +19,11 @@ Interpretation: crowd model explains ~98% of occupancy variance; demand model tr
 hourly entries closely on synthetic data (expected — strong generated signal).
 Both degrade gracefully to heuristic baselines if artifacts are missing.
 
-### 1.1 Real-world Kaggle-trained models (Seoul / Hangzhou)
+### 1.1 Real-world Kaggle-trained models (Seoul / Hangzhou + NYC / TfL / Beijing)
 
-Trained with `kaggle/01_seoul_crowd_demand.py` and `kaggle/02_hangzhou_crowd_demand.py`
-(XGBoost, held-out 20% split).
+Trained with `kaggle/01_seoul_crowd_demand.py`, `kaggle/02_hangzhou_crowd_demand.py`,
+`kaggle/04_nyc_crowd_demand.py`, `kaggle/05_tfl_crowd_demand.py`,
+`kaggle/06_beijing_crowd_demand.py` (XGBoost, held-out 20% split).
 
 | Dataset | Model | R² | MAE | Peak-hour MAE |
 |---|---|---|---|---|
@@ -33,11 +34,17 @@ Trained with `kaggle/01_seoul_crowd_demand.py` and `kaggle/02_hangzhou_crowd_dem
 
 Served by the API through `model_wrappers`: the `METROFLOW_MODEL_CITY` env var selects
 `{city}_crowd_model.joblib` / `{city}_demand_model.joblib` from `models_store/` (default
-`hangzhou`). The feature schema is read from each artifact's own metadata
+`hangzhou`; supported: seoul/hangzhou/nyc/tfl/beijing). The feature schema is read from each artifact's own metadata
 (`stations`, `cap_norm_scale`), so inference builds the exact trained vector width
 (Seoul 108, Hangzhou 88). Backend stations ST01–ST10 map to real station codes in
-`app/ml/registry.py`. To refresh, rerun the Kaggle scripts (early stopping enabled,
-`early_stopping_rounds=25`) and drop the zipped outputs into `models_store/`.
+`app/ml/registry.py`. Live provenance is exposed at `GET /predictions/model-info`
+(rendered as the ModelBadge on the dedicated **AI Predictions** page). To refresh, rerun the Kaggle scripts
+and drop the zipped outputs into `models_store/`.
+
+> NYC / TfL / Beijing scripts ship with realistic proxies when Kaggle inputs are
+> absent, so `python kaggle/04_nyc_crowd_demand.py` etc. always produce
+> `{city}_model_outputs/metrics.json`. Promote a city by copying its
+> `*_model.joblib` pair into `models_store/` as `{city}_crowd/demand_model.joblib`.
 
 ### 1.2 NJ Transit delay models (real-world)
 
@@ -53,11 +60,14 @@ Trained with `kaggle/03_nj_transit_delay.py` (XGBoost, 3M stop-level rows from
 | | MAE | 3.15 min |
 | | delayed-only MAE | 7.43 min |
 
-Served via `POST /api/v1/predictions/delay`. Inputs are the model's real feature
+Served via `POST /api/v1/predictions/delay` (live Delay Predictor on the AI page).
+Inputs are the model's real feature
 space (line, from/to station, stop sequence, scheduled time, weekday, train type);
 top features are `line` (Princeton Shuttle, Atl. City Line, Northeast Corridor),
 schedule phase (`sched_sin`) and weekend flag. There is no synthetic fallback —
-the endpoint returns 503 only if artifacts are missing. Refreshing does not require
+the endpoint returns clean `503` (not 500) if artifacts are missing. A second
+delay set is trainable via `kaggle/07_railway_delay.py` (Railway Delay 2015,
+312k journeys) for comparison. Refreshing does not require
 retraining: the current model already reflects the dataset ceiling for a
 line/schedule level delay target.
 
@@ -68,11 +78,15 @@ line/schedule level delay target.
 | `GET /api/v1/health` | < 10 ms |
 | `POST /api/v1/auth/login` | ~2.5 s (pbkdf2 hashing; first request) |
 | `GET /api/v1/crowd/live` | ~50 ms |
+| `POST /api/v1/crowd/ingest` | ~60 ms (persist + cache refresh) |
 | `GET /api/v1/crowd/heatmap` | ~60 ms (10 stations × 24 h = 240 cells) |
 | `GET /api/v1/predictions/crowd?hours=12` | ~80 ms (12 model inferences) |
 | `GET /api/v1/predictions/patterns` | ~120 ms (7-day aggregation) |
+| `GET /api/v1/predictions/model-info` | ~20 ms (artifact metadata) |
+| `POST /api/v1/predictions/delay` | ~30 ms (XGBoost classifier + regressor) |
 | `POST /api/v1/scheduling/apply-headway/{id}` | ~70 ms |
 | `GET /api/v1/analytics/overview` | ~40 ms |
+| `GET /api/v1/analytics/insights` | ~150 ms (recs + patterns + outlook) |
 
 ## 3. Real-Time Layer
 
@@ -89,9 +103,10 @@ line/schedule level delay target.
 | Dataset | Size |
 |---|---|
 | Ridership records | 14,400 rows (10 stations × 24 h × 60 days) |
-| Ticketing events (Mongo) | 20,000 generated / 5,000 seeded per run |
+| Ticketing events (Mongo) | 50,000 generated / 5,000 seeded per run |
 | Schedules | ~170 active timetable entries |
 | Heatmap grid | 240 points per render |
+| Kaggle coverage | 7/7 scripts (Seoul, Hangzhou, NJ + NYC, TfL, Beijing, Railway2015) |
 
 ## 5. Scalability Notes
 

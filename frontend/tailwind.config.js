@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: "class",
   content: ["./pages/**/*.{js,jsx}", "./components/**/*.{js,jsx}"],
   theme: {
     extend: {
@@ -17,6 +18,12 @@ module.exports = {
           900: "#1a388e",
           950: "#152556",
         },
+        slate: {
+          950: "#090d16",
+          900: "#0f172a",
+          850: "#131d33",
+          800: "#1e293b",
+        },
       },
       fontFamily: {
         sans: [
@@ -30,10 +37,30 @@ module.exports = {
         ],
       },
       boxShadow: {
-        card: "0 1px 3px rgba(15,23,42,.08), 0 1px 2px rgba(15,23,42,.04)",
-        pop: "0 10px 30px rgba(15,23,42,.12)",
+        card: "0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04)",
+        pop: "0 10px 30px rgba(0,0,0,.25)",
+        glow: "0 0 20px rgba(29, 98, 241, 0.35)",
+        "glow-emerald": "0 0 20px rgba(16, 185, 129, 0.35)",
+        "glow-rose": "0 0 20px rgba(244, 63, 94, 0.35)",
+        "glow-amber": "0 0 20px rgba(245, 158, 11, 0.35)",
       },
+      animation: {
+        "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "radar-spin": "radar 4s linear infinite",
+        "float": "float 3s ease-in-out infinite",
+      },
+      keyframes: {
+        radar: {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-6px)" },
+        }
+      }
     },
   },
   plugins: [],
 };
+

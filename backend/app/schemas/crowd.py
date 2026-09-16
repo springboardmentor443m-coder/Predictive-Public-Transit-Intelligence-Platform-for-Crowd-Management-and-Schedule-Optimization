@@ -33,3 +33,11 @@ class StationHistoryPoint(BaseModel):
     exits: int
     occupancy: int
     congestion_level: str
+
+
+class CrowdIngestRequest(BaseModel):
+    station_id: str
+    entries: int = 0
+    exits: int = 0
+    occupancy: int = 0
+    timestamp: Optional[datetime] = None

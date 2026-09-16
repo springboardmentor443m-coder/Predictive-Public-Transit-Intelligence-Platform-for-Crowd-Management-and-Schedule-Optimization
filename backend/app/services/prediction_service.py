@@ -79,6 +79,14 @@ def forecast_demand(station_id: str | None = None, hours: int = 12, db=None) -> 
 
 
 def smart_recommendations(db=None):
+    if db is None:
+        from app.core.database import SessionLocal
+
+        db = SessionLocal()
+        try:
+            return scheduling_service.get_optimization_recommendations(db)
+        finally:
+            db.close()
     return scheduling_service.get_optimization_recommendations(db)
 
 
@@ -129,8 +137,6 @@ def _compute_patterns(db, feat) -> list[dict]:
         }
         sorted_hours = sorted(avg, key=lambda h: avg[h], reverse=True)
         peak_hour = sorted_hours[0]
-        am_peak = min(sorted_hours[:12], key=lambda h: -avg[h]) if recs else 8
-        pm_peak = min(sorted_hours[12:], key=lambda h: -avg[h]) if recs else 17
         weekend_factor = (
             round((sum(weekend_vals) / len(weekend_vals)) / max(1e-6, sum(weekday_vals) / len(weekday_vals)), 2)
             if weekend_vals and weekday_vals

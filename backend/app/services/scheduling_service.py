@@ -45,7 +45,6 @@ def get_optimization_recommendations(db: Session) -> list[dict]:
             .first()
         )
         current_headway = schedule_row.headway_min if schedule_row else 6
-        peak_prob = feat.PEAK_MULTIPLIER.get(base_hour, 1.0) if weekday < 5 else 1.0
         baseline_entries = int(feat.demand_base_entries(base_hour) * (1.15 if base_hour in feat.PEAK_MULTIPLIER else 1.0) * (1.0 if weekday < 5 else feat.WEEKEND_FACTOR))
         recommended_headway = compute_recommended_headway(baseline_entries, TRAIN_CAPACITY_DEFAULT)
 
