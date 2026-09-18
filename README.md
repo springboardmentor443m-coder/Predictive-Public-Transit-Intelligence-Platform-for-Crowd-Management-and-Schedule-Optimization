@@ -60,36 +60,94 @@ git push origin your-name
 ## Vijaya Sree Progress Update
 
 ### Completed
-- Dataset Selection (NYC Subway Traffic)
-- Data Cleaning
-- Feature Engineering
-- Exploratory Data Analysis
+- Dataset Selection (NYC Subway Traffic 2017–2021)
+- Data Cleaning & Preprocessing
+- Feature Engineering (Temporal & Spatial Variables)
+- Exploratory Data Analysis (`01_EDA.ipynb`)
+- **Target Leakage Investigation & Prevention Strategy**
+- **Machine Learning Model Training & Benchmarking** (Decision Tree, Random Forest, XGBoost)
+- **Automated Model Selection & Serialization** (`models/congestion_model.pkl`)
+- **Real-Time Prediction & Recommendation Engine** (`src/prediction.py`)
+- **Model Training Walkthrough Notebook** (`notebooks/02_Model_Training.ipynb`)
 
-### Features Created
-- hour
-- day
-- month
-- year
-- day_of_week
-- is_weekend
-- is_peak_hour
-- Total_Traffic
-- Congestion_Level
+---
 
-### Files Added
+### Machine Learning Model Evaluation & Comparison
 
+Models were trained and evaluated using stratified 80/20 train-test splits on clean, non-leaked features (150,000 balanced records):
+
+| Model | Accuracy | F1 (Weighted) | Precision (Weighted) | Recall (Weighted) | Training Time |
+|---|---|---|---|---|---|
+| **Decision Tree (Baseline)** | 87.64% | 0.8760 | 0.8761 | 0.8764 | 0.88s |
+| **Random Forest (Selected)** | **88.07%** | **0.8799** | **0.8801** | **0.8807** | 8.14s |
+| **XGBoost Classifier** | 86.05% | 0.8594 | 0.8590 | 0.8605 | 6.83s |
+
+**Automated Selection**: **Random Forest Classifier** achieved the highest weighted F1 Score (**0.8799**) and highest accuracy (**88.07%**), outperforming the baseline Decision Tree and XGBoost while demonstrating exceptional generalization across all 3 congestion tiers:
+- **High Congestion**: Precision: 0.9072, Recall: 0.9496, F1: 0.9279
+- **Low Congestion**: Precision: 0.8930, Recall: 0.8373, F1: 0.8643
+- **Medium Congestion**: Precision: 0.8324, Recall: 0.8174, F1: 0.8248
+
+---
+
+### Target Leakage Prevention Strategy
+
+- **Observation**: `Total_Traffic` is mathematically defined as `Entries + Exits`, and `Congestion_Level` was defined directly from the 33rd and 66th quantiles of `Total_Traffic`.
+- **Leakage Experiment**:
+  - Model A (Clean: Temporal + Station Features): **87.08%** Accuracy.
+  - Model B (Leaked: Temporal + Station + Entries + Exits): **99.15%** Accuracy.
+- **Decision**: In real-world transit operations, future passenger entry/exit numbers are unavailable in advance. Feeding `Total_Traffic`, `Entries`, or `Exits` into the model causes target leakage. Therefore, the production model strictly relies on scheduled temporal and station coordinates (`hour`, `day_of_week`, `is_peak_hour`, `Latitude`, `Longitude`, `Borough`, `Structure`, `Stop Name`).
+
+---
+
+### Top Feature Importances (Random Forest)
+
+1. **`hour` (27.99%)**: Captures major peak commuting windows (morning rush 8–9 AM, evening rush 5–7 PM) vs. overnight minimums.
+2. **`Latitude` (18.52%) & `Longitude` (17.04%)**: Spatial positioning distinguishes high-density Manhattan commercial corridors from outer residential terminals.
+3. **`Stop Name` (13.17%)**: Station-specific passenger capacity and major transfer hubs (e.g., Grand Central, Times Square).
+4. **`Structure` (5.24%) & `day_of_week` (4.35%)**: Underground subway hubs vs elevated stations, and weekday vs weekend commuting dynamics.
+
+---
+
+### Files Added & Updated
+
+```text
 src/
-- data_cleaning.py
-- feature_engineering.py
-- train_model.py
-- prediction.py
-- utils.py
+├── data_cleaning.py          # Data ingestion and deduplication
+├── feature_engineering.py    # Temporal and congestion feature extraction
+├── utils.py                  # Data loading, validation, encoding, metrics, plots, persistence
+├── train_model.py            # Training pipeline, leakage experiment, model comparison & export
+└── prediction.py             # Inference engine (single, batch, confidence, recommendations)
+
+models/
+├── congestion_model.pkl      # Production model bundle (model, encoders, metadata)
+└── model.pkl                 # Compatibility alias
+
+reports/figures/
+├── confusion_matrix.png      # Confusion matrix heatmap for the selected model
+└── feature_importance.png    # Feature importance horizontal bar chart
 
 notebooks/
-- 01_EDA.ipynb
+├── 01_EDA.ipynb              # Exploratory data analysis
+└── 02_Model_Training.ipynb   # Model training, comparison, leakage analysis, and evaluation
+```
+
+---
+
+### How to Run
+
+1. **Train and compare models**:
+   ```bash
+   python src/train_model.py
+   ```
+
+2. **Run real-time prediction and recommendations**:
+   ```bash
+   python src/prediction.py
+   ```
+
+---
 
 ### Upcoming
-- Random Forest Model Training
-- Traffic Forecasting
-- Dashboard Development
-- FastAPI Integration
+- Traffic Forecasting (Time-Series / Demand Estimation)
+- Streamlit Transit Intelligence Dashboard
+- FastAPI Integration & REST API Endpoints
