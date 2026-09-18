@@ -69,6 +69,7 @@ git push origin your-name
 - **Automated Model Selection & Serialization** (`models/congestion_model.pkl`)
 - **Real-Time Prediction & Recommendation Engine** (`src/prediction.py`)
 - **Model Training Walkthrough Notebook** (`notebooks/02_Model_Training.ipynb`)
+- **FastAPI Real-Time Prediction Backend** (`api/main.py`)
 
 ---
 
@@ -111,6 +112,12 @@ Models were trained and evaluated using stratified 80/20 train-test splits on cl
 ### Files Added & Updated
 
 ```text
+api/
+└── main.py                   # FastAPI application with /predict, /health, Swagger docs
+
+dashboard/
+└── app.py                    # Multi-page interactive Streamlit transit intelligence dashboard
+
 src/
 ├── data_cleaning.py          # Data ingestion and deduplication
 ├── feature_engineering.py    # Temporal and congestion feature extraction
@@ -140,14 +147,26 @@ notebooks/
    python src/train_model.py
    ```
 
-2. **Run real-time prediction and recommendations**:
+2. **Run real-time prediction CLI**:
    ```bash
    python src/prediction.py
    ```
+
+3. **Launch FastAPI Backend Server**:
+   ```bash
+   uvicorn api.main:app --reload --port 8000
+   ```
+   - Interactive Swagger API Documentation: `http://127.0.0.1:8000/docs`
+   - ReDoc Documentation: `http://127.0.0.1:8000/redoc`
+   - Health Check: `http://127.0.0.1:8000/health`
+
+4. **Launch Interactive Streamlit Dashboard**:
+   ```bash
+   streamlit run dashboard/app.py
+   ```
+   - Dashboard UI: `http://localhost:8501`
 
 ---
 
 ### Upcoming
 - Traffic Forecasting (Time-Series / Demand Estimation)
-- Streamlit Transit Intelligence Dashboard
-- FastAPI Integration & REST API Endpoints
