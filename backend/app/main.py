@@ -1,10 +1,14 @@
 import sys
 import os
-import json
 from datetime import datetime
 from typing import List, Dict
 import asyncio
-from simulator import simulate_realtime_tick
+import json
+
+# Ensure the backend directory is in the path to import helper engines
+BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BACKEND_DIR not in sys.path:
+    sys.path.insert(0, BACKEND_DIR)
 
 import numpy as np
 import pandas as pd
@@ -13,9 +17,7 @@ from pydantic import BaseModel
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Ensure the backend directory is in the path to import helper engines
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+from simulator import simulate_realtime_tick
 from alert_manager import alert_hub
 from analytics_engine import analytics_engine
 
@@ -167,12 +169,23 @@ def analytics_summary():
     csv_path = os.path.join(os.path.dirname(__file__), "..", "data", "live_crowd_summary.csv")
     if os.path.exists(csv_path):
         df = pd.read_csv(csv_path)
+        flow_col = "net_flow" if "net_flow" in df.columns else ("net_occupancy" if "net_occupancy" in df.columns else None)
+        station_col = "station_name" if "station_name" in df.columns else ("station_id" if "station_id" in df.columns else None)
+        has_rows = len(df) > 0
+        
+        highest_station = "Central Station"
+        highest_net = 0
+        if has_rows and flow_col:
+            highest_net = int(df[flow_col].max())
+            if station_col:
+                highest_station = str(df.loc[df[flow_col].idxmax(), station_col])
+
         return {
             "total_stations": len(df),
-            "average_inflow": round(float(df["inflow"].mean()), 2) if "inflow" in df.columns else 0.0,
-            "average_outflow": round(float(df["outflow"].mean()), 2) if "outflow" in df.columns else 0.0,
-            "highest_crowd_station": str(df.loc[df["net_flow"].idxmax(), "station_name"]) if "net_flow" in df.columns else "Central Station",
-            "highest_net_occupancy": int(df["net_flow"].max()) if "net_flow" in df.columns else 0
+            "average_inflow": round(float(df["inflow"].mean()), 2) if ("inflow" in df.columns and has_rows) else 0.0,
+            "average_outflow": round(float(df["outflow"].mean()), 2) if ("outflow" in df.columns and has_rows) else 0.0,
+            "highest_crowd_station": highest_station,
+            "highest_net_occupancy": highest_net
         }
     return {}
 
@@ -286,3 +299,8 @@ def get_operational_kpis():
 def get_congestion_heatmap():
     """Returns station coordinates and congestion weights for heatmap rendering."""
     return {"points": analytics_engine.generate_congestion_heatmap()}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)
