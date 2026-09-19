@@ -11,6 +11,12 @@ from app.models import (
 from app.routes.crowd import router as crowd_router
 from app.routes.congestion import router as congestion_router
 from app.routes.auth import router as auth_router
+from app.routes.demand import router as demand_router
+from app.routes.peak_hours import router as peak_hours_router
+from app.routes.schedule import router as schedule_router
+from app.routes.delay import router as delay_router
+from app.routes.traffic import router as traffic_router
+from app.routes.recommendations import router as recommendations_router
 
 
 app = FastAPI(
@@ -38,6 +44,12 @@ app.add_middleware(
 app.include_router(crowd_router)
 app.include_router(congestion_router)
 app.include_router(auth_router)
+app.include_router(demand_router)
+app.include_router(peak_hours_router)
+app.include_router(schedule_router)
+app.include_router(delay_router)
+app.include_router(traffic_router)
+app.include_router(recommendations_router)
 
 
 @app.get("/")

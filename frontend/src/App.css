@@ -734,3 +734,62 @@ footer {
   border-radius: 50%;
   background: #22c55e;
 }
+.page-container {
+  padding: 32px;
+}
+
+.page-container h1 {
+  margin-bottom: 32px;
+}
+
+.dashboard-card {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.dashboard-card h2 {
+  margin-bottom: 20px;
+}
+
+.data-row {
+  display: grid;
+  grid-template-columns: 100px 100px 1fr;
+  gap: 20px;
+  padding: 12px 0;
+  border-bottom: 1px solid #1f2937;
+  align-items: center;
+}
+
+.data-row span:last-child {
+  text-align: right;
+}
+
+@media (max-width: 800px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.dashboard-card p {
+  margin-top: 16px;
+  line-height: 1.6;
+}
+
+.dashboard-card .data-row span:nth-child(2) {
+  min-width: 0;
+  line-height: 1.5;
+}
+
+.dashboard-card:has(h2:first-child) {
+  min-width: 0;
+}
+
+.dashboard-card:nth-child(4) .data-row {
+  grid-template-columns: 30px 1fr;
+  text-align: left;
+}
+
+.dashboard-card:nth-child(4) .data-row span:nth-child(2) {
+  text-align: left;
+}
