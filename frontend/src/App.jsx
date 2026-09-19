@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Login from "./pages/Login";
 import CrowdMonitoring from "./pages/CrowdMonitoring";
 import Congestion from "./pages/Congestion";
+import M2Dashboard from "./pages/M2Dashboard";
 
 import {
   getStoredUser,
@@ -539,10 +540,10 @@ function App() {
                 ? "nav-item active"
                 : "nav-item"
             }
-            onClick={() => setActivePage("alerts")}
+            onClick={() => setActivePage("m2")}
           >
-            <span>🚨</span>
-            Alerts
+            <span>🤖</span>
+            M2 AI Analytics
           </button>
 
 
@@ -590,6 +591,8 @@ function App() {
           <Congestion />
         )}
 
+
+        {activePage === "m2" && <M2Dashboard />}
 
         {activePage === "alerts" && (
           <div className="page-content">
