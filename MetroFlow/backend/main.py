@@ -144,3 +144,33 @@ def database_test():
             "status": "error",
             "message": str(e),
         }
+
+@app.get("/analytics")
+def get_analytics():
+    import pandas as pd
+
+    data_path = "../datasets/raw/station-hourly.csv"
+
+    df = pd.read_csv(data_path, sep=";")
+
+    total_ridership = int(df["Ridership"].sum())
+    total_stations = int(df["Station"].nunique())
+
+    busiest_station = (
+        df.groupby("Station")["Ridership"]
+        .sum()
+        .idxmax()
+    )
+
+    peak_hour = int(
+        df.groupby("Hour")["Ridership"]
+        .sum()
+        .idxmax()
+    )
+
+    return {
+        "total_ridership": total_ridership,
+        "total_stations": total_stations,
+        "busiest_station": busiest_station,
+        "peak_hour": peak_hour
+    }

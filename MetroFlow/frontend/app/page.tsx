@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type PredictionResponse = {
   station: string;
@@ -11,15 +11,40 @@ type PredictionResponse = {
   recommendation: string;
 };
 
+type AnalyticsResponse = {
+  total_ridership: number;
+  total_stations: number;
+  busiest_station: string;
+  peak_hour: number;
+};
+
 export default function Home() {
+  const [result, setResult] = useState<PredictionResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
   const [station, setStation] = useState("Attiguppe");
   const [hour, setHour] = useState(18);
   const [dayOfWeek, setDayOfWeek] = useState(1);
   const [currentRidership, setCurrentRidership] = useState(100);
+  useEffect(() => {
+  const fetchAnalytics = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:8000/analytics");
 
-  const [result, setResult] = useState<PredictionResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+      if (!response.ok) {
+        throw new Error("Failed to fetch analytics");
+      }
+
+      const data: AnalyticsResponse = await response.json();
+      setAnalytics(data);
+    } catch (err) {
+      console.error("Analytics fetch error:", err);
+    }
+  };
+
+  fetchAnalytics();
+}, []);
 
   const predictRidership = async () => {
     setLoading(true);
@@ -97,6 +122,50 @@ export default function Home() {
 
       <section className="content-grid">
         <div className="card input-card">
+        {analytics && (
+  <section className="mb-8">
+    <div className="mb-4">
+      <h2 className="text-2xl font-bold text-slate-800">
+        Metro Analytics
+      </h2>
+      <p className="text-slate-500">
+        Insights from Bengaluru Metro ridership data
+      </p>
+    </div>
+
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      
+      <div className="rounded-2xl bg-white p-6 shadow-sm">
+        <p className="text-sm text-slate-500">Total Ridership</p>
+        <p className="mt-2 text-3xl font-bold text-slate-800">
+          {analytics.total_ridership.toLocaleString()}
+        </p>
+      </div>
+
+      <div className="rounded-2xl bg-white p-6 shadow-sm">
+        <p className="text-sm text-slate-500">Metro Stations</p>
+        <p className="mt-2 text-3xl font-bold text-slate-800">
+          {analytics.total_stations}
+        </p>
+      </div>
+
+      <div className="rounded-2xl bg-white p-6 shadow-sm">
+        <p className="text-sm text-slate-500">Busiest Station</p>
+        <p className="mt-2 text-lg font-bold text-slate-800">
+          {analytics.busiest_station}
+        </p>
+      </div>
+
+      <div className="rounded-2xl bg-white p-6 shadow-sm">
+        <p className="text-sm text-slate-500">Peak Hour</p>
+        <p className="mt-2 text-3xl font-bold text-slate-800">
+          {analytics.peak_hour}:00
+        </p>
+      </div>
+
+    </div>
+  </section>
+)}
           <h3>Prediction Input</h3>
 
           <label>Metro Station</label>
