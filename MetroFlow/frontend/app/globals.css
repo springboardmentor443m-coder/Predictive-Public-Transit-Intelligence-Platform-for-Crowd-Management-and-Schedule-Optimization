@@ -1,0 +1,285 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f4f7fb;
+  color: #172033;
+}
+
+body {
+  min-height: 100vh;
+}
+
+.dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #2563eb;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 42px;
+  font-weight: 800;
+}
+
+.subtitle {
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 16px;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #047857;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.hero {
+  padding: 28px;
+  border-radius: 18px;
+  background: #172554;
+  color: white;
+  margin-bottom: 24px;
+}
+
+.hero h2 {
+  margin: 0 0 8px;
+  font-size: 25px;
+}
+
+.hero p {
+  margin: 0;
+  color: #cbd5e1;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 24px;
+}
+
+.card {
+  background: white;
+  border-radius: 18px;
+  padding: 26px;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.07);
+}
+
+.card h3 {
+  margin-top: 0;
+  font-size: 20px;
+}
+
+.input-card label {
+  display: block;
+  margin-top: 18px;
+  margin-bottom: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.input-card input,
+.input-card select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  font-size: 15px;
+  background: white;
+}
+
+.input-card button {
+  width: 100%;
+  margin-top: 24px;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  background: #2563eb;
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.input-card button:hover {
+  background: #1d4ed8;
+}
+
+.input-card button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.error {
+  margin-top: 15px;
+  color: #dc2626;
+  font-size: 14px;
+}
+
+.empty-state {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: #64748b;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+}
+
+.result-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.result-label {
+  margin: 0 0 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 1px;
+}
+
+.result-top h2 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.crowd {
+  padding: 9px 15px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.crowd.low {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.crowd.medium {
+  background: #fef3c7;
+  color: #a16207;
+}
+
+.crowd.high {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.crowd.very-high {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.metric {
+  padding: 18px;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.metric span {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.metric strong {
+  font-size: 24px;
+}
+
+.recommendation {
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 12px;
+  background: #eff6ff;
+  border-left: 4px solid #2563eb;
+}
+
+.recommendation p {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #2563eb;
+}
+
+.recommendation h4 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+footer {
+  text-align: center;
+  margin-top: 30px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+@media (max-width: 800px) {
+  .dashboard {
+    padding: 20px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+}
