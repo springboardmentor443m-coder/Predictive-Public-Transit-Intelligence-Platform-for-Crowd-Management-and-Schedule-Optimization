@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -5,7 +6,7 @@ from sqlalchemy import select
 from app.database import get_db
 from app.models.alert import Alert
 from app.models.user import User
-from app.schemas.alert import AlertResponse
+from app.schemas.alert import AlertResponse, AlertBroadcastRequest
 from app.core.dependencies import require_roles
 
 router = APIRouter(prefix="/alerts", tags=["Alerts"])
@@ -69,3 +70,38 @@ def resolve_alert(
     db.commit()
     db.refresh(alert)
     return alert
+
+
+@router.post(
+    "/broadcast",
+    response_model=AlertResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Broadcast emergency priority alert (Admin/Operator only)",
+    description=(
+        "Publishes a network-wide or station-specific emergency broadcast alert. "
+        "Requires JWT token with 'admin' or 'operator' role."
+    ),
+    responses={
+        201: {"description": "Broadcast alert published successfully"},
+        401: {"description": "Unauthenticated: Missing or invalid JWT bearer token"},
+        403: {"description": "Forbidden: User does not hold 'admin' or 'operator' role"},
+    }
+)
+def broadcast_alert(
+    request: AlertBroadcastRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(["admin", "operator"])),
+):
+    now = datetime.now(timezone.utc)
+    new_alert = Alert(
+        station_code=request.station_code,
+        alert_type=request.alert_type or "broadcast",
+        severity=request.severity.lower(),
+        message=f"[{current_user.username.upper()} BROADCAST] {request.message}",
+        resolved=False,
+        created_at=now,
+    )
+    db.add(new_alert)
+    db.commit()
+    db.refresh(new_alert)
+    return new_alert

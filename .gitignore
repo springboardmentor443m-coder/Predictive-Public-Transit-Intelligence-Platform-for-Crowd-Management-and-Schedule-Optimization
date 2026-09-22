@@ -6,6 +6,7 @@
 # Heavy Machine Learning Models (Exceeding GitHub 100MB file limit)
 crowd_prediction_rf_compressed.pkl
 crowd_compressed_rf_compressed.pkl
+eval/*.pkl
 *.joblib
 *.h5
 *.pt

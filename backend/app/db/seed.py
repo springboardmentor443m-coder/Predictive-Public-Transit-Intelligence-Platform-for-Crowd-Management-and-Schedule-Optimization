@@ -463,37 +463,66 @@ def seed_database(db: Session, force: bool = False):
     else:
         print(f"      Alerts already present ({existing_alerts_count} rows).")
 
-    # 5. Populate Default Users
+    # 5. Populate Seed Users from Environment Secrets (No Hardcoded Passwords)
+    import os
+    import secrets
     from app.models.user import User
     from app.core.security import get_password_hash
-    print("\n[5/5] Populating default operator and admin accounts...")
-    existing_users = {u.username: u for u in db.execute(select(User)).scalars().all()}
+    from app.core.config import settings
+
+    print("\n[5/5] Populating user accounts from environment variables...")
+
+    admin_user = os.getenv("SEED_ADMIN_USERNAME") or getattr(settings, "SEED_ADMIN_USERNAME", None) or "admin"
+    admin_pass = os.getenv("SEED_ADMIN_PASSWORD") or getattr(settings, "SEED_ADMIN_PASSWORD", None)
+
+    operator_user = os.getenv("SEED_OPERATOR_USERNAME") or getattr(settings, "SEED_OPERATOR_USERNAME", None) or "operator"
+    operator_pass = os.getenv("SEED_OPERATOR_PASSWORD") or getattr(settings, "SEED_OPERATOR_PASSWORD", None)
+
+    seed_accounts = []
     
-    default_users = [
-        {"username": "operator", "password": "operatorpassword", "role": "operator"},
-        {"username": "operator123", "password": "operator123", "role": "operator"},
-        {"username": "admin", "password": "adminpassword", "role": "admin"},
-        {"username": "admin123", "password": "admin123", "role": "admin"},
-        {"username": "station_manager", "password": "adminpassword", "role": "admin"},
-    ]
-
-    new_users = []
-    for u in default_users:
-        if u["username"] not in existing_users:
-            new_users.append(User(
-                username=u["username"],
-                hashed_password=get_password_hash(u["password"]),
-                role=u["role"]
-            ))
-            existing_users[u["username"]] = True
-
-    if new_users:
-        db.add_all(new_users)
-        db.commit()
-        inserted_counts["users"] = len(new_users)
-        print(f"      Inserted {len(new_users)} default user accounts.")
+    if admin_pass:
+        seed_accounts.append({"username": admin_user, "password": admin_pass, "role": "admin"})
     else:
-        print(f"      Default users already exist ({len(existing_users)} users).")
+        ephemeral_admin_pass = secrets.token_urlsafe(16)
+        print(f"      [WARNING] SEED_ADMIN_PASSWORD not set in environment. Generated ephemeral password for {admin_user}: {ephemeral_admin_pass}")
+        seed_accounts.append({"username": admin_user, "password": ephemeral_admin_pass, "role": "admin"})
+
+    if operator_pass:
+        seed_accounts.append({"username": operator_user, "password": operator_pass, "role": "operator"})
+    else:
+        ephemeral_op_pass = secrets.token_urlsafe(16)
+        print(f"      [WARNING] SEED_OPERATOR_PASSWORD not set in environment. Generated ephemeral password for {operator_user}: {ephemeral_op_pass}")
+        seed_accounts.append({"username": operator_user, "password": ephemeral_op_pass, "role": "operator"})
+
+    # Purge legacy default insecure accounts from previous seeds (admin123, operator123, station_manager)
+    legacy_usernames = ["admin123", "operator123", "station_manager"]
+    legacy_users_to_remove = db.execute(select(User).where(User.username.in_(legacy_usernames))).scalars().all()
+    if legacy_users_to_remove:
+        for lu in legacy_users_to_remove:
+            db.delete(lu)
+        db.commit()
+        print(f"      Purged {len(legacy_users_to_remove)} insecure legacy default accounts from database.")
+
+    existing_users = {u.username: u for u in db.execute(select(User)).scalars().all()}
+    new_users_count = 0
+    
+    for sa in seed_accounts:
+        uname = sa["username"]
+        if uname in existing_users:
+            user_obj = existing_users[uname]
+            user_obj.hashed_password = get_password_hash(sa["password"])
+            user_obj.role = sa["role"]
+        else:
+            db.add(User(
+                username=uname,
+                hashed_password=get_password_hash(sa["password"]),
+                role=sa["role"]
+            ))
+            new_users_count += 1
+            
+    db.commit()
+    inserted_counts["users"] = new_users_count
+    print(f"      Synced {len(seed_accounts)} environment-driven user accounts ({new_users_count} new).")
 
     # Summary table
     print("\n=======================================================")

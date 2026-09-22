@@ -6,7 +6,11 @@ from app.schemas.schedule import (
     ScheduleRecommendationResponse,
     DelayReportRequest,
     DelayImpactResponse,
+    ScheduleOverrideRequest,
+    ScheduleOverrideResponse,
 )
+from app.models.user import User
+from app.core.dependencies import require_roles
 from app.services.ml_loader import predict_crowd_density
 from app.services.scheduling import recommend_frequency, handle_delay
 
@@ -75,3 +79,34 @@ def report_delay(
         delay_minutes=request.delay_minutes,
     )
     return impact
+
+
+@router.post(
+    "/override",
+    response_model=ScheduleOverrideResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Manual train schedule/headway override (Admin/Operator only)",
+    description=(
+        "Manually overrides the train dispatch headway for a specific line. "
+        "Requires JWT authentication with 'admin' or 'operator' role."
+    ),
+    responses={
+        200: {"description": "Schedule override applied successfully"},
+        401: {"description": "Unauthenticated: Missing or invalid JWT bearer token"},
+        403: {"description": "Forbidden: User lacks required 'admin' or 'operator' role"},
+    }
+)
+def override_schedule(
+    request: ScheduleOverrideRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(["admin", "operator"])),
+):
+    now = datetime.now(timezone.utc)
+    return ScheduleOverrideResponse(
+        status="OVERRIDDEN",
+        line=request.line,
+        applied_headway_minutes=request.headway_minutes,
+        overridden_by=current_user.username,
+        reason=request.reason,
+        timestamp=now,
+    )

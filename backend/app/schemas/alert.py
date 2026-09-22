@@ -14,3 +14,11 @@ class AlertResponse(BaseModel):
     resolved: bool = Field(..., description="Whether the alert has been resolved")
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class AlertBroadcastRequest(BaseModel):
+    """Request schema for emergency broadcast alerts."""
+    message: str = Field(..., min_length=3, description="Broadcast alert message text")
+    severity: str = Field("critical", description="Alert severity: 'low', 'medium', 'high', 'critical'")
+    station_code: Optional[str] = Field(None, description="Optional target station code (None for network-wide)")
+    alert_type: Optional[str] = Field("broadcast", description="Alert type category (e.g. 'broadcast', 'emergency')")

@@ -38,3 +38,21 @@ class DelayImpactResponse(BaseModel):
     initial_delay_minutes: int = Field(..., description="Initial delay logged at origin station")
     logged_at: datetime = Field(..., description="Timestamp of delay event")
     affected_stations: List[DownstreamAffectedStation] = Field(..., description="List of downstream impacted stations")
+
+
+class ScheduleOverrideRequest(BaseModel):
+    """Request payload for manual schedule and headway override."""
+    line: str = Field(..., description="Transit line identifier (e.g. 'Line 2')")
+    headway_minutes: float = Field(..., ge=1.0, le=30.0, description="Override headway frequency in minutes")
+    reason: str = Field(..., min_length=3, description="Operational justification for the manual override")
+    station_code: str | None = Field(None, description="Optional target station code")
+
+
+class ScheduleOverrideResponse(BaseModel):
+    """Response payload confirming applied manual schedule override."""
+    status: str = Field("OVERRIDDEN", description="Override status")
+    line: str = Field(..., description="Target transit line")
+    applied_headway_minutes: float = Field(..., description="New headway frequency applied")
+    overridden_by: str = Field(..., description="Username of operator/admin who authorized override")
+    reason: str = Field(..., description="Operational justification")
+    timestamp: datetime = Field(..., description="Timestamp of override")

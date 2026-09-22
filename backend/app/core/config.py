@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 1 day
 
+    # Seed Credentials (Environment Variable Driven)
+    SEED_ADMIN_USERNAME: str = "admin"
+    SEED_ADMIN_PASSWORD: str = ""
+    SEED_OPERATOR_USERNAME: str = "operator"
+    SEED_OPERATOR_PASSWORD: str = ""
+
     # Model
     MODEL_PATH: str = "../crowd_prediction_rf_compressed.pkl"
 
