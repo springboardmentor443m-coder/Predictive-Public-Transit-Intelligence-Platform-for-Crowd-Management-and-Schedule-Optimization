@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+.env.local
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Database (auto-generated)
+*.db
+*.sqlite
+*.sqlite3
+
+# Dataset docs (large files)
+DATASET_&_DOCS/
+*.xlsx
+*.xls
+
+# Temp
+tmp/
+temp/
+
+# Frontend build
+frontend/build/
+frontend/dist/
+frontend/.vite/

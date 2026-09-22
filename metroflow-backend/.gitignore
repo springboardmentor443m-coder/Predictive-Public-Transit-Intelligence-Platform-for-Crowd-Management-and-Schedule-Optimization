@@ -1,0 +1,19 @@
+# Node dependencies & builds
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+.venv/
+venv/
+ENV/
+
+# IDE & System
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
