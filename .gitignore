@@ -48,3 +48,12 @@ temp/
 frontend/build/
 frontend/dist/
 frontend/.vite/
+
+# Utility scripts (not project code)
+*.bat
+start_*.py
+clean.py
+push.py
+commit.py
+start.py
+
