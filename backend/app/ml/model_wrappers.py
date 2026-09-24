@@ -68,19 +68,26 @@ class CrowdModel:
         return bool(self.stations) and self.trained_on in _KAGGLE_CITIES
 
     def _feature_rows(
-        self, hours: list[int], weekday: int, station: dict | None = None
+        self, hours: list[int], weekday, station: dict | None = None
     ) -> np.ndarray:
+        # `weekday` may be a single int (uniform) or a per-row sequence so
+        # multi-day forecast windows resolve the correct day-of-week per hour.
         sid = (station or {}).get("id")
         cap = (station or {}).get("capacity_per_hour")
+        wd_list = (
+            list(weekday)
+            if isinstance(weekday, (list, tuple, np.ndarray))
+            else [weekday] * len(hours)
+        )
         if self.is_kaggle:
             code = registry.city_station_code(sid)
             return np.array([
-                feat.kaggle_row_features(h, weekday, code, cap, self.stations, self.cap_norm_scale)
-                for h in hours
+                feat.kaggle_row_features(h, wd, code, cap, self.stations, self.cap_norm_scale)
+                for h, wd in zip(hours, wd_list)
             ])
-        return np.array([feat.row_features(h, weekday, sid, cap) for h in hours])
+        return np.array([feat.row_features(h, wd, sid, cap) for h, wd in zip(hours, wd_list)])
 
-    def _predict_raw(self, X: np.ndarray, hours: list[int], weekday: int, capacity_per_hour: float | None = None) -> np.ndarray:
+    def _predict_raw(self, X: np.ndarray, hours: list[int], weekday, capacity_per_hour: float | None = None) -> np.ndarray:
         if self.artifact is not None:
             try:
                 model = self.artifact["model"] if isinstance(self.artifact, dict) else self.artifact
@@ -88,6 +95,12 @@ class CrowdModel:
             except Exception as e:
                 logger.warning(f"crowd model predict failed ({e}); using baseline")
         cap_ratio = (capacity_per_hour or 520.0) / 520.0
+        if isinstance(weekday, (list, tuple, np.ndarray)):
+            return np.array([
+                feat.station_baseline_occupancy_pct(h) * (feat.WEEKEND_FACTOR if wd >= 5 else 1.0)
+                * cap_ratio
+                for h, wd in zip(hours, list(weekday))
+            ])
         return np.array([
             feat.station_baseline_occupancy_pct(h) * (feat.WEEKEND_FACTOR if weekday >= 5 else 1.0)
             * cap_ratio
@@ -125,6 +138,40 @@ class CrowdModel:
             })
         return results
 
+    def predict_period(
+        self,
+        start_dt: datetime,
+        hours_ahead: int = 12,
+        station: dict | None = None,
+    ) -> list[dict]:
+        """Forecast crowd occupancy for an arbitrary window starting at
+        `start_dt` (any date/time). day-of-week is resolved per hour so the
+        window can span multiple days (weekday vs weekend are handled
+        correctly by the trained models)."""
+        start_dt = start_dt.replace(minute=0, second=0, microsecond=0)
+        dts = [start_dt + timedelta(hours=i) for i in range(hours_ahead)]
+        hours = [d.hour for d in dts]
+        weekdays = [d.weekday() for d in dts]
+        cap = (station or {}).get("capacity_per_hour")
+        X = self._feature_rows(hours, weekdays, station)
+        preds = self._predict_raw(X, hours, weekdays, cap)
+
+        results = []
+        for i, p in enumerate(preds):
+            pct = float(np.clip(p, 0.05, 1.2)) * 100.0
+            lower = max(0.0, pct - self.residual_std * 100)
+            upper = min(100.0, pct + self.residual_std * 100)
+            results.append({
+                "hour": hours[i],
+                "date": dts[i].strftime("%Y-%m-%d"),
+                "predicted_occupancy_pct": round(pct, 2),
+                "lower": round(lower, 2),
+                "upper": round(upper, 2),
+                "congestion_level": feat.congestion_from_pct(pct / 100.0),
+                "timestamp": dts[i].isoformat() + "Z",
+            })
+        return results
+
 
 class DemandForecaster:
     def __init__(self):
@@ -146,17 +193,22 @@ class DemandForecaster:
         return bool(self.stations) and self.trained_on in _KAGGLE_CITIES
 
     def _feature_rows(
-        self, hours: list[int], weekday: int, station: dict | None = None
+        self, hours: list[int], weekday, station: dict | None = None
     ) -> np.ndarray:
         sid = (station or {}).get("id")
         cap = (station or {}).get("capacity_per_hour")
+        wd_list = (
+            list(weekday)
+            if isinstance(weekday, (list, tuple, np.ndarray))
+            else [weekday] * len(hours)
+        )
         if self.is_kaggle:
             code = registry.city_station_code(sid)
             return np.array([
-                feat.kaggle_row_features(h, weekday, code, cap, self.stations, self.cap_norm_scale)
-                for h in hours
+                feat.kaggle_row_features(h, wd, code, cap, self.stations, self.cap_norm_scale)
+                for h, wd in zip(hours, wd_list)
             ])
-        return np.array([feat.row_features(h, weekday, sid, cap) for h in hours])
+        return np.array([feat.row_features(h, wd, sid, cap) for h, wd in zip(hours, wd_list)])
 
     def _predict(self, X: np.ndarray, hours: list[int], capacity_per_hour: float | None = None) -> np.ndarray:
         if self.artifact is not None:
@@ -201,6 +253,44 @@ class DemandForecaster:
                 "predicted_entries": entry_val,
                 "predicted_exits": exit_val,
                 "peak_probability": round(peak_prob, 3),
+            })
+        return results
+
+    def forecast_period(
+        self,
+        start_dt: datetime,
+        hours_ahead: int = 12,
+        station: dict | None = None,
+    ) -> list[dict]:
+        """Forecast gate demand for an arbitrary window starting at `start_dt`.
+        Day-of-week is resolved per hour (multi-day windows treat weekday vs
+        weekend correctly)."""
+        start_dt = start_dt.replace(minute=0, second=0, microsecond=0)
+        dts = [start_dt + timedelta(hours=i) for i in range(hours_ahead)]
+        hours = [d.hour for d in dts]
+        weekdays = [d.weekday() for d in dts]
+        cap = (station or {}).get("capacity_per_hour")
+        X = self._feature_rows(hours, weekdays, station)
+        entries_pred = self._predict(X, hours, cap)
+
+        results = []
+        for i, e in enumerate(entries_pred):
+            hr = hours[i]
+            wd = weekdays[i]
+            factor = 1.0 if self.is_kaggle else (1.5 if wd < 5 else 0.75)
+            entry_val = max(0, int(round(float(e) * factor)))
+            if self.is_kaggle:
+                exit_val = max(0, int(round(entry_val * 0.85)))
+            else:
+                exit_val = max(0, int(round(entry_val * feat.station_baseline_occupancy_pct(hr) * 0.9)))
+            peak_prob = min(1.0, feat.BASELINE_OCCUPANCY[hr] + (0.15 if hr in feat.PEAK_MULTIPLIER else 0.0))
+            results.append({
+                "hour": hr,
+                "date": dts[i].strftime("%Y-%m-%d"),
+                "predicted_entries": entry_val,
+                "predicted_exits": exit_val,
+                "peak_probability": round(peak_prob, 3),
+                "timestamp": dts[i].isoformat() + "Z",
             })
         return results
 

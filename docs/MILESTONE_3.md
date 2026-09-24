@@ -18,6 +18,26 @@
 - Frontend subscribes via `lib/socket.js`; Overview/Crowd pages update KPIs, station
   cards and heatmap tiles without refresh.
 
+## 1b. Real-Time Train Monitoring
+
+- **Live fleet layer** (`app/services/train_monitor.py`): derives telemetry per train
+  from the timetable engine — status (`in_transit` / `at_station` / `delayed` /
+  `awaiting_departure` / `in_depot` / `at_terminal` / `out_of_service`), position %
+  between stops, current/next station, ETA, headway, delay minutes, and a projected
+  `load_pct` from the cached crowd snapshots (`crowd:latest:{sid}`). 45 s dwell,
+  3 h lookback / 18 h lookahead schedule windows.
+- **Socket.IO extension**: the realtime loop now also broadcasts `train_update`
+  (global + per-train `train:{id}` rooms); clients join/leave with
+  `join_train` / `leave_train` room handlers.
+- **REST surface** (`app/api/v1/trains.py`): `GET /trains` (fleet list),
+  `GET /trains/live` (full live telemetry), `GET /trains/live/{train_id}`, and
+  `GET /trains/{train_id}/schedule` (upcoming stops).
+- **Per-train forecasts**: `GET /predictions/train/{train_id}?hours=N` returns the
+  expected crowd occupancy & passenger demand at each upcoming stop of the train.
+- Frontend: `pages/dashboard/trains.jsx` (live fleet cards, per-train detail KPIs,
+  upcoming-stops table + per-stop forecast chart), overview fleet strip on
+  `pages/dashboard/index.jsx`, and `lib/socket.js` `joinTrainRoom`/`leaveTrainRoom`.
+
 ## 2. Automated Alert System
 
 Rule engine in `app/services/alert_service.py::evaluate_alerts()`:
@@ -61,7 +81,8 @@ Rule engine in `app/services/alert_service.py::evaluate_alerts()`:
 
 | Criterion | Status |
 |---|---|
-| Real-time monitoring functional with live data feed | ✅ Socket.IO loop |
+| Real-time monitoring functional with live data feed | ✅ Socket.IO loop (crowd + train) |
+| Train position/status tracking meets PRD | ✅ /trains/live + train_update events |
 | Alert system triggers correctly under congestion scenarios | ✅ rule engine + tests |
 | Optimized schedules generated from AI predictions | ✅ optimization + apply endpoint |
 | Dashboard displays alerts and updated schedules | ✅ |

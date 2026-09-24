@@ -11,8 +11,9 @@ monitoring into one centralized application for smart transportation systems.
 |---|---|
 | User Management | Admin/operator login, role-based access control (RBAC), profile management |
 | Crowd Monitoring | Passenger density tracking (ticketing + sensor data), heatmaps, congestion monitoring, station-wise analytics, inflow/outflow analysis |
+| Train Monitoring | Live fleet position & status per train (in-transit / at-station / delayed...), position %, next stop, ETA, headway, projected load — streamed via Socket.IO with per-train rooms |
 | Scheduling Management | Train schedule CRUD, peak-hour optimization, frequency adjustment, delay handling |
-| AI Prediction | Crowd prediction models, passenger demand forecasting, traffic pattern analysis, smart recommendations |
+| AI Prediction | Crowd prediction & demand forecasting for any chosen date/time (`start_time`), per-train per-stop forecasts, traffic pattern analysis, smart recommendations |
 | Alert & Notification | Overcrowding alerts, delay notifications, emergency announcements, real-time updates (Socket.IO) |
 | Analytics Dashboard | Traffic analytics, station performance reports, operational monitoring, AI insight panels |
 
@@ -38,8 +39,8 @@ MetroFlow/
 │   │   ├── core/                 # config, security (JWT), database sessions
 │   │   ├── models/               # SQLAlchemy models (users, stations, trains, schedules, alerts, ridership)
 │   │   ├── schemas/              # Pydantic request/response schemas
-│   │   ├── api/v1/               # REST endpoints per module
-│   │   ├── services/             # business logic: crowd, scheduling, prediction, alerts, analytics, realtime
+│   │   ├── api/v1/               # REST endpoints per module (incl. trains, predictions)
+│   │   ├── services/             # business logic: crowd, scheduling, prediction, alerts, analytics, realtime, train_monitor
 │   │   └── ml/                   # feature engineering + model wrappers
 │   ├── scripts/
 │   │   ├── generate_data.py      # synthetic transportation datasets (CSV) -> data/
@@ -152,7 +153,7 @@ for measured model/API benchmarks, and `docs/DEPLOYMENT.md` for AWS/Azure/K8s de
 ```bash
 cd backend
 pip install -r requirements-dev.txt
-pytest tests -v        # API suite (41 tests) + model wrapper suite (7 tests)
+pytest tests -v        # API suite (49 tests) + model wrapper suite (7 tests)
 ```
 
 CI runs the same suite inside the built Docker image (Linux, pinned deps) plus

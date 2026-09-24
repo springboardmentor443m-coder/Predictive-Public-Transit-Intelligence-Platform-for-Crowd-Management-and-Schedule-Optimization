@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.ml.model_wrappers import get_crowd_model, get_delay_model, get_demand_model
 from app.services import scheduling_service
@@ -64,6 +64,28 @@ def predict_crowd(station_id: str | None = None, hours: int = 12, db=None) -> li
     return model.predict_hourly(base_hour, hours_ahead=hours, station=_station_ctx(db, station_id))
 
 
+def predict_crowd_at(
+    start_at: datetime | None = None,
+    station_id: str | None = None,
+    hours: int = 12,
+    db=None,
+) -> list[dict]:
+    """Forecast crowd occupancy for a user-selected date/time window. When
+    `start_at` is omitted it defaults to the current hour (same as predict_crowd)."""
+    if start_at is None:
+        return predict_crowd(station_id, hours, db)
+    model = get_crowd_model()
+    if db is None:
+        from app.core.database import SessionLocal
+
+        db = SessionLocal()
+        try:
+            return model.predict_period(start_at, hours_ahead=hours, station=_station_ctx(db, station_id))
+        finally:
+            db.close()
+    return model.predict_period(start_at, hours_ahead=hours, station=_station_ctx(db, station_id))
+
+
 def forecast_demand(station_id: str | None = None, hours: int = 12, db=None) -> list[dict]:
     model = get_demand_model()
     base_hour = datetime.utcnow().hour
@@ -76,6 +98,95 @@ def forecast_demand(station_id: str | None = None, hours: int = 12, db=None) -> 
         finally:
             db.close()
     return model.forecast_hourly(base_hour, hours_ahead=hours, station=_station_ctx(db, station_id))
+
+
+def forecast_demand_at(
+    start_at: datetime | None = None,
+    station_id: str | None = None,
+    hours: int = 12,
+    db=None,
+) -> list[dict]:
+    """Forecast gate demand for a user-selected date/time window."""
+    if start_at is None:
+        return forecast_demand(station_id, hours, db)
+    model = get_demand_model()
+    if db is None:
+        from app.core.database import SessionLocal
+
+        db = SessionLocal()
+        try:
+            return model.forecast_period(start_at, hours_ahead=hours, station=_station_ctx(db, station_id))
+        finally:
+            db.close()
+    return model.forecast_period(start_at, hours_ahead=hours, station=_station_ctx(db, station_id))
+
+
+def forecast_train(
+    train_id: str,
+    hours: int = 12,
+    db=None,
+    station_override_id: str | None = None,
+) -> list[dict] | None:
+    """Per-train forward forecast: for each upcoming scheduled stop, predict
+    platform crowd occupancy + gate demand from the trained models. Returns a
+    stop-level series for the next `hours` arrivals (None if train unknown)."""
+    from app.models.schedule import TrainSchedule
+    from app.models.station import Station
+    from app.models.train import Train
+
+    if db is None:
+        from app.core.database import SessionLocal
+
+        db = SessionLocal()
+        close = True
+    else:
+        close = False
+
+    try:
+        train = db.query(Train).filter(Train.id == train_id).first()
+        if train is None:
+            return None
+        now = datetime.utcnow()
+        horizon = now + timedelta(hours=hours)
+        stops = (
+            db.query(TrainSchedule)
+            .filter(
+                TrainSchedule.train_id == train_id,
+                TrainSchedule.arrival >= now,
+                TrainSchedule.arrival <= horizon,
+            )
+            .order_by(TrainSchedule.arrival.asc())
+            .all()
+        )
+        crowd_model = get_crowd_model()
+        demand_model = get_demand_model()
+        station_name = {s.id: s.name for s in db.query(Station).all()}
+
+        results = []
+        for stop in stops:
+            ctx = {"id": stop.station_id, "capacity_per_hour": stop.station.capacity_per_hour}
+            crowd = crowd_model.predict_period(stop.arrival, hours_ahead=1, station=_station_ctx(db, stop.station_id))
+            demand = demand_model.forecast_period(stop.arrival, hours_ahead=1, station=_station_ctx(db, stop.station_id))
+            cp = crowd[0] if crowd else {}
+            dp = demand[0] if demand else {}
+            results.append({
+                "station_id": stop.station_id,
+                "station_name": station_name.get(stop.station_id, stop.station_id),
+                "direction": stop.direction,
+                "arrival": stop.arrival.isoformat() + "Z",
+                "headway_min": stop.headway_min,
+                "status": stop.status,
+                "delay_min": stop.delay_min or 0,
+                "predicted_occupancy_pct": cp.get("predicted_occupancy_pct"),
+                "congestion_level": cp.get("congestion_level"),
+                "predicted_entries": dp.get("predicted_entries"),
+                "predicted_exits": dp.get("predicted_exits"),
+                "peak_probability": dp.get("peak_probability"),
+            })
+        return results
+    finally:
+        if close:
+            db.close()
 
 
 def smart_recommendations(db=None):

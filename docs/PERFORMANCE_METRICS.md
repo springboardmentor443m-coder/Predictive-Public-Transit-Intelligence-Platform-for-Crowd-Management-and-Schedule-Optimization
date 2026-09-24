@@ -81,6 +81,9 @@ line/schedule level delay target.
 | `POST /api/v1/crowd/ingest` | ~60 ms (persist + cache refresh) |
 | `GET /api/v1/crowd/heatmap` | ~60 ms (10 stations × 24 h = 240 cells) |
 | `GET /api/v1/predictions/crowd?hours=12` | ~80 ms (12 model inferences) |
+| `GET /api/v1/predictions/crowd?start_time=...&hours=72` | ~320 ms (72 inferences, multi-day weekday resolution) |
+| `GET /api/v1/predictions/train/{id}?hours=12` | ~120 ms (per-stop forecast across a train's route) |
+| `GET /api/v1/trains/live` | ~45 ms (schedule-derived fleet telemetry) |
 | `GET /api/v1/predictions/patterns` | ~120 ms (7-day aggregation) |
 | `GET /api/v1/predictions/model-info` | ~20 ms (artifact metadata) |
 | `POST /api/v1/predictions/delay` | ~30 ms (XGBoost classifier + regressor) |
@@ -93,7 +96,9 @@ line/schedule level delay target.
 | Metric | Value |
 |---|---|
 | Broadcast interval | 5 s (`crowd_update`) |
+| Train telemetry interval | 5 s (`train_update`, global + `train:{id}` rooms) |
 | Snapshot payload | 10 stations × {occupancy_pct, congestion_level, inflow, outflow} |
+| Fleet payload | per train × {status, position_pct, current/next station, ETA, headway, delay, load_pct} |
 | Alert dedup window | 15 min per (station, type) |
 | Alert push latency | same cycle as detection (≤ 5 s) |
 | Redis snapshot TTL | 30 s |

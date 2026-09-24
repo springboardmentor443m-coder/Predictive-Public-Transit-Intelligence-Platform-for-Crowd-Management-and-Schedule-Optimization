@@ -4,6 +4,7 @@ from collections import OrderedDict
 
 from app.services import socketio_state
 from app.services.crowd_service import get_all_live_snapshots, log_sensor_event
+from app.services.train_monitor import get_live_trains
 
 logger = logging.getLogger(__name__)
 
@@ -50,11 +51,12 @@ async def broadcast_loop() -> None:
 
                     evaluate_alerts(db)
                     fresh_alerts = recent_unbroadcast_alerts(db)
-                    return snapshots, fresh_alerts
+                    trains = get_live_trains(db)
+                    return snapshots, fresh_alerts, trains
                 finally:
                     db.close()
 
-            snapshots, fresh_alerts = await asyncio.to_thread(collect)
+            snapshots, fresh_alerts, trains = await asyncio.to_thread(collect)
 
             if consecutive_failures > 0:
                 logger.info("Realtime broadcast recovered; resuming normal cadence")
@@ -77,6 +79,15 @@ async def broadcast_loop() -> None:
                 while len(_emitted_alert_ids) > _MAX_TRACKED_ALERT_IDS:
                     _emitted_alert_ids.popitem(last=False)
                 await sio.emit("alert", alert, room=None)
+
+            for tr in trains or []:
+                # Global feed (all dashboards) + per-train room for subscribed
+                # clients (train detail panels animate via train:{id}).
+                await sio.emit("train_update", tr, room=None)
+                try:
+                    await sio.emit("train_update", tr, room=f"train:{tr.get('train_id')}")
+                except Exception:
+                    pass
         except Exception as e:
             consecutive_failures += 1
             if _should_log_failure(consecutive_failures):

@@ -81,6 +81,29 @@ async def leave_station(sid, data):
             pass
 
 
+@sio.event
+async def join_train(sid, data):
+    """Join a per-train room to receive only that train's `train_update`
+    events (plus the global feed)."""
+    train_id = data.get("train_id") if isinstance(data, dict) else data
+    if train_id:
+        try:
+            await sio.enter_room(sid, f"train:{train_id}")
+            await sio.emit("joined_train", {"train_id": train_id}, to=sid)
+        except Exception as e:
+            logger.warning(f"join_train failed: {e}")
+
+
+@sio.event
+async def leave_train(sid, data):
+    train_id = data.get("train_id") if isinstance(data, dict) else data
+    if train_id:
+        try:
+            await sio.leave_room(sid, f"train:{train_id}")
+        except Exception:
+            pass
+
+
 socketio_state.set_sio(sio)
 
 

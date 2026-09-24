@@ -29,9 +29,10 @@ const NAV = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, roles: ["admin", "operator", "viewer"], section: "Operate", shortcut: "1" },
   { href: "/dashboard/crowd", label: "Crowd Monitoring", icon: Activity, roles: ["admin", "operator", "viewer"], section: "Operate", shortcut: "2" },
   { href: "/dashboard/scheduling", label: "Scheduling", icon: CalendarClock, roles: ["admin", "operator"], section: "Operate", lockFor: ["viewer"], shortcut: "3" },
-  { href: "/dashboard/predictions", label: "AI Predictions", icon: BrainCircuit, roles: ["admin", "operator", "viewer"], section: "Intelligence", shortcut: "4" },
-  { href: "/dashboard/analytics", label: "Analytics", icon: TrainFront, roles: ["admin", "operator", "viewer"], section: "Intelligence", shortcut: "5" },
-  { href: "/dashboard/alerts", label: "Alerts", icon: Bell, roles: ["admin", "operator", "viewer"], section: "Intelligence", badge: true, shortcut: "6" },
+  { href: "/dashboard/trains", label: "Train Monitoring", icon: TrainFront, roles: ["admin", "operator", "viewer"], section: "Operate", shortcut: "4" },
+  { href: "/dashboard/predictions", label: "AI Predictions", icon: BrainCircuit, roles: ["admin", "operator", "viewer"], section: "Intelligence", shortcut: "5" },
+  { href: "/dashboard/analytics", label: "Analytics", icon: TrainFront, roles: ["admin", "operator", "viewer"], section: "Intelligence", shortcut: "6" },
+  { href: "/dashboard/alerts", label: "Alerts", icon: Bell, roles: ["admin", "operator", "viewer"], section: "Intelligence", badge: true, shortcut: "7" },
 ];
 
 export default function DashboardLayout({ title, subtitle, children }) {

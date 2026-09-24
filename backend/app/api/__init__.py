@@ -8,6 +8,7 @@ from app.api.v1 import (
     predictions,
     scheduling,
     stations,
+    trains,
     users,
 )
 
@@ -17,6 +18,7 @@ api_router.include_router(users.router)
 api_router.include_router(stations.router)
 api_router.include_router(crowd.router)
 api_router.include_router(scheduling.router)
+api_router.include_router(trains.router)
 api_router.include_router(predictions.router)
 api_router.include_router(alerts.router)
 api_router.include_router(analytics.router)

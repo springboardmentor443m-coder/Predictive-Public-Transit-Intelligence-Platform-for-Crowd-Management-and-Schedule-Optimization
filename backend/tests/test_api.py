@@ -218,6 +218,47 @@ def test_station_history(client, viewer_headers):
     assert len(hist) >= 20
 
 
+# ---------- Real-time Train Monitoring ----------
+
+def test_live_trains(client, viewer_headers):
+    live = client.get("/api/v1/trains/live", headers=viewer_headers).json()
+    ids = [t["train_id"] for t in live]
+    assert "TR-R01" in ids
+    t = next(t for t in live if t["train_id"] == "TR-R01")
+    assert t["line"] == "Red"
+    assert t["status"] in {"in_transit", "at_station", "delayed", "awaiting_departure", "at_terminal", "in_depot", "out_of_service"}
+    assert 0 <= t["position_pct"] <= 100
+    assert "next_station" in t and "last_updated" in t
+
+
+def test_live_train_single(client, viewer_headers):
+    snap = client.get("/api/v1/trains/live/TR-R01", headers=viewer_headers).json()
+    assert snap["train_id"] == "TR-R01"
+    assert snap["next_station"]["id"] == "ST01"
+    assert snap["capacity"] == 1000
+
+
+def test_live_train_404(client, viewer_headers):
+    assert client.get("/api/v1/trains/live/NOPE", headers=viewer_headers).status_code == 404
+
+
+def test_train_schedule_endpoint(client, viewer_headers):
+    sc = client.get("/api/v1/trains/TR-R01/schedule", headers=viewer_headers).json()
+    assert len(sc) >= 1
+    assert sc[0]["station_id"] == "ST01"
+
+
+def test_train_forecast_endpoint(client, viewer_headers):
+    fc = client.get("/api/v1/predictions/train/TR-R01?hours=6", headers=viewer_headers).json()
+    assert len(fc) >= 1
+    assert all("predicted_occupancy_pct" in p and "station_name" in p for p in fc)
+
+
+def test_fleet_registry(client, viewer_headers):
+    fleet = client.get("/api/v1/trains", headers=viewer_headers).json()
+    assert any(t["id"] == "TR-R01" and t["model"] == "M8" for t in fleet)
+
+
 # ---------- AI Predictions ----------
 
 def test_crowd_prediction(client, viewer_headers):
@@ -254,6 +295,36 @@ def test_predictions_differ_per_station(client, viewer_headers):
     da = client.get("/api/v1/predictions/demand?station_id=ST01&hours=6", headers=viewer_headers).json()
     db_ = client.get("/api/v1/predictions/demand?station_id=ST02&hours=6", headers=viewer_headers).json()
     assert [p["predicted_entries"] for p in da] != [p["predicted_entries"] for p in db_]
+
+
+def test_crowd_prediction_with_custom_start_time(client, viewer_headers):
+    from datetime import datetime, timedelta
+
+    future = datetime.utcnow() + timedelta(days=2)
+    iso = future.strftime("%Y-%m-%dT%H:%M:%S")
+    pred = client.get(
+        f"/api/v1/predictions/crowd?station_id=ST01&start_time={iso}&hours=50",
+        headers=viewer_headers,
+    ).json()
+    assert len(pred) == 50
+    # Forecast window spans at least 2 calendar dates with per-row timestamps.
+    dates = {p["date"] for p in pred}
+    assert len(dates) >= 2
+    assert all("timestamp" in p and "lower" in p and "upper" in p for p in pred)
+
+
+def test_demand_prediction_with_custom_start_time(client, viewer_headers):
+    from datetime import datetime, timedelta
+
+    future = datetime.utcnow() + timedelta(days=3)
+    iso = future.strftime("%Y-%m-%dT%H:%M:%S")
+    dem = client.get(
+        f"/api/v1/predictions/demand?station_id=ST01&start_time={iso}&hours=26",
+        headers=viewer_headers,
+    ).json()
+    assert len(dem) == 26
+    assert len({d["date"] for d in dem}) >= 2
+    assert all(d["predicted_entries"] >= 0 for d in dem)
 
 
 # ---------- Scheduling ----------

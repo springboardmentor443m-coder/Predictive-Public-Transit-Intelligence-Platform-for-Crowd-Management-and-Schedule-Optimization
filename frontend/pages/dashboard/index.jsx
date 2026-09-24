@@ -18,6 +18,7 @@ function Overview() {
   const { showToast } = useToast();
   const [overview, setOverview] = useState(null);
   const [live, setLive] = useState([]);
+  const [trains, setTrains] = useState([]);
   const [traffic, setTraffic] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [insights, setInsights] = useState(null);
@@ -28,9 +29,10 @@ function Overview() {
 
   const loadAll = useCallback(async () => {
     try {
-      const [ov, lv, tr, al, ins, mi] = await Promise.all([
+      const [ov, lv, trs, tr, al, ins, mi] = await Promise.all([
         api.get("/analytics/overview"),
         api.get("/crowd/live"),
+        api.get("/trains/live"),
         api.get("/analytics/traffic?hours=24"),
         api.get("/alerts?limit=6"),
         api.get("/analytics/insights").catch(() => null),
@@ -38,6 +40,7 @@ function Overview() {
       ]);
       setOverview(ov.data);
       setLive(lv.data);
+      setTrains(trs.data);
       setTraffic(tr.data.map((t) => ({ ...t, label: `${String(t.hour).padStart(2, "0")}:00` })));
       setAlerts(al.data);
       if (ins) setInsights(ins.data);
@@ -66,6 +69,15 @@ function Overview() {
           return next;
         });
       });
+      s.on("train_update", (tr) => {
+        setTrains((prev) => {
+          const idx = prev.findIndex((t) => t.train_id === tr.train_id);
+          if (idx === -1) return [...prev, tr];
+          const next = [...prev];
+          next[idx] = tr;
+          return next;
+        });
+      });
       s.on("alert", (newAlert) => {
         showToast(newAlert.title || "New system alert triggered", "warning");
         loadAll();
@@ -76,6 +88,7 @@ function Overview() {
         s.off("connect");
         s.off("disconnect");
         s.off("crowd_update");
+        s.off("train_update");
         s.off("alert");
       }
     };
@@ -98,6 +111,8 @@ function Overview() {
   }));
 
   const avgOcc = overview?.avg_occupancy_pct ?? 0;
+  const inServiceTrains = trains.filter((t) => ["in_transit", "at_station", "awaiting_departure", "delayed"].includes(t.status));
+  const delayedTrains = trains.filter((t) => t.status === "delayed");
 
   return (
     <DashboardLayout title="Operations Control Overview" subtitle="Real-time transit network status & AI telematics">
@@ -123,7 +138,9 @@ function Overview() {
 
             <p className="text-sm text-slate-300 leading-relaxed">
               Monitoring <span className="font-bold text-white">{overview?.total_stations ?? 10} stations</span> across Red, Blue & Green lines ·{" "}
-              <span className="font-bold text-emerald-400">{overview?.on_time_pct ?? 96}% on-time performance</span> · AI Model{" "}
+              <span className="font-bold text-emerald-400">{overview?.on_time_pct ?? 96}% on-time performance</span> ·{" "}
+              <span className="font-bold text-white">{inServiceTrains.length} trains in service</span>
+              {delayedTrains.length > 0 && <span className="text-amber-300"> ({delayedTrains.length} delayed)</span>} · AI Model{" "}
               <span className="font-mono text-brand-300 font-bold">{modelInfo?.city || "hangzhou"} ({modelInfo?.crowd?.algorithm || "XGBoost"})</span> serving live predictions.
             </p>
           </div>
@@ -179,6 +196,62 @@ function Overview() {
           accent={overview?.active_alerts > 0 ? "rose" : "emerald"}
           sub={overview?.active_alerts ? "Immediate operator review needed" : "Network operating smoothly"}
         />
+      </div>
+
+      {/* Live Fleet Strip — realtime train telemetry */}
+      <div className="card card-pad mt-5 border-slate-800">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+              <TrainFront className="h-4 w-4" />
+            </span>
+            <div>
+              <h3 className="font-extrabold tracking-tight text-white">Live Fleet Position</h3>
+              <p className="text-[11px] text-slate-400">Position of each train between stations, streamed via Socket.IO</p>
+            </div>
+          </div>
+          <Link href="/dashboard/trains" className="text-xs font-extrabold text-brand-400 hover:text-brand-300">
+            Open Train Monitor →
+          </Link>
+        </div>
+
+        <div className="flex gap-3 overflow-x-auto pb-2 scroll-thin">
+          {trains.map((t) => {
+            const inService = ["in_transit", "at_station", "awaiting_departure", "delayed"].includes(t.status);
+            const barColor = t.status === "delayed" ? "#f59e0b"
+              : t.line === "Red" ? "#f43f5e"
+              : t.line === "Blue" ? "#3b82f6"
+              : "#10b981";
+            return (
+              <Link
+                key={t.train_id}
+                href="/dashboard/trains"
+                className="w-52 shrink-0 rounded-2xl border border-slate-800 bg-slate-950/70 p-3 transition hover:border-slate-600"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-extrabold text-white">{t.train_id}</p>
+                  <StatusBadge value={!inService ? (t.status === "in_depot" ? "on_time" : "low") : t.status === "delayed" ? "critical" : "on_time"} />
+                </div>
+                <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">{t.line} Line</p>
+                {inService ? (
+                  <>
+                    <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-800">
+                      <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${t.position_pct || 0}%`, backgroundColor: barColor }} />
+                    </div>
+                    <p className="mt-1.5 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                      <span className="max-w-[45%] truncate">{t.current_station?.name || "Depot"}</span>
+                      <span className="text-slate-500">→</span>
+                      <span className="max-w-[45%] truncate">{t.next_station?.name || "—"}</span>
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-2.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">{t.status.replaceAll("_", " ")}</p>
+                )}
+              </Link>
+            );
+          })}
+          {trains.length === 0 && <p className="py-6 text-center text-xs text-slate-500">Waiting for fleet telemetry...</p>}
+        </div>
       </div>
 
       {/* AI Operational Insights Component */}

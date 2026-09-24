@@ -6,6 +6,7 @@ export const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 let socket = null;
 let joinedStation = null;
+let joinedTrain = null;
 
 function authPayload() {
   if (typeof window === "undefined") return undefined;
@@ -31,9 +32,10 @@ export function getSocket() {
     timeout: 8000,
     auth: authPayload(),
   });
-  // Re-join station room after reconnects.
+  // Re-join station/train rooms after reconnects.
   socket.on("connect", () => {
     if (joinedStation) socket.emit("join_station", { station_id: joinedStation });
+    if (joinedTrain) socket.emit("join_train", { train_id: joinedTrain });
   });
   return socket;
 }
@@ -51,6 +53,21 @@ export function leaveStationRoom() {
     if (socket && joinedStation) socket.emit("leave_station", { station_id: joinedStation });
   } catch {}
   joinedStation = null;
+}
+
+export function joinTrainRoom(trainId) {
+  joinedTrain = trainId || null;
+  try {
+    const s = getSocket();
+    if (trainId) s.emit("join_train", { train_id: trainId });
+  } catch {}
+}
+
+export function leaveTrainRoom() {
+  try {
+    if (socket && joinedTrain) socket.emit("leave_train", { train_id: joinedTrain });
+  } catch {}
+  joinedTrain = null;
 }
 
 export function disconnectSocket() {

@@ -33,6 +33,7 @@ export default function CommandPalette({ isOpen, onClose }) {
   const NAV_ITEMS = [
     { href: "/dashboard", label: "Operations Overview", icon: Activity, section: "Navigation" },
     { href: "/dashboard/crowd", label: "Crowd Monitoring Map", icon: Activity, section: "Navigation" },
+    { href: "/dashboard/trains", label: "Real-Time Train Monitoring", icon: TrainFront, section: "Navigation" },
     { href: "/dashboard/scheduling", label: "Train Schedules & Headway", icon: CalendarClock, section: "Navigation" },
     { href: "/dashboard/predictions", label: "AI Crowd & Delay Predictions", icon: BrainCircuit, section: "Navigation" },
     { href: "/dashboard/analytics", label: "Analytics & Performance Reports", icon: TrainFront, section: "Navigation" },

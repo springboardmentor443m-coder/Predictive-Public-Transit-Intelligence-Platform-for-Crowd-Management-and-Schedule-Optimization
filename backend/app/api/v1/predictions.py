@@ -1,11 +1,16 @@
-from fastapi import APIRouter, Depends, Query
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_db, require_roles
 from app.schemas.prediction import DelayPredictResponse, DelayRequest
 from app.services.prediction_service import (
     forecast_demand,
+    forecast_demand_at,
+    forecast_train,
     predict_crowd,
+    predict_crowd_at,
     predict_delay,
     smart_recommendations,
     traffic_patterns,
@@ -15,13 +20,25 @@ router = APIRouter(prefix="/predictions", tags=["predictions"])
 
 
 @router.get("/crowd", response_model=list[dict])
-async def crowd_prediction(station_id: str = Query(None), hours: int = Query(12, ge=1, le=48), db: Session = Depends(get_db), _=Depends(require_roles())):
-    return predict_crowd(station_id, hours, db=db)
+async def crowd_prediction(
+    start_time: datetime | None = Query(None, description="Forecast window start (ISO). Defaults to now."),
+    station_id: str = Query(None),
+    hours: int = Query(12, ge=1, le=72),
+    db: Session = Depends(get_db),
+    _=Depends(require_roles()),
+):
+    return predict_crowd_at(start_time, station_id, hours, db=db)
 
 
 @router.get("/demand", response_model=list[dict])
-async def demand_forecast(station_id: str = Query(None), hours: int = Query(12, ge=1, le=48), db: Session = Depends(get_db), _=Depends(require_roles())):
-    return forecast_demand(station_id, hours, db=db)
+async def demand_forecast(
+    start_time: datetime | None = Query(None, description="Forecast window start (ISO). Defaults to now."),
+    station_id: str = Query(None),
+    hours: int = Query(12, ge=1, le=72),
+    db: Session = Depends(get_db),
+    _=Depends(require_roles()),
+):
+    return forecast_demand_at(start_time, station_id, hours, db=db)
 
 
 @router.post("/delay", response_model=DelayPredictResponse)
@@ -35,6 +52,21 @@ async def delay_prediction(req: DelayRequest, _=Depends(require_roles())):
             status_code=503,
             detail="Delay prediction model is temporarily unavailable. Please retry after training.",
         ) from e
+
+
+@router.get("/train/{train_id}", response_model=list[dict])
+async def train_forecast(
+    train_id: str,
+    hours: int = Query(12, ge=1, le=48),
+    db: Session = Depends(get_db),
+    _=Depends(require_roles()),
+):
+    """Per-train forward forecast: predicted crowd + demand at each upcoming
+    scheduled stop of a specific train."""
+    result = forecast_train(train_id, hours, db=db)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Train not found")
+    return result
 
 
 @router.get("/recommendations", response_model=list[dict])

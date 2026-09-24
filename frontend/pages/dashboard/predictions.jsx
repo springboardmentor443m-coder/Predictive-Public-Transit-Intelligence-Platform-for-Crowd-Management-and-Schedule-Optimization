@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { BrainCircuit, Clock3, Lightbulb, Loader2, Sparkles, TrainFront, TrendingUp } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { BrainCircuit, CalendarDays, Clock3, Lightbulb, Loader2, Sparkles, TrainFront, TrendingUp } from "lucide-react";
 import {
   Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
@@ -49,6 +49,31 @@ function Predictions() {
   const [modelInfo, setModelInfo] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Forecast window controls: pick an explicit date + start hour, or run from
+  // the current hour ("now"). The models resolve day-of-week per hour so the
+  // window can span multiple days.
+  const today = new Date();
+  const [forecastDate, setForecastDate] = useState(() => {
+    const d = new Date();
+    d.setMinutes(0, 0, 0);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
+  const [forecastHour, setForecastHour] = useState("now");
+  const [forecastSpan, setForecastSpan] = useState(12);
+
+  const startTimeParam = useMemo(() => {
+    if (forecastHour === "now") return "";
+    return `${forecastDate}T${String(forecastHour).padStart(2, "0")}:00:00`;
+  }, [forecastDate, forecastHour]);
+
+  const formatPoint = (p) => {
+    const t = new Date(p.timestamp);
+    if (Number.isNaN(t.getTime())) return `${String(p.hour).padStart(2, "0")}:00`;
+    const day = t.toLocaleDateString([], { month: "short", day: "numeric" });
+    const todayStr = new Date().toLocaleDateString([], { month: "short", day: "numeric" });
+    return day === todayStr ? `${String(p.hour).padStart(2, "0")}:00` : `${day} ${String(p.hour).padStart(2, "0")}:00`;
+  };
+
   const [delayForm, setDelayForm] = useState({
     line: "Northeast Corrdr",
     from_station: "NY Penn",
@@ -77,9 +102,12 @@ function Predictions() {
   useEffect(() => {
     if (!stationId) return;
     setLoading(true);
+    const qs =
+      `station_id=${stationId}&hours=${forecastSpan}` +
+      (startTimeParam ? `&start_time=${encodeURIComponent(startTimeParam)}` : "");
     Promise.all([
-      api.get(`/predictions/crowd?station_id=${stationId}&hours=12`),
-      api.get(`/predictions/demand?station_id=${stationId}&hours=12`),
+      api.get(`/predictions/crowd?${qs}`),
+      api.get(`/predictions/demand?${qs}`),
     ])
       .then(([c, d]) => {
         setCrowd(c.data);
@@ -87,17 +115,17 @@ function Predictions() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [stationId]);
+  }, [stationId, forecastSpan, startTimeParam]);
 
   const crowdChart = crowd.map((p) => ({
-    label: `${String(p.hour).padStart(2, "0")}:00`,
+    label: formatPoint(p),
     predicted: p.predicted_occupancy_pct,
     bandBase: p.lower,
     bandWidth: Math.max(0, p.upper - p.lower),
   }));
 
   const demandChart = demand.map((p) => ({
-    label: `${String(p.hour).padStart(2, "0")}:00`,
+    label: formatPoint(p),
     entries: p.predicted_entries,
     exits: p.predicted_exits,
   }));
@@ -167,11 +195,61 @@ function Predictions() {
         </div>
       </div>
 
+      {/* Forecast Window Controls */}
+      <div className="card card-pad mt-5 border-slate-800">
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-500/15 border border-brand-500/30 text-brand-400">
+              <CalendarDays className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-slate-400">Forecast Window</p>
+              <p className="text-xs text-slate-500">
+                {startTimeParam
+                  ? `Predicting from ${new Date(`${startTimeParam}Z`).toLocaleString([], { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}`
+                  : "Predicting from the current hour"}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label className="label">Forecast Date</label>
+            <input
+              type="date"
+              className="input"
+              value={forecastDate}
+              onChange={(e) => setForecastDate(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="label">Start Hour</label>
+            <select className="input" value={forecastHour} onChange={(e) => setForecastHour(e.target.value)}>
+              <option value="now">Now</option>
+              {Array.from({ length: 24 }, (_, h) => (
+                <option key={h} value={h}>{String(h).padStart(2, "0")}:00</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="label">Forecast Span</label>
+            <select className="input" value={forecastSpan} onChange={(e) => setForecastSpan(Number(e.target.value))}>
+              <option value="6">6 hours</option>
+              <option value="12">12 hours</option>
+              <option value="24">24 hours (1 day)</option>
+              <option value="48">48 hours (2 days)</option>
+              <option value="72">72 hours (3 days)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Forecast Charts Row */}
       <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
         {/* Crowd Density Forecast Area Chart */}
         <div className="card card-pad border-slate-800">
-          <h3 className="font-extrabold tracking-tight text-white">12-Hour Crowd Density Forecast</h3>
+          <h3 className="font-extrabold tracking-tight text-white">{forecastSpan}-Hour Crowd Density Forecast</h3>
           <p className="mb-4 text-xs text-slate-400">Predicted occupancy % with confidence upper/lower bounds</p>
 
           {loading ? (
@@ -188,7 +266,7 @@ function Predictions() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#94a3b8" }} stroke="#334155" />
+                <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#94a3b8" }} interval="preserveStartEnd" stroke="#334155" />
                 <YAxis unit="%" tick={{ fontSize: 11, fill: "#94a3b8" }} stroke="#334155" domain={[0, 100]} />
                 <Tooltip content={<CrowdTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -202,7 +280,7 @@ function Predictions() {
 
         {/* Passenger Demand Forecast Area Chart */}
         <div className="card card-pad border-slate-800">
-          <h3 className="font-extrabold tracking-tight text-white">12-Hour Passenger Demand Forecast</h3>
+          <h3 className="font-extrabold tracking-tight text-white">{forecastSpan}-Hour Passenger Demand Forecast</h3>
           <p className="mb-4 text-xs text-slate-400">Predicted gate entries vs exits volume</p>
 
           {loading ? (
@@ -213,7 +291,7 @@ function Predictions() {
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={demandChart} margin={{ left: -10, right: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#94a3b8" }} stroke="#334155" />
+                <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#94a3b8" }} interval="preserveStartEnd" stroke="#334155" />
                 <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} stroke="#334155" />
                 <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />

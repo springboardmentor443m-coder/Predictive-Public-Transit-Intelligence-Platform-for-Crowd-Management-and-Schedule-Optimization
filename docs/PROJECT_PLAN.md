@@ -69,6 +69,7 @@ Redis keys: `crowd:latest:{station_id}` snapshots, `alerts:recent` list.
 - [x] Notification & alert workflows (rule engine on live occupancy/delays)
 - [x] Emergency announcement system (broadcast to all dashboard clients)
 - [x] Real-time schedule update features (socket push + polling fallback)
+- [x] Live train position/status monitoring (fleet telemetry + train_update socket events)
 - [x] Analytics & reporting dashboards (traffic, station performance, punctuality)
 - [x] Congestion heatmaps + operational insights panels
 
@@ -91,13 +92,18 @@ Redis keys: `crowd:latest:{station_id}` snapshots, `alerts:recent` list.
 | GET | /api/v1/crowd/heatmap | any | heatmap matrix (station × hour) |
 | GET | /api/v1/crowd/station/{id}/history | any | inflow/outflow history |
 | POST | /api/v1/crowd/ingest | operator+ | sensor/gate ingest (live snapshot refresh) |
+| GET | /api/v1/trains | any | fleet list |
+| GET | /api/v1/trains/live | any | live fleet telemetry (position, status, ETA, load) |
+| GET | /api/v1/trains/live/{train_id} | any | single live train telemetry |
+| GET | /api/v1/trains/{train_id}/schedule | any | upcoming stops for a train |
 | GET/POST/PUT/DELETE | /api/v1/scheduling/schedules | operator+ | schedule management (PUT = full edit) |
 | GET | /api/v1/scheduling/schedules/{id} | any | single schedule (edit form) |
 | GET | /api/v1/scheduling/optimization | operator+ | frequency recommendations |
 | POST | /api/v1/scheduling/delay/{schedule_id} | operator+ | report/handle delay |
 | POST | /api/v1/scheduling/apply-headway/{station_id} | operator+ | frequency adjustment execution |
-| GET | /api/v1/predictions/crowd?station_id&hours | any | crowd forecast |
-| GET | /api/v1/predictions/demand?station_id&hours | any | demand forecast |
+| GET | /api/v1/predictions/crowd?station_id&hours&start_time | any | crowd forecast (start_time = ISO date/time, multi-day OK) |
+| GET | /api/v1/predictions/demand?station_id&hours&start_time | any | demand forecast (start_time = ISO date/time, multi-day OK) |
+| GET | /api/v1/predictions/train/{train_id}?hours | any | per-stop crowd/demand forecast along a train's route |
 | POST | /api/v1/predictions/delay | any | NJ/Railway delay inference (503 if model missing) |
 | GET | /api/v1/predictions/recommendations | any | smart recommendations |
 | GET | /api/v1/predictions/patterns | any | traffic pattern analysis |
@@ -109,7 +115,7 @@ Redis keys: `crowd:latest:{station_id}` snapshots, `alerts:recent` list.
 | GET | /api/v1/analytics/traffic | any | traffic analytics series |
 | GET | /api/v1/analytics/station-performance | any | station report cards |
 | GET | /api/v1/analytics/insights | any | consolidated AI insight panel |
-| WS | /socket.io | any (JWT optional) | live crowd + alert events; rooms station:{id} via join_station |
+| WS | /socket.io | any (JWT optional) | live crowd + train + alert events; rooms station:{id} via join_station, train:{id} via join_train |
 
 ## 6. Performance Targets (PRD §8–9)
 
