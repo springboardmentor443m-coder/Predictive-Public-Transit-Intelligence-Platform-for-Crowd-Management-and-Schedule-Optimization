@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 
+from app.core.time import utcnow
 from app.ml import features as feat
 from app.ml import registry
 
@@ -39,8 +40,13 @@ def _load_artifact(filename: str):
 
 def _city_file(kind: str) -> str:
     """Prefer the per-city artifact (e.g. hangzhou_crowd_model.joblib); fall
-    back to the legacy synthetic artifact (crowd_model.joblib)."""
+    back to the legacy synthetic artifact (crowd_model.joblib). For the crowd
+    model the quantile variant (native confidence intervals) wins when present."""
     city = registry.model_city()
+    if kind == "crowd":
+        quantile_name = f"{city}_crowd_quantile_model.joblib"
+        if os.path.exists(os.path.join(_store_dir, quantile_name)):
+            return quantile_name
     city_name = f"{city}_{kind}_model.joblib"
     if os.path.exists(os.path.join(_store_dir, city_name)):
         return city_name
@@ -53,15 +59,24 @@ class CrowdModel:
         self.stations = []
         self.cap_norm_scale = 700.0
         self.trained_on = None
+        self.low_model = None
+        self.high_model = None
         if isinstance(self.artifact, dict):
             self.stations = list(self.artifact.get("stations") or [])
             self.cap_norm_scale = float(self.artifact.get("cap_norm_scale", 700.0))
             self.trained_on = self.artifact.get("trained_on")
+            if self.artifact.get("kind") == "quantile":
+                self.low_model = self.artifact.get("low")
+                self.high_model = self.artifact.get("high")
         self.residual_std = 0.05 if not isinstance(self.artifact, dict) else float(self.artifact.get("residual_std", 0.05))
 
     @property
     def is_loaded(self) -> bool:
         return self.artifact is not None
+
+    @property
+    def is_quantile(self) -> bool:
+        return self.low_model is not None and self.high_model is not None
 
     @property
     def is_kaggle(self) -> bool:
@@ -107,6 +122,25 @@ class CrowdModel:
             for h in hours
         ])
 
+    def _predict_bounds(
+        self, X: np.ndarray, hours: list[int], weekday, capacity_per_hour: float | None = None
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Return (center, lower, upper) occupancy-fraction predictions.
+        Quantile artifacts provide native bounds; others fall back to a
+        symmetric residual_std band."""
+        if self.is_quantile:
+            try:
+                center = np.asarray(self.artifact["model"].predict(X), dtype=float)
+                low = np.asarray(self.low_model.predict(X), dtype=float)
+                high = np.asarray(self.high_model.predict(X), dtype=float)
+                low = np.minimum(low, center)
+                high = np.maximum(high, center)
+                return center, low, high
+            except Exception as e:
+                logger.warning(f"quantile crowd predict failed ({e}); using residual band")
+        pred = self._predict_raw(X, hours, weekday, capacity_per_hour)
+        return pred, pred - self.residual_std, pred + self.residual_std
+
     def predict_hourly(
         self,
         base_hour: int,
@@ -114,20 +148,20 @@ class CrowdModel:
         weekday: int | None = None,
         station: dict | None = None,
     ) -> list[dict]:
-        now = datetime.utcnow()
+        now = utcnow()
         if weekday is None:
             weekday = now.weekday()
         hours = [(base_hour + h) % 24 for h in range(hours_ahead)]
         cap = (station or {}).get("capacity_per_hour")
         X = self._feature_rows(hours, weekday, station)
-        preds = self._predict_raw(X, hours, weekday, cap)
+        center, low, high = self._predict_bounds(X, hours, weekday, cap)
 
         results = []
-        for i, p in enumerate(preds):
-            pct = float(np.clip(p, 0.05, 1.2)) * 100.0
+        for i, c in enumerate(center):
+            pct = float(np.clip(c, 0.05, 1.2)) * 100.0
             ts = now + timedelta(hours=i)
-            lower = max(0.0, pct - self.residual_std * 100)
-            upper = min(100.0, pct + self.residual_std * 100)
+            lower = max(0.0, float(np.clip(low[i], 0.05, 1.2)) * 100.0)
+            upper = min(100.0, float(np.clip(high[i], 0.05, 1.2)) * 100.0)
             results.append({
                 "hour": hours[i],
                 "predicted_occupancy_pct": round(pct, 2),
@@ -154,13 +188,13 @@ class CrowdModel:
         weekdays = [d.weekday() for d in dts]
         cap = (station or {}).get("capacity_per_hour")
         X = self._feature_rows(hours, weekdays, station)
-        preds = self._predict_raw(X, hours, weekdays, cap)
+        center, low, high = self._predict_bounds(X, hours, weekdays, cap)
 
         results = []
-        for i, p in enumerate(preds):
-            pct = float(np.clip(p, 0.05, 1.2)) * 100.0
-            lower = max(0.0, pct - self.residual_std * 100)
-            upper = min(100.0, pct + self.residual_std * 100)
+        for i, c in enumerate(center):
+            pct = float(np.clip(c, 0.05, 1.2)) * 100.0
+            lower = max(0.0, float(np.clip(low[i], 0.05, 1.2)) * 100.0)
+            upper = min(100.0, float(np.clip(high[i], 0.05, 1.2)) * 100.0)
             results.append({
                 "hour": hours[i],
                 "date": dts[i].strftime("%Y-%m-%d"),
@@ -230,7 +264,7 @@ class DemandForecaster:
         weekday: int | None = None,
         station: dict | None = None,
     ) -> list[dict]:
-        now = datetime.utcnow()
+        now = utcnow()
         if weekday is None:
             weekday = now.weekday()
         hours = [(base_hour + h) % 24 for h in range(hours_ahead)]
