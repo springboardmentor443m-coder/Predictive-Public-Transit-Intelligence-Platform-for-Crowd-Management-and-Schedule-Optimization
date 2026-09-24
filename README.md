@@ -6,9 +6,6 @@ real time. It integrates AI analytics, scheduling automation, crowd prediction w
 prediction intervals**, operational monitoring, and **real-world dataset ingestion** into one
 centralized application for smart transportation systems.
 
-The whole codebase is **TypeScript on the frontend** and a modern, deprecation-free Python
-backend (`datetime.utcnow()` is banned in favour of the timezone-safe `app.core.time.utcnow()`).
-
 ## Key Capabilities
 
 | Module | Features |
@@ -204,10 +201,6 @@ false *"Backend Offline"*).
 * **Milestone 2 (Wk 3-4):** datasets, AI crowd/demand models, backend integration - [docs/MILESTONE_2.md](docs/MILESTONE_2.md)
 * **Milestone 3 (Wk 5-6):** real-time monitoring, alerts, schedule optimization - [docs/MILESTONE_3.md](docs/MILESTONE_3.md)
 * **Milestone 4 (Wk 7-8):** analytics, testing, Docker/cloud deployment, docs - [docs/MILESTONE_4.md](docs/MILESTONE_4.md)
-
-Engineering hardening delivered after Milestone 4 (TypeScript conversion, quantile confidence
-intervals, dataset importers, real-time traffic-curve fix, Python hygiene, login health check)
-is tracked in the [`CHANGELOG.md`](CHANGELOG.md).
 
 See `docs/PROJECT_PLAN.md` for the full week-wise breakdown, `docs/PERFORMANCE_METRICS.md`
 for measured model/API benchmarks, and `docs/DEPLOYMENT.md` for AWS/Azure/K8s deployment.
