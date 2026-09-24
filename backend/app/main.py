@@ -167,6 +167,12 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 app.include_router(api_router, prefix="/api/v1")
 
 
+@app.get("/api/v1/health", tags=["health"])
+async def health() -> dict:
+    """Public, unauthenticated liveness probe used by the login screen."""
+    return {"status": "ok", "app": settings.APP_NAME, "version": settings.VERSION}
+
+
 @app.get("/")
 async def root():
     return {"app": "MetroFlow", "api": "/api/v1/docs", "status": "running"}
