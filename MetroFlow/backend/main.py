@@ -174,3 +174,24 @@ def get_analytics():
         "busiest_station": busiest_station,
         "peak_hour": peak_hour
     }
+@app.get("/weather-summary")
+def get_weather_summary():
+    weather_path = (
+        Path(__file__).resolve().parents[1]
+        / "datasets"
+        / "raw"
+        / "bengaluru-weather-2025.csv"
+    )
+    if not weather_path.exists():
+        weather_path = Path("../datasets/raw/bengaluru-weather-2025.csv")
+
+    df = pd.read_csv(weather_path)
+
+    df = df[df["month"].isin([8, 9])].copy()
+
+    return {
+        "average_temperature": round(float(df["temp"].mean()), 2),
+        "average_humidity": round(float(df["rhum"].mean()), 2),
+        "total_rainfall": round(float(df["prcp"].sum()), 2),
+        "average_wind_speed": round(float(df["wspd"].mean()), 2),
+    }

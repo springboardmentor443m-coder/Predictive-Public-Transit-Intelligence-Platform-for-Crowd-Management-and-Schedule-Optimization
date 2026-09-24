@@ -18,33 +18,59 @@ type AnalyticsResponse = {
   peak_hour: number;
 };
 
+type WeatherResponse = {
+  average_temperature: number;
+  average_humidity: number;
+  total_rainfall: number;
+  average_wind_speed: number;
+};
+
 export default function Home() {
+  const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
+  const [weather, setWeather] = useState<WeatherResponse | null>(null);
   const [result, setResult] = useState<PredictionResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
   const [station, setStation] = useState("Attiguppe");
   const [hour, setHour] = useState(18);
   const [dayOfWeek, setDayOfWeek] = useState(1);
   const [currentRidership, setCurrentRidership] = useState(100);
   useEffect(() => {
-  const fetchAnalytics = async () => {
-    try {
-      const response = await fetch("http://127.0.0.1:8000/analytics");
+    const fetchAnalytics = async () => {
+      try {
+        const response = await fetch("http://127.0.0.1:8000/analytics");
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch analytics");
+        if (!response.ok) {
+          throw new Error("Failed to fetch analytics");
+        }
+
+        const data: AnalyticsResponse = await response.json();
+        setAnalytics(data);
+      } catch (err) {
+        console.error("Analytics fetch error:", err);
       }
+    };
 
-      const data: AnalyticsResponse = await response.json();
-      setAnalytics(data);
-    } catch (err) {
-      console.error("Analytics fetch error:", err);
-    }
-  };
+    const fetchWeather = async () => {
+      try {
+        const response = await fetch(
+          "http://127.0.0.1:8000/weather-summary"
+        );
 
-  fetchAnalytics();
-}, []);
+        if (!response.ok) {
+          throw new Error("Failed to fetch weather");
+        }
+
+        const data: WeatherResponse = await response.json();
+        setWeather(data);
+      } catch (err) {
+        console.error("Weather fetch error:", err);
+      }
+    };
+
+    fetchAnalytics();
+    fetchWeather();
+  }, []);
 
   const predictRidership = async () => {
     setLoading(true);
@@ -163,6 +189,49 @@ export default function Home() {
         </p>
       </div>
 
+    </div>
+  </section>
+)}
+
+{weather && (
+  <section className="mb-8">
+    <div className="mb-4">
+      <h2 className="text-2xl font-bold text-slate-800">
+        Weather & Environmental Insights
+      </h2>
+      <p className="text-slate-500">
+        Bengaluru weather conditions during operational period
+      </p>
+    </div>
+
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="rounded-2xl bg-white p-6 shadow-sm">
+        <p className="text-sm text-slate-500">Average Temperature</p>
+        <p className="mt-2 text-3xl font-bold text-slate-800">
+          {weather.average_temperature} °C
+        </p>
+      </div>
+
+      <div className="rounded-2xl bg-white p-6 shadow-sm">
+        <p className="text-sm text-slate-500">Average Humidity</p>
+        <p className="mt-2 text-3xl font-bold text-slate-800">
+          {weather.average_humidity}%
+        </p>
+      </div>
+
+      <div className="rounded-2xl bg-white p-6 shadow-sm">
+        <p className="text-sm text-slate-500">Total Rainfall</p>
+        <p className="mt-2 text-3xl font-bold text-slate-800">
+          {weather.total_rainfall} mm
+        </p>
+      </div>
+
+      <div className="rounded-2xl bg-white p-6 shadow-sm">
+        <p className="text-sm text-slate-500">Average Wind Speed</p>
+        <p className="mt-2 text-3xl font-bold text-slate-800">
+          {weather.average_wind_speed} km/h
+        </p>
+      </div>
     </div>
   </section>
 )}
