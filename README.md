@@ -73,16 +73,16 @@ docker-compose down
 ├──────────────────────────┬─────────────────────────────┤
 │                          │                             │
 │   ┌──────────────────────▼─────────────────────┐       │
-│   │   Pre-trained XGBoost Regressor (JSON IO)   │       │
-│   │   • 9 Feature Matrix + Cyclical Sin/Cos     │       │
-│   │   • 95.06% R² Variance Explanation          │       │
+│   │   Pre-trained XGBoost Regressor (JSON IO)   │      │
+│   │   • 9 Feature Matrix + Cyclical Sin/Cos     │      │
+│   │   • 95.06% R² Variance Explanation          │      │
 │   └────────────────────────────────────────────┘       │
 │                          │                             │
 │   ┌──────────────────────▼─────────────────────┐       │
 │   │     Automated Rule-Based Scheduling        │       │
-│   │   • 🔴 Severe Rush (≥1500 pax) -> 3 Min   │       │
-│   │   • 🟡 Moderate (800-1499 pax) -> 6 Min   │       │
-│   │   • 🟢 Off-Peak (<800 pax)    -> 10 Min   │       │
+│   │   • 🔴 Severe Rush (≥1500 pax) -> 3 Min   │        │
+│   │   • 🟡 Moderate (800-1499 pax) -> 6 Min   │        │
+│   │   • 🟢 Off-Peak (<800 pax)    -> 10 Min   │        │
 │   └────────────────────────────────────────────┘       │
 └────────────────────────────────────────────────────────┘
 ```
