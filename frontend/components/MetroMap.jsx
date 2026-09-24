@@ -8,6 +8,12 @@ const LINE_COLORS = {
   Green: "#10b981",
 };
 
+const LINE_ROUTES = {
+  Red: "Central Junction · Riverside Park · Tech District · South Commons",
+  Blue: "Old Town Market · Stadium Plaza · University Gate",
+  Green: "Airport Terminal · Harbor Front · North Industrial",
+};
+
 export default function MetroMap({ stations = [], live = [], selected, onSelect }) {
   const [filterLine, setFilterLine] = useState("all");
 
@@ -52,6 +58,11 @@ export default function MetroMap({ stations = [], live = [], selected, onSelect 
             <button
               key={ln}
               onClick={() => setFilterLine(ln)}
+              title={
+                LINE_ROUTES[ln]
+                  ? `${ln} Line — a color-coded rail corridor serving: ${LINE_ROUTES[ln]}. Click to show only its stations.`
+                  : `${ln} Line corridor`
+              }
               className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${filterLine === ln ? "bg-white text-slate-900 shadow" : "bg-slate-800 text-slate-400 hover:text-white"}`}
             >
               <span className="inline-block h-2 w-2 rounded-full mr-1.5" style={{ backgroundColor: LINE_COLORS[ln] }} />
@@ -59,7 +70,7 @@ export default function MetroMap({ stations = [], live = [], selected, onSelect 
             </button>
           ))}
         </div>
-        <span className="text-[11px] font-mono text-slate-400 hidden sm:inline">Socket Live Latency: &lt;2s</span>
+        <span className="text-[11px] font-mono text-slate-400 hidden sm:inline">Hover a line chip to see its corridor route</span>
       </div>
 
       {/* SVG Canvas Map */}
@@ -224,6 +235,21 @@ export default function MetroMap({ stations = [], live = [], selected, onSelect 
           ))}
         </div>
         <span className="text-[11px] text-slate-400">Click any station node to open real-time telemetry</span>
+      </div>
+
+      {/* Metro Line Corridor Legend */}
+      <div className="rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-[11px] text-slate-400">
+        <p className="font-extrabold uppercase tracking-wider text-slate-500 mb-2">What is a “Line”?</p>
+        <div className="flex flex-wrap gap-x-6 gap-y-2">
+          {Object.entries(LINE_ROUTES).map(([ln, route]) => (
+            <span key={ln} className="inline-flex items-start gap-2 max-w-md" title={`${ln} Line — color-coded rail corridor`}>
+              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: LINE_COLORS[ln] }} />
+              <span>
+                <b className="text-white">{ln} Line</b> — <span className="text-slate-400">{route}</span>
+              </span>
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );

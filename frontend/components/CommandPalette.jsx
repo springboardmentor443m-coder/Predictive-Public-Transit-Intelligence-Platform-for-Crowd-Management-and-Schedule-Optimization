@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { Search, Activity, CalendarClock, BrainCircuit, TrainFront, Bell, Settings, ArrowRight, X } from "lucide-react";
 import api from "../lib/api";
 
-export default function CommandPalette({ isOpen, onClose }) {
+export default function CommandPalette({ isOpen, onClose, onOpen }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [stations, setStations] = useState([]);
@@ -15,10 +15,10 @@ export default function CommandPalette({ isOpen, onClose }) {
   }, [isOpen]);
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        if (isOpen) onClose(); else openModal();
+        if (isOpen) onClose(); else onOpen();
       }
       if (e.key === "Escape" && isOpen) {
         onClose();
@@ -26,7 +26,7 @@ export default function CommandPalette({ isOpen, onClose }) {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, onOpen]);
 
   if (!isOpen) return null;
 

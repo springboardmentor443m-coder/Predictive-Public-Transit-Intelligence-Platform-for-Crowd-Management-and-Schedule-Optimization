@@ -264,7 +264,7 @@ export default function DashboardLayout({ title, subtitle, children }) {
       </div>
 
       {/* Global Command Palette */}
-      <CommandPalette isOpen={cmdOpen} onClose={() => setCmdOpen(false)} />
+      <CommandPalette isOpen={cmdOpen} onClose={() => setCmdOpen(false)} onOpen={() => setCmdOpen(true)} />
     </div>
   );
 }

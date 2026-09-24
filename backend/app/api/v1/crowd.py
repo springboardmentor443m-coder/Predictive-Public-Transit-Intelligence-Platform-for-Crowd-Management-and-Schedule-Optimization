@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
@@ -33,8 +35,14 @@ async def heatmap(db: Session = Depends(get_db), _=Depends(require_roles())):
 
 
 @router.get("/station/{station_id}/history", response_model=list[dict])
-async def station_history(station_id: str, hours: int = Query(24, ge=1, le=168), db: Session = Depends(get_db), _=Depends(require_roles())):
-    return get_station_history(db, station_id, hours)
+async def station_history(
+    station_id: str,
+    hours: int = Query(24, ge=1, le=168),
+    start_time: datetime | None = Query(None, description="Anchor the window at this ISO date/time (historical tracking). Defaults to now."),
+    db: Session = Depends(get_db),
+    _=Depends(require_roles()),
+):
+    return get_station_history(db, station_id, hours, start_time)
 
 
 @router.post("/ingest", response_model=dict)

@@ -17,7 +17,7 @@
 
 ## 2. End-to-End Testing
 
-Automated suite: `backend/tests/test_api.py` (49 tests, all passing) run with:
+Automated suite: `backend/tests/test_api.py` (50 tests, all passing) run with:
 
 ```bash
 cd backend && pip install -r requirements-dev.txt
@@ -29,7 +29,7 @@ Coverage by module:
 | Area | Verified behaviors |
 |---|---|
 | Auth/RBAC | login success/failure, token guard, role 403s, admin user list, self-registration locked to viewer role, `PUT /users/me` profile & password updates |
-| Crowd | live snapshots, heatmap grid size, station history |
+| Crowd | live snapshots, heatmap grid size, station history, history with custom `start_time` anchor |
 | Predictions | crowd forecast shape, demand ≥ 0, recommendations, traffic patterns, `start_time` date-aware windows (multi-day weekday handling), per-train route forecast |
 | Trains | live fleet telemetry, single-train lookup + 404, train schedule stops, fleet registry sync |
 | Scheduling | viewer blocked, CRUD round-trip, delay→alert linkage, apply-headway |
@@ -74,7 +74,7 @@ Measured results in [`PERFORMANCE_METRICS.md`](PERFORMANCE_METRICS.md). Key leve
 | Criterion | Status |
 |---|---|
 | Analytics dashboard delivering actionable insights | ✅ insights + model badge (AI Predictions page) + CSV/print |
-| System tested end-to-end with reliable AI outputs | ✅ 49 automated API tests + 7 model tests |
+| System tested end-to-end with reliable AI outputs | ✅ 50 automated API tests + 7 model tests |
 | Platform deployed and accessible via Docker/cloud setup | ✅ compose + k8s + cloud docs |
 | Complete documentation and presentation delivered | ✅ |
 

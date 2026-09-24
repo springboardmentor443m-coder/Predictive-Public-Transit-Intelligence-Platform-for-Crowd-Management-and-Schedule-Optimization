@@ -32,6 +32,9 @@ function CrowdMonitoring() {
   const [selected, setSelected] = useState("ST01");
   const [history, setHistory] = useState([]);
   const [loadingHist, setLoadingHist] = useState(false);
+  const [histDate, setHistDate] = useState("");
+  const [histHour, setHistHour] = useState("now");
+  const [histHours, setHistHours] = useState(24);
   const [connected, setConnected] = useState(false);
   const [ingest, setIngest] = useState({ entries: 140, exits: 110, occupancy: 350 });
   const [ingesting, setIngesting] = useState(false);
@@ -58,24 +61,33 @@ function CrowdMonitoring() {
 
   const loadHistory = useCallback((stationId) => {
     setLoadingHist(true);
-    api.get(`/crowd/station/${stationId}/history?hours=24`)
+    const start = histDate ? `${histDate}T${String(histHour).padStart(2, "0")}:00:00` : "";
+    const qs = `hours=${histHours}` + (start ? `&start_time=${encodeURIComponent(start)}` : "");
+    api.get(`/crowd/station/${stationId}/history?${qs}`)
       .then((res) => {
         setHistory(
           res.data.map((r) => ({
             time: new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            full: new Date(r.timestamp).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
             entries: r.entries,
             exits: r.exits,
             occupancy: r.occupancy,
           }))
         );
       })
-      .catch(() => {})
+      .catch(() => setHistory([]))
       .finally(() => setLoadingHist(false));
-  }, []);
+  }, [histDate, histHour, histHours]);
 
   useEffect(() => {
     if (selected) loadHistory(selected);
   }, [selected, loadHistory]);
+
+  const historyAnchorLabel = histDate
+    ? `Historical data from ${new Date(`${histDate}T${String(histHour).padStart(2, "0")}:00:00Z`).toLocaleString([], {
+        month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit",
+      })}`
+    : "Last 24h live window (up to date)";
 
   useEffect(() => {
     let s;
@@ -290,12 +302,12 @@ function CrowdMonitoring() {
       <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-3">
         {/* History Chart */}
         <div className="card card-pad xl:col-span-2 border-slate-800">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="font-extrabold tracking-tight text-white">
                 Inflow vs Outflow — {selectedStation?.name || "Station"}
               </h3>
-              <p className="text-xs text-slate-400">Gate entries & exit trend over past 24 hours</p>
+              <p className="text-xs text-slate-400">{historyAnchorLabel}</p>
             </div>
             <select
               className="input w-auto py-1 text-xs"
@@ -306,6 +318,41 @@ function CrowdMonitoring() {
                 <option key={s.id} value={s.id}>{s.name} ({s.id})</option>
               ))}
             </select>
+          </div>
+
+          {/* Historical Data Tracker: pick a past date/time window to inspect */}
+          <div className="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-3">
+            <div>
+              <label className="label">As-of Date (blank = latest/live)</label>
+              <input
+                type="date"
+                className="input py-1.5 text-xs"
+                value={histDate}
+                onChange={(e) => setHistDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label">Start Hour</label>
+              <select className="input py-1.5 text-xs" value={histHour} onChange={(e) => setHistHour(e.target.value)}>
+                <option value="now">Now</option>
+                {Array.from({ length: 24 }, (_, h) => (
+                  <option key={h} value={h}>{String(h).padStart(2, "0")}:00</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">Window</label>
+              <select className="input py-1.5 text-xs" value={histHours} onChange={(e) => setHistHours(Number(e.target.value))}>
+                <option value="12">12 hours</option>
+                <option value="24">24 hours</option>
+                <option value="48">48 hours (2 days)</option>
+                <option value="72">72 hours (3 days)</option>
+                <option value="168">7 days</option>
+              </select>
+            </div>
+            <p className="text-[10px] text-slate-500 pb-1">
+              Track recorded gate entries/exits for a chosen past date · leave date blank to keep the feed up to date.
+            </p>
           </div>
 
           {loadingHist ? (

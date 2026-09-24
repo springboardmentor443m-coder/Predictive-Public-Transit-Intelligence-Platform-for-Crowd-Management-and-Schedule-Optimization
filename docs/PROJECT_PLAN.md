@@ -90,7 +90,7 @@ Redis keys: `crowd:latest:{station_id}` snapshots, `alerts:recent` list.
 | GET | /api/v1/stations | any | network stations |
 | GET | /api/v1/crowd/live | any | live density per station |
 | GET | /api/v1/crowd/heatmap | any | heatmap matrix (station × hour) |
-| GET | /api/v1/crowd/station/{id}/history | any | inflow/outflow history |
+| GET | /api/v1/crowd/station/{id}/history | any | inflow/outflow history (optional `start_time` anchors a chosen past date for historical tracking) |
 | POST | /api/v1/crowd/ingest | operator+ | sensor/gate ingest (live snapshot refresh) |
 | GET | /api/v1/trains | any | fleet list |
 | GET | /api/v1/trains/live | any | live fleet telemetry (position, status, ETA, load) |

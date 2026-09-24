@@ -21,6 +21,12 @@ const LINE_TEXT = {
   Green: "text-emerald-400",
 };
 
+const LINE_ROUTES = {
+  Red: "Central Junction · Riverside Park · Tech District · South Commons",
+  Blue: "Old Town Market · Stadium Plaza · University Gate",
+  Green: "Airport Terminal · Harbor Front · North Industrial",
+};
+
 function Trains() {
   const [trains, setTrains] = useState([]);
   const [selectedId, setSelectedId] = useState("");
@@ -82,8 +88,8 @@ function Trains() {
     if (!trainId) return;
     setLoadingDetail(true);
     Promise.all([
-      api.get(`/trains/${trainId}/schedule`).catch(() => []),
-      api.get(`/predictions/train/${trainId}?hours=12`).catch(() => []),
+      api.get(`/trains/${trainId}/schedule`).then((r) => r.data).catch(() => []),
+      api.get(`/predictions/train/${trainId}?hours=12`).then((r) => r.data).catch(() => []),
     ])
       .then(([sc, fc]) => {
         setSchedule(sc);
@@ -140,6 +146,24 @@ function Trains() {
             <p className="mt-1 text-xs sm:text-sm text-slate-300">
               {trains.length} fleet units tracked · {connected ? "streaming via Socket.IO per-train rooms" : "15s polling fallback"}
             </p>
+
+            {/* Metro line legend: what the color-coded lines mean */}
+            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+              {Object.entries(LINE_ROUTES).map(([line, route]) => (
+                <span
+                  key={line}
+                  className="group inline-flex items-center gap-2 text-[11px] text-slate-300"
+                  title={`${line} Line — a color-coded rail corridor serving: ${route}. Each train on this card runs along this corridor.`}
+                >
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: LINE_COLORS[line] }} />
+                  <span className="font-extrabold uppercase tracking-wide">{line} Line</span>
+                  <span className="hidden text-slate-500 group-hover:inline lg:inline">{route}</span>
+                </span>
+              ))}
+              <span className="text-[10px] text-slate-500 lg:hidden">
+                Hover a dot for the corridor route
+              </span>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">

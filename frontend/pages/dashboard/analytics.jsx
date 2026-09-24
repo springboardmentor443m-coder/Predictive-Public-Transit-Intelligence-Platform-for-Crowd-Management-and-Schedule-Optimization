@@ -19,11 +19,12 @@ function Analytics() {
   const [traffic, setTraffic] = useState([]);
   const [perf, setPerf] = useState([]);
   const [insights, setInsights] = useState(null);
+  const [trafficHours, setTrafficHours] = useState(24);
 
   useEffect(() => {
     Promise.all([
       api.get("/analytics/overview"),
-      api.get("/analytics/traffic?hours=24"),
+      api.get(`/analytics/traffic?hours=${trafficHours}`),
       api.get("/analytics/station-performance?limit=10"),
       api.get("/analytics/insights").catch(() => null),
     ])
@@ -34,7 +35,7 @@ function Analytics() {
         if (ins) setInsights(ins.data);
       })
       .catch(() => {});
-  }, []);
+  }, [trafficHours]);
 
   const radarData = perf.slice(0, 6).map((p) => ({
     station: p.station_name.length > 12 ? p.station_name.slice(0, 11) + "…" : p.station_name,
@@ -107,13 +108,32 @@ function Analytics() {
       <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
         {/* Hourly Passenger Traffic Chart */}
         <div className="card card-pad border-slate-800">
-          <h3 className="font-extrabold tracking-tight text-white">Hourly Passenger Throughput Volume</h3>
-          <p className="mb-4 text-xs text-slate-400">Estimated passenger volume (thousands per hour) · 24h rolling</p>
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="font-extrabold tracking-tight text-white">Hourly Passenger Throughput Volume</h3>
+              <p className="text-xs text-slate-400">
+                Estimated passenger volume (thousands per hour) · {trafficHours}h rolling historical window
+              </p>
+            </div>
+            <div>
+              <label className="label">Historical Window</label>
+              <select
+                className="input py-1 text-xs"
+                value={trafficHours}
+                onChange={(e) => setTrafficHours(Number(e.target.value))}
+              >
+                <option value="24">Last 24 hours</option>
+                <option value="48">Last 48 hours (2 days)</option>
+                <option value="72">Last 72 hours (3 days)</option>
+                <option value="168">Last 7 days</option>
+              </select>
+            </div>
+          </div>
           
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={traffic} margin={{ left: -10, right: 10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#94a3b8" }} interval={2} stroke="#334155" />
+              <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#94a3b8" }} interval={Math.max(0, Math.round(trafficHours / 12) - 1)} stroke="#334155" />
               <YAxis unit="k" tick={{ fontSize: 11, fill: "#94a3b8" }} stroke="#334155" />
               <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }} />
               <Line type="monotone" dataKey="passenger_k" name="Passengers (k)" stroke="#3b82f6" strokeWidth={3} dot={false} />

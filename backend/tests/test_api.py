@@ -218,6 +218,21 @@ def test_station_history(client, viewer_headers):
     assert len(hist) >= 20
 
 
+def test_station_history_custom_start_time(client, viewer_headers):
+    from datetime import datetime, timedelta, timezone
+    from urllib.parse import quote
+
+    start = (datetime.now(timezone.utc) - timedelta(days=3)).replace(minute=0, second=0, microsecond=0)
+    hist = client.get(
+        f"/api/v1/crowd/station/ST01/history?hours=24&start_time={quote(start.isoformat())}",
+        headers=viewer_headers,
+    ).json()
+    assert isinstance(hist, list)
+    assert 0 < len(hist) <= 24
+    # First returned sample must not predate the requested anchor hour.
+    assert hist[0]["timestamp"][:13] >= start.strftime("%Y-%m-%dT%H")
+
+
 # ---------- Real-time Train Monitoring ----------
 
 def test_live_trains(client, viewer_headers):

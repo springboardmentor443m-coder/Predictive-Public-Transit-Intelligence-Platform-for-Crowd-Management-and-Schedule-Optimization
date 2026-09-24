@@ -158,22 +158,45 @@ def get_heatmap(db: Session) -> list[dict]:
     return points
 
 
-def get_station_history(db: Session, station_id: str, hours: int = 24) -> list[dict]:
+def get_station_history(
+    db: Session,
+    station_id: str,
+    hours: int = 24,
+    start_at: datetime | None = None,
+) -> list[dict]:
+    """Gate entries/exits history for a station over `hours`.
+
+    When `start_at` is provided it anchors the window at the selected date/time
+    (`[start_at, start_at + hours)`), enabling historical date tracking. Without
+    it the window is the last `hours` ending at now. Missing samples are filled
+    with the baseline occupancy curve so charts never render empty.
+    """
     now = datetime.utcnow()
-    since = now - timedelta(hours=hours)
+    if start_at is not None:
+        window_start = start_at
+        window_end = start_at + timedelta(hours=hours)
+        anchor_hour = start_at.hour
+    else:
+        window_start = now - timedelta(hours=hours)
+        window_end = now
+        anchor_hour = now.hour
     records = (
         db.query(RidershipRecord)
-        .filter(RidershipRecord.station_id == station_id, RidershipRecord.timestamp >= since)
+        .filter(
+            RidershipRecord.station_id == station_id,
+            RidershipRecord.timestamp >= window_start,
+            RidershipRecord.timestamp < window_end,
+        )
         .order_by(RidershipRecord.timestamp.asc())
         .all()
     )
     if not records:
-        baseline = feat.station_baseline_occupancy_pct(now.hour)
+        baseline = feat.station_baseline_occupancy_pct(anchor_hour)
         for i in range(hours):
-            h = (now.hour - hours + i + 1) % 24
+            ts = window_start + timedelta(hours=i)
             records.append(RidershipRecord(
                 station_id=station_id,
-                timestamp=now - timedelta(hours=hours - i),
+                timestamp=ts,
                 entries=int(baseline * 400),
                 exits=int(baseline * 400),
                 occupancy=int(baseline * 300),

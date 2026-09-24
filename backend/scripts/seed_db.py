@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 from datetime import datetime, timedelta, timezone
@@ -89,6 +90,7 @@ def _synthetic_rows(stations_df: pd.DataFrame) -> list:
 
 
 def _build_ridership_rows(stations_df: pd.DataFrame) -> list:
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     ridership_path = os.path.join(DATA_DIR, "ridership_hourly.csv")
     hist = None
     if os.path.exists(ridership_path):
@@ -98,85 +100,124 @@ def _build_ridership_rows(stations_df: pd.DataFrame) -> list:
             print(f"  Could not parse {ridership_path} ({e}); falling back.")
     if hist is None or hist.empty or "timestamp" not in hist.columns:
         return _synthetic_rows(stations_df)
+    # Prefer the CSV only when it is reasonably fresh (<= 3 days old); otherwise
+    # synthesize a rolling window ending *now* so the "last 24h" dashboards and
+    # freshness of the demo data are always up to date.
+    if hist["timestamp"].max() < now - timedelta(days=3):
+        print("  ridership_hourly.csv is stale; synthesizing a now-anchored window instead.")
+        return _synthetic_rows(stations_df)
     rows = _rows_from_dataframe(hist)
     return rows if rows else _synthetic_rows(stations_df)
 
 
-def seed() -> None:
+def _clear_seeded_db(db) -> int:
+    """Remove only prefix-identifiable seeded rows so `--refresh` can roll the
+    demo window forward without touching anything created by users (ingests
+    use RR-ING-*, operator-created schedules keep their own ids)."""
+    removed = 0
+    for model, prefix in (
+        (schedule.TrainSchedule, "SCH-"),
+        (ridership.RidershipRecord, "RR-ST"),
+        (alert.Alert, "AL-SEED-"),
+    ):
+        targets = db.query(model).filter(model.id.like(f"{prefix}%")).all()
+        removed += len(targets)
+        for row in targets:
+            db.delete(row)
+    db.commit()
+    return removed
+
+
+def seed(refresh: bool = False) -> None:
     print("Creating tables ...")
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
 
-    if db.query(user.User).count() > 0:
-        print("Database already seeded; skipping.")
+    users_exist = db.query(user.User).count() > 0
+    stations_exist = db.query(station.Station).count() > 0
+
+    if users_exist and not refresh:
+        print("Database already seeded; skipping. Use `--refresh` to roll the demo window forward.")
         db.close()
         return
 
-    print("Seeding users ...")
-    for email, pwd, name, role in USERS:
-        db.add(user.User(
-            id=f"usr_{role}",
-            email=email,
-            full_name=name,
-            hashed_password=hash_password(pwd),
-            role=role,
-            is_active=True,
-        ))
+    if refresh:
+        removed = _clear_seeded_db(db)
+        print(f"Refresh mode: cleared {removed} seeded rows (schedules/history/alerts).")
 
-    print("Seeding stations ...")
-    stations_path = os.path.join(DATA_DIR, "stations.csv")
-    stations_df = pd.read_csv(stations_path)
-    station_map = {}
-    for i, row in stations_df.iterrows():
-        sid = row["code"]
-        station_map[row["code"]] = sid
-        db.add(station.Station(
-            id=sid,
-            code=row["code"],
-            name=row["name"],
-            line=row["line"],
-            zone="Zone-" + str(1 + i % 3),
-            lat=12.90 + i * 0.021,
-            lng=77.50 + (i % 5) * 0.031,
-            capacity_per_hour=int(row["capacity_per_hour"]),
-        ))
-
-    print("Seeding trains ...")
-    train_map = {}
-    lines = sorted(stations_df["line"].unique())
-    tid = 1
-    for line in lines:
-        for n in range(4):
-            code = f"TR-{line[0]}{tid:02d}"
-            train_map[code] = code
-            db.add(train.Train(
-                id=code,
-                code=code,
-                model="MetroCoach-M8" if n % 2 == 0 else "MetroCoach-M6",
-                capacity=1200 if n % 2 == 0 else 900,
-                status="active" if n < 3 else "maintenance",
+    if not users_exist:
+        print("Seeding users ...")
+        for email, pwd, name, role in USERS:
+            db.add(user.User(
+                id=f"usr_{role}",
+                email=email,
+                full_name=name,
+                hashed_password=hash_password(pwd),
+                role=role,
+                is_active=True,
             ))
-            tid += 1
 
-    db.commit()
+    if not stations_exist:
+        print("Seeding stations ...")
+        stations_path = os.path.join(DATA_DIR, "stations.csv")
+        stations_df = pd.read_csv(stations_path)
+        station_map = {}
+        for i, row in stations_df.iterrows():
+            sid = row["code"]
+            station_map[row["code"]] = sid
+            db.add(station.Station(
+                id=sid,
+                code=row["code"],
+                name=row["name"],
+                line=row["line"],
+                zone="Zone-" + str(1 + i % 3),
+                lat=12.90 + i * 0.021,
+                lng=77.50 + (i % 5) * 0.031,
+                capacity_per_hour=int(row["capacity_per_hour"]),
+            ))
 
-    print("Seeding schedules (next 24h) ...")
+    stations_df = pd.read_csv(os.path.join(DATA_DIR, "stations.csv"))
+    if not stations_exist:
+        print("Seeding trains ...")
+        train_map = {}
+        lines = sorted(stations_df["line"].unique())
+        tid = 1
+        for line in lines:
+            for n in range(4):
+                code = f"TR-{line[0]}{tid:02d}"
+                train_map[code] = code
+                db.add(train.Train(
+                    id=code,
+                    code=code,
+                    model="MetroCoach-M8" if n % 2 == 0 else "MetroCoach-M6",
+                    capacity=1200 if n % 2 == 0 else 900,
+                    status="active" if n < 3 else "maintenance",
+                ))
+                tid += 1
+        db.commit()
+    else:
+        lines = sorted(stations_df["line"].unique())
+
+    print("Seeding schedules (next 24h rolling window) ...")
     now = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
     peak_hours = {7, 8, 9, 16, 17, 18}
+    _train_map = {t.code: t.id for t in db.query(train.Train).all()}
     sched_count = 0
     for line in lines:
         line_stations = [c for c, r in zip(stations_df["code"], stations_df["line"]) if r == line]
-        line_trains = [t for t in train_map if t.startswith(f"TR-{line[0]}")]
-        for t_idx, tcode in enumerate(line_trains[:3]):
+        line_trains = [t for t in _train_map if t.startswith(f"TR-{line[0]}")][:3]
+        for t_idx, tcode in enumerate(line_trains):
             offset = t_idx * 20
-            for hour in range(5, 24):
+            for h in range(1, 25):
+                ts = now + timedelta(hours=h, minutes=offset)
+                hour = ts.hour
                 headway = 4 if hour in peak_hours else 8
                 st_code = line_stations[(hour + t_idx) % len(line_stations)]
-                arrival = now.replace(hour=hour) + timedelta(minutes=offset)
+                arrival = ts
                 delay = 0 if hour not in peak_hours else int((sched_count * 7) % 4)
                 status = "on_time" if delay <= 2 else "delayed"
                 db.add(schedule.TrainSchedule(
-                    id=f"SCH-{tcode}-{hour:02d}-{st_code}",
+                    id=f"SCH-{tcode}-{ts.strftime('%m%d%H%M')}-{st_code}",
                     train_id=tcode,
                     station_id=st_code,
                     direction=("northbound" if (hour + t_idx) % 2 == 0 else "southbound"),
@@ -191,7 +232,7 @@ def seed() -> None:
     db.commit()
     print(f"  {sched_count} schedules created")
 
-    print("Seeding ridership history (last 7 days) ...")
+    print("Seeding ridership history (last 7 days, now-anchored) ...")
     rows = _build_ridership_rows(stations_df)
     db.bulk_save_objects(rows)
     db.commit()
@@ -255,4 +296,12 @@ def seed_mongo_events() -> None:
 
 
 if __name__ == "__main__":
-    seed()
+    parser = argparse.ArgumentParser(description="Seed (or refresh) MetroFlow demo data.")
+    parser.add_argument(
+        "--refresh",
+        action="store_true",
+        help="Roll the demo window forward: replace seeded schedules/history/alerts "
+        "with now-anchored data (keeps users, stations, trains and user-created rows).",
+    )
+    args = parser.parse_args()
+    seed(refresh=args.refresh)
