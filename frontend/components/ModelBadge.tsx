@@ -1,6 +1,20 @@
 import { BrainCircuit, Cpu, Database, Sparkles } from "lucide-react";
+import type { ModelInfo } from "../lib/types";
 
-export default function ModelBadge({ info, compact = false }) {
+interface ModelBadgeProps {
+  info: ModelInfo | null | undefined;
+  compact?: boolean;
+}
+
+const CITY_LABELS: Record<string, string> = {
+  seoul: "Seoul Metro",
+  hangzhou: "Hangzhou Metro",
+  nyc: "NYC Subway",
+  tfl: "London TfL",
+  beijing: "Beijing Metro",
+};
+
+export default function ModelBadge({ info, compact = false }: ModelBadgeProps) {
   if (!info) {
     return (
       <div className="flex items-center gap-2.5 rounded-2xl bg-slate-900 border border-slate-800 px-4 py-3 text-xs text-slate-400">
@@ -9,15 +23,9 @@ export default function ModelBadge({ info, compact = false }) {
     );
   }
 
-  const cityLabel = {
-    seoul: "Seoul Metro",
-    hangzhou: "Hangzhou Metro",
-    nyc: "NYC Subway",
-    tfl: "London TfL",
-    beijing: "Beijing Metro",
-  }[info.city] || info.city;
+  const cityLabel = CITY_LABELS[info.city] || info.city;
 
-  const metrics = [
+  const metrics: Array<[string, string]> = [
     ["Crowd R²", info.crowd?.metrics?.r2 != null ? Number(info.crowd.metrics.r2).toFixed(3) : "0.896"],
     ["Demand R²", info.demand?.metrics?.r2 != null ? Number(info.demand.metrics.r2).toFixed(3) : "0.923"],
     ["Crowd MAE", info.crowd?.metrics?.mae != null ? Number(info.crowd.metrics.mae).toFixed(3) : "2.410"],

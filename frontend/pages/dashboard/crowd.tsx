@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { ArrowDown, ArrowUp, Download, Loader2, Radio, Send, Sparkles } from "lucide-react";
 import {
   Area,
@@ -19,18 +19,27 @@ import { useToast } from "../../components/ToastContext";
 import api from "../../lib/api";
 import { getSocket, joinStationRoom } from "../../lib/socket";
 import { downloadCsv } from "../../lib/csv";
+import type { Station, LiveCrowdSnapshot, StationHeatmapPoint, StationHistoryPoint, ModelInfo } from "../../lib/types";
+
+interface HistoryRow {
+  time: string;
+  full: string;
+  entries: number;
+  exits: number;
+  occupancy: number;
+}
 
 function CrowdMonitoring() {
   const { hasRole } = useAuth();
   const { showToast } = useToast();
   const canIngest = hasRole("admin", "operator");
 
-  const [stations, setStations] = useState([]);
-  const [live, setLive] = useState([]);
-  const [heatmap, setHeatmap] = useState([]);
-  const [modelInfo, setModelInfo] = useState(null);
+  const [stations, setStations] = useState<Station[]>([]);
+  const [live, setLive] = useState<LiveCrowdSnapshot[]>([]);
+  const [heatmap, setHeatmap] = useState<StationHeatmapPoint[]>([]);
+  const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
   const [selected, setSelected] = useState("ST01");
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = useState<HistoryRow[]>([]);
   const [loadingHist, setLoadingHist] = useState(false);
   const [histDate, setHistDate] = useState("");
   const [histHour, setHistHour] = useState("now");
@@ -42,10 +51,10 @@ function CrowdMonitoring() {
   const loadStatic = useCallback(async () => {
     try {
       const [st, lv, hm, mi] = await Promise.all([
-        api.get("/stations"),
-        api.get("/crowd/live"),
-        api.get("/crowd/heatmap"),
-        api.get("/predictions/model-info").catch(() => null),
+        api.get<Station[]>("/stations"),
+        api.get<LiveCrowdSnapshot[]>("/crowd/live"),
+        api.get<StationHeatmapPoint[]>("/crowd/heatmap"),
+        api.get<ModelInfo>("/predictions/model-info").catch(() => null),
       ]);
       setStations(st.data);
       setLive(lv.data);
@@ -59,11 +68,11 @@ function CrowdMonitoring() {
     loadStatic();
   }, [loadStatic]);
 
-  const loadHistory = useCallback((stationId) => {
+  const loadHistory = useCallback((stationId: string) => {
     setLoadingHist(true);
     const start = histDate ? `${histDate}T${String(histHour).padStart(2, "0")}:00:00` : "";
     const qs = `hours=${histHours}` + (start ? `&start_time=${encodeURIComponent(start)}` : "");
-    api.get(`/crowd/station/${stationId}/history?${qs}`)
+    api.get<StationHistoryPoint[]>(`/crowd/station/${stationId}/history?${qs}`)
       .then((res) => {
         setHistory(
           res.data.map((r) => ({
@@ -90,12 +99,12 @@ function CrowdMonitoring() {
     : "Last 24h live window (up to date)";
 
   useEffect(() => {
-    let s;
+    let s: ReturnType<typeof getSocket> | undefined;
     try {
       s = getSocket();
       s.on("connect", () => setConnected(true));
       s.on("disconnect", () => setConnected(false));
-      s.on("crowd_update", (snap) => {
+      s.on("crowd_update", (snap: LiveCrowdSnapshot) => {
         setLive((prev) => {
           const idx = prev.findIndex((p) => p.station_id === snap.station_id);
           if (idx === -1) return [...prev, snap];
@@ -106,7 +115,7 @@ function CrowdMonitoring() {
       });
     } catch {}
     const iv = setInterval(() => {
-      api.get("/crowd/live").then((r) => setLive(r.data)).catch(() => {});
+      api.get<LiveCrowdSnapshot[]>("/crowd/live").then((r) => setLive(r.data)).catch(() => {});
     }, 25000);
     return () => {
       clearInterval(iv);
@@ -126,11 +135,11 @@ function CrowdMonitoring() {
   const selectedLive = live.find((s) => s.station_id === selected);
   const strained = useMemo(() => live.filter((s) => ["high", "critical"].includes(s.congestion_level)).length, [live]);
 
-  async function submitIngest(e) {
+  async function submitIngest(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setIngesting(true);
     try {
-      const res = await api.post("/crowd/ingest", {
+      const res = await api.post<LiveCrowdSnapshot>("/crowd/ingest", {
         station_id: selected,
         entries: Number(ingest.entries),
         exits: Number(ingest.exits),
@@ -140,14 +149,14 @@ function CrowdMonitoring() {
       loadHistory(selected);
       showToast(`Ingested gate reading for ${selectedStation?.name || selected}`, "success");
     } catch (err) {
-      showToast(err?.response?.data?.detail || "Ingest failed", "error");
+      showToast((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Ingest failed", "error");
     } finally {
       setIngesting(false);
     }
   }
 
   function exportHeatmap() {
-    downloadCsv(`metroflow-heatmap-${Date.now()}.csv`, heatmap, [
+    downloadCsv<StationHeatmapPoint>(`metroflow-heatmap-${Date.now()}.csv`, heatmap, [
       { label: "station_id", key: "station_id" },
       { label: "station_name", key: "station_name" },
       { label: "hour", key: "hour" },
@@ -213,7 +222,7 @@ function CrowdMonitoring() {
                 min={0}
                 className="input py-2 font-mono"
                 value={ingest.entries}
-                onChange={(e) => setIngest({ ...ingest, entries: e.target.value })}
+                onChange={(e) => setIngest({ ...ingest, entries: Number(e.target.value) })}
               />
             </div>
             <div>
@@ -223,7 +232,7 @@ function CrowdMonitoring() {
                 min={0}
                 className="input py-2 font-mono"
                 value={ingest.exits}
-                onChange={(e) => setIngest({ ...ingest, exits: e.target.value })}
+                onChange={(e) => setIngest({ ...ingest, exits: Number(e.target.value) })}
               />
             </div>
             <div>
@@ -233,7 +242,7 @@ function CrowdMonitoring() {
                 min={0}
                 className="input py-2 font-mono"
                 value={ingest.occupancy}
-                onChange={(e) => setIngest({ ...ingest, occupancy: e.target.value })}
+                onChange={(e) => setIngest({ ...ingest, occupancy: Number(e.target.value) })}
               />
             </div>
             <div className="flex items-end">
@@ -359,6 +368,12 @@ function CrowdMonitoring() {
             <div className="flex h-[300px] items-center justify-center text-slate-500">
               <Loader2 className="mr-2 h-5 w-5 animate-spin text-brand-400" /> Loading station telemetry history...
             </div>
+          ) : history.length === 0 ? (
+            <div className="flex h-[300px] items-center justify-center rounded-xl border border-dashed border-slate-800 text-center">
+              <p className="px-6 text-xs text-slate-500">
+                No recorded telemetry for this station and window. Try a wider window or reset the date to live.
+              </p>
+            </div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={history} margin={{ left: -10, right: 10 }}>
@@ -406,7 +421,7 @@ function CrowdMonitoring() {
                 />
               </div>
               <p className="mt-1.5 text-xs font-mono text-slate-400">
-                {selectedLive ? `${selectedLive.occupancy?.toLocaleString()} / ${selectedLive.capacity?.toLocaleString()} capacity` : "—"}
+                {selectedLive ? `${Number(selectedLive.occupancy).toLocaleString()} / ${Number(selectedLive.capacity).toLocaleString()} capacity` : "—"}
               </p>
             </div>
 

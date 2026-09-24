@@ -12,16 +12,18 @@ import { withAuth } from "../../lib/auth";
 import { useToast } from "../../components/ToastContext";
 import api from "../../lib/api";
 import { downloadCsv } from "../../lib/csv";
+import type { AnalyticsOverview, TrafficSeriesPoint, StationPerformance, AiInsights } from "../../lib/types";
 
 function Analytics() {
   const { showToast } = useToast();
-  const [overview, setOverview] = useState(null);
-  const [traffic, setTraffic] = useState([]);
-  const [perf, setPerf] = useState([]);
-  const [insights, setInsights] = useState(null);
+  const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
+  const [traffic, setTraffic] = useState<TrafficSeriesPoint[]>([]);
+  const [perf, setPerf] = useState<StationPerformance[]>([]);
+  const [insights, setInsights] = useState<AiInsights | null>(null);
   const [trafficHours, setTrafficHours] = useState(24);
   const [histDate, setHistDate] = useState("");
   const [histHour, setHistHour] = useState("now");
+  const [hydrated, setHydrated] = useState(false);
 
   const windowLabel = `last ${trafficHours}h`;
   const anchorLabel = histDate
@@ -37,10 +39,10 @@ function Analytics() {
       ? `&start_time=${encodeURIComponent(`${histDate}T${histHour === "now" ? "00" : histHour}:00:00`)}`
       : "";
     Promise.all([
-      api.get("/analytics/overview"),
-      api.get(`/analytics/traffic?hours=${trafficHours}${anchor}`),
-      api.get(`/analytics/station-performance?limit=10&hours=${trafficHours}${anchor}`),
-      api.get("/analytics/insights").catch(() => null),
+      api.get<AnalyticsOverview>("/analytics/overview"),
+      api.get<TrafficSeriesPoint[]>(`/analytics/traffic?hours=${trafficHours}${anchor}`),
+      api.get<StationPerformance[]>(`/analytics/station-performance?limit=10&hours=${trafficHours}${anchor}`),
+      api.get<AiInsights>("/analytics/insights").catch(() => null),
     ])
       .then(([ov, tr, pf, ins]) => {
         setOverview(ov.data);
@@ -48,7 +50,8 @@ function Analytics() {
         setPerf(pf.data);
         if (ins) setInsights(ins.data);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setHydrated(true));
   }, [trafficHours, histDate, histHour]);
 
   const radarData = perf.slice(0, 6).map((p) => ({
@@ -58,7 +61,7 @@ function Analytics() {
   }));
 
   function exportPerf() {
-    downloadCsv(`metroflow-station-performance-${Date.now()}.csv`, perf, [
+    downloadCsv<StationPerformance>(`metroflow-station-performance-${Date.now()}.csv`, perf, [
       { label: "station_id", key: "station_id" },
       { label: "station_name", key: "station_name" },
       { label: "avg_occupancy_pct", key: "avg_occupancy_pct" },
@@ -72,7 +75,7 @@ function Analytics() {
   }
 
   function exportTraffic() {
-    downloadCsv(`metroflow-traffic-${Date.now()}.csv`, traffic, [
+    downloadCsv<TrafficSeriesPoint>(`metroflow-traffic-${Date.now()}.csv`, traffic, [
       { label: "hour", key: "hour" },
       { label: "label", key: "label" },
       { label: "passenger_k", key: "passenger_k" },
@@ -87,8 +90,8 @@ function Analytics() {
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard label="On-time Performance" value={overview ? `${overview.on_time_pct}%` : "—"} accent="emerald" />
         <KpiCard label="Avg Network Occupancy" value={overview ? `${overview.avg_occupancy_pct}%` : "—"} accent="brand" />
-        <KpiCard label="Delayed Services" value={overview ? overview.delayed_count ?? "—" : "—"} accent="amber" />
-        <KpiCard label="Open Alerts" value={overview?.active_alerts ?? "—"} accent={overview?.active_alerts > 3 ? "rose" : "sky"} />
+        <KpiCard label="Delayed Services" value={overview != null ? (overview.delayed_count ?? "—") : "—"} accent="amber" />
+        <KpiCard label="Open Alerts" value={overview?.active_alerts ?? "—"} accent={(overview?.active_alerts ?? 0) > 3 ? "rose" : "sky"} />
       </div>
 
       {/* AI Operational Insights */}
@@ -191,6 +194,17 @@ function Analytics() {
             </div>
           </div>
           
+          {!hydrated ? (
+            <div className="flex h-[300px] items-center justify-center text-xs text-slate-500">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin text-brand-400" /> Loading traffic series...
+            </div>
+          ) : traffic.length === 0 ? (
+            <div className="flex h-[300px] items-center justify-center rounded-xl border border-dashed border-slate-800 text-center">
+              <p className="px-6 text-xs text-slate-500">
+                No passenger throughput data for the selected window. Try a wider window or reset to live.
+              </p>
+            </div>
+          ) : (
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={traffic} margin={{ left: -10, right: 10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
@@ -200,6 +214,7 @@ function Analytics() {
               <Line type="monotone" dataKey="passenger_k" name="Passengers (k)" stroke="#3b82f6" strokeWidth={3} dot={false} />
             </LineChart>
           </ResponsiveContainer>
+          )}
         </div>
 
         {/* Station Health Radar */}
@@ -209,6 +224,15 @@ function Analytics() {
             Congestion Score vs Punctuality % (Top 6 major stations) · {anchorLabel}
           </p>
 
+          {!hydrated ? (
+            <div className="flex h-[300px] items-center justify-center text-xs text-slate-500">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin text-brand-400" /> Loading station health...
+            </div>
+          ) : radarData.length === 0 ? (
+            <div className="flex h-[300px] items-center justify-center rounded-xl border border-dashed border-slate-800 text-center">
+              <p className="px-6 text-xs text-slate-500">No station performance data for the selected window.</p>
+            </div>
+          ) : (
           <ResponsiveContainer width="100%" height={300}>
             <RadarChart data={radarData} outerRadius="70%">
               <PolarGrid stroke="#1e293b" />
@@ -219,6 +243,7 @@ function Analytics() {
               <Radar name="Punctuality %" dataKey="punctuality" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.3} />
             </RadarChart>
           </ResponsiveContainer>
+          )}
         </div>
       </div>
 
@@ -300,6 +325,15 @@ function Analytics() {
         <h3 className="font-extrabold tracking-tight text-white">{trafficHours}-Hour Average Occupancy per Station</h3>
         <p className="mb-4 text-xs text-slate-400">Color mapped by congestion level · {anchorLabel}</p>
 
+        {!hydrated ? (
+          <div className="flex h-[260px] items-center justify-center text-xs text-slate-500">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin text-brand-400" /> Loading occupancy report...
+          </div>
+        ) : perf.length === 0 ? (
+          <div className="flex h-[260px] items-center justify-center rounded-xl border border-dashed border-slate-800 text-center">
+            <p className="px-6 text-xs text-slate-500">No occupancy data for the selected window.</p>
+          </div>
+        ) : (
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={perf.slice().reverse()} margin={{ left: -10, right: 10 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
@@ -313,6 +347,7 @@ function Analytics() {
             </Bar>
           </BarChart>
         </ResponsiveContainer>
+        )}
       </div>
     </DashboardLayout>
   );

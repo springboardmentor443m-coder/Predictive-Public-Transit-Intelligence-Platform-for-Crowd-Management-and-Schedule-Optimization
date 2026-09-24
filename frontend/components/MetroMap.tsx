@@ -1,26 +1,35 @@
 import { useState } from "react";
 import { congestionColor } from "./StatusBadge";
-import { TrainFront } from "lucide-react";
+import type { Station, LiveCrowdSnapshot } from "../lib/types";
 
-const LINE_COLORS = {
+const LINE_COLORS: Record<string, string> = {
   Red: "#ef4444",
   Blue: "#3b82f6",
   Green: "#10b981",
 };
 
-const LINE_ROUTES = {
+const LINE_ROUTES: Record<string, string> = {
   Red: "Central Junction · Riverside Park · Tech District · South Commons",
   Blue: "Old Town Market · Stadium Plaza · University Gate",
   Green: "Airport Terminal · Harbor Front · North Industrial",
 };
 
-export default function MetroMap({ stations = [], live = [], selected, onSelect }) {
+interface MetroMapProps {
+  stations?: Station[];
+  live?: LiveCrowdSnapshot[];
+  selected?: string | null;
+  onSelect?: (stationId: string) => void;
+}
+
+export default function MetroMap({ stations = [], live = [], selected, onSelect }: MetroMapProps) {
   const [filterLine, setFilterLine] = useState("all");
 
-  const liveById = Object.fromEntries((live || []).map((s) => [s.station_id, s]));
-  
+  const liveById: Record<string, LiveCrowdSnapshot> = Object.fromEntries(
+    (live || []).map((s) => [s.station_id, s])
+  );
+
   // Group stations by line preserving order
-  const lines = {};
+  const lines: Record<string, Station[]> = {};
   stations.forEach((s) => {
     (lines[s.line] = lines[s.line] || []).push(s);
   });
@@ -29,18 +38,19 @@ export default function MetroMap({ stations = [], live = [], selected, onSelect 
   const H = 280;
 
   // Layout: track Y coordinates
-  const trackY = {};
+  const trackY: Record<string, number> = {};
   lineNames.forEach((ln, i) => {
     trackY[ln] = 70 + i * 80;
   });
 
-  function xFor(line, idx, total) {
+  function xFor(line: string, idx: number, total: number): number {
     const pad = 80;
     if (total <= 1) return W / 2;
     return pad + (idx * (W - pad * 2)) / (total - 1);
   }
 
-  const activeLineNames = filterLine === "all" ? lineNames : lineNames.filter((l) => l.toLowerCase() === filterLine.toLowerCase());
+  const activeLineNames =
+    filterLine === "all" ? lineNames : lineNames.filter((l) => l.toLowerCase() === filterLine.toLowerCase());
 
   return (
     <div className="space-y-3">
@@ -153,7 +163,7 @@ export default function MetroMap({ stations = [], live = [], selected, onSelect 
                   className="cursor-pointer group"
                 >
                   <title>{`${s.name} (${s.id}) · Line: ${s.line} · Occupancy: ${pct}% · Congestion: ${snap?.congestion_level || "low"}`}</title>
-                  
+
                   {/* Selection Pulsing Ring */}
                   {isSel && (
                     <circle

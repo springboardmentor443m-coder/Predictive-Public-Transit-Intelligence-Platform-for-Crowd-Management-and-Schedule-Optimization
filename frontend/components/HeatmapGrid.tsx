@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { congestionColor } from "./StatusBadge";
+import type { StationHeatmapPoint } from "../lib/types";
 
-export default function HeatmapGrid({ points, stations, onSelectStation }) {
+interface HeatmapGridProps {
+  points: StationHeatmapPoint[];
+  stations?: Array<{ id: string; name: string }>;
+  onSelectStation?: (stationId: string) => void;
+}
+
+export default function HeatmapGrid({ points, stations, onSelectStation }: HeatmapGridProps) {
   const [query, setQuery] = useState("");
 
   if (!points || !points.length) {
@@ -13,17 +20,17 @@ export default function HeatmapGrid({ points, stations, onSelectStation }) {
     );
   }
 
-  const byHour = {};
+  const byHour: Record<number, StationHeatmapPoint[]> = {};
   for (const p of points) {
     (byHour[p.hour] = byHour[p.hour] || []).push(p);
   }
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
-  const allStations = (
-    stations ||
-    Object.values(byHour)[0]?.map((p) => ({ id: p.station_id, name: p.station_name })) ||
-    []
-  );
+  const allStations: Array<{ id: string; name: string }> =
+    stations || (
+      Object.values(byHour)[0]?.map((p) => ({ id: p.station_id, name: p.station_name })) ||
+      []
+    );
 
   const filteredStations = allStations.filter(
     (st) => st.name.toLowerCase().includes(query.toLowerCase()) || st.id.toLowerCase().includes(query.toLowerCase())

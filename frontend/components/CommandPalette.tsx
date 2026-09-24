@@ -1,21 +1,46 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { Search, Activity, CalendarClock, BrainCircuit, TrainFront, Bell, Settings, ArrowRight, X } from "lucide-react";
+import { Search, Activity, CalendarClock, BrainCircuit, TrainFront, Bell, Settings, ArrowRight, X, type LucideIcon } from "lucide-react";
 import api from "../lib/api";
+import type { Station } from "../lib/types";
 
-export default function CommandPalette({ isOpen, onClose, onOpen }) {
+interface NavCommand {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  section: string;
+}
+
+const NAV_ITEMS: NavCommand[] = [
+  { href: "/dashboard", label: "Operations Overview", icon: Activity, section: "Navigation" },
+  { href: "/dashboard/crowd", label: "Crowd Monitoring Map", icon: Activity, section: "Navigation" },
+  { href: "/dashboard/trains", label: "Real-Time Train Monitoring", icon: TrainFront, section: "Navigation" },
+  { href: "/dashboard/scheduling", label: "Train Schedules & Headway", icon: CalendarClock, section: "Navigation" },
+  { href: "/dashboard/predictions", label: "AI Crowd & Delay Predictions", icon: BrainCircuit, section: "Navigation" },
+  { href: "/dashboard/analytics", label: "Analytics & Performance Reports", icon: TrainFront, section: "Navigation" },
+  { href: "/dashboard/alerts", label: "Alert Feed & Broadcast Center", icon: Bell, section: "Navigation" },
+  { href: "/dashboard/settings", label: "Settings & User Management", icon: Settings, section: "Navigation" },
+];
+
+interface CommandPaletteProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onOpen: () => void;
+}
+
+export default function CommandPalette({ isOpen, onClose, onOpen }: CommandPaletteProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [stations, setStations] = useState([]);
+  const [stations, setStations] = useState<Station[]>([]);
 
   useEffect(() => {
     if (isOpen) {
-      api.get("/stations").then((r) => setStations(r.data)).catch(() => {});
+      api.get<Station[]>("/stations").then((r) => setStations(r.data)).catch(() => {});
     }
   }, [isOpen]);
 
   useEffect(() => {
-const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         if (isOpen) onClose(); else onOpen();
@@ -30,17 +55,6 @@ const handleKeyDown = (e) => {
 
   if (!isOpen) return null;
 
-  const NAV_ITEMS = [
-    { href: "/dashboard", label: "Operations Overview", icon: Activity, section: "Navigation" },
-    { href: "/dashboard/crowd", label: "Crowd Monitoring Map", icon: Activity, section: "Navigation" },
-    { href: "/dashboard/trains", label: "Real-Time Train Monitoring", icon: TrainFront, section: "Navigation" },
-    { href: "/dashboard/scheduling", label: "Train Schedules & Headway", icon: CalendarClock, section: "Navigation" },
-    { href: "/dashboard/predictions", label: "AI Crowd & Delay Predictions", icon: BrainCircuit, section: "Navigation" },
-    { href: "/dashboard/analytics", label: "Analytics & Performance Reports", icon: TrainFront, section: "Navigation" },
-    { href: "/dashboard/alerts", label: "Alert Feed & Broadcast Center", icon: Bell, section: "Navigation" },
-    { href: "/dashboard/settings", label: "Settings & User Management", icon: Settings, section: "Navigation" },
-  ];
-
   const q = query.trim().toLowerCase();
 
   const filteredNav = NAV_ITEMS.filter((i) => i.label.toLowerCase().includes(q));
@@ -48,7 +62,7 @@ const handleKeyDown = (e) => {
     (s) => s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q) || s.line.toLowerCase().includes(q)
   );
 
-  const navigateTo = (href) => {
+  const navigateTo = (href: string) => {
     router.push(href);
     onClose();
   };

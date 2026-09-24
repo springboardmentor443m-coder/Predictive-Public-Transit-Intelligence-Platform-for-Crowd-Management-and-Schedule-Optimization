@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { BellRing, Check, Download, Loader2, Megaphone, Radio, ShieldAlert } from "lucide-react";
 import DashboardLayout from "../../components/DashboardLayout";
 import StatusBadge from "../../components/StatusBadge";
@@ -7,6 +7,9 @@ import { useToast } from "../../components/ToastContext";
 import api from "../../lib/api";
 import { getSocket } from "../../lib/socket";
 import { downloadCsv } from "../../lib/csv";
+import type { AlertItem, Station } from "../../lib/types";
+
+type Filter = "open" | "ack" | "all";
 
 function Alerts() {
   const { hasRole } = useAuth();
@@ -14,14 +17,14 @@ function Alerts() {
   const canOperate = hasRole("admin", "operator");
   const isAdmin = hasRole("admin");
 
-  const [alerts, setAlerts] = useState([]);
-  const [filter, setFilter] = useState("open");
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [filter, setFilter] = useState<Filter>("open");
   const [typeF, setTypeF] = useState("");
   const [sevF, setSevF] = useState("");
   const [stationF, setStationF] = useState("");
-  const [busyId, setBusyId] = useState(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [bcForm, setBcForm] = useState({ title: "", message: "", station_id: "" });
-  const [stations, setStations] = useState([]);
+  const [stations, setStations] = useState<Station[]>([]);
   const [sending, setSending] = useState(false);
 
   const load = useCallback(() => {
@@ -32,23 +35,23 @@ function Alerts() {
     if (sevF) params.set("severity", sevF);
     if (stationF) params.set("station_id", stationF);
 
-    api.get(`/alerts?${params.toString()}`)
+    api.get<AlertItem[]>(`/alerts?${params.toString()}`)
       .then((res) => setAlerts(res.data))
       .catch(() => {});
   }, [filter, typeF, sevF, stationF]);
 
   useEffect(() => {
     load();
-    api.get("/stations").then((r) => setStations(r.data)).catch(() => {});
+    api.get<Station[]>("/stations").then((r) => setStations(r.data)).catch(() => {});
     const iv = setInterval(load, 20000);
     return () => clearInterval(iv);
   }, [load]);
 
   useEffect(() => {
-    let s;
+    let s: ReturnType<typeof getSocket> | undefined;
     try {
       s = getSocket();
-      s.on("alert", (newAlert) => {
+      s.on("alert", (newAlert: AlertItem) => {
         showToast(newAlert.title || "New emergency broadcast", "error", "ALERT RECEIVED");
         load();
       });
@@ -58,20 +61,20 @@ function Alerts() {
     };
   }, [load, showToast]);
 
-  async function acknowledge(id) {
+  async function acknowledge(id: string) {
     setBusyId(id);
     try {
       await api.post(`/alerts/${id}/acknowledge`);
       showToast("Alert acknowledged & resolved", "success");
       load();
     } catch (err) {
-      showToast(err?.response?.data?.detail || "Failed to acknowledge alert", "error");
+      showToast((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to acknowledge alert", "error");
     } finally {
       setBusyId(null);
     }
   }
 
-  async function broadcast(e) {
+  async function broadcast(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSending(true);
     try {
@@ -86,14 +89,14 @@ function Alerts() {
       setBcForm({ title: "", message: "", station_id: "" });
       load();
     } catch (err) {
-      showToast(err?.response?.data?.detail || "Broadcast failed (admin privileges required)", "error");
+      showToast((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Broadcast failed (admin privileges required)", "error");
     } finally {
       setSending(false);
     }
   }
 
   function exportCsv() {
-    downloadCsv(`metroflow-alerts-${Date.now()}.csv`, alerts, [
+    downloadCsv<AlertItem>(`metroflow-alerts-${Date.now()}.csv`, alerts, [
       { label: "id", key: "id" },
       { label: "type", key: "type" },
       { label: "severity", key: "severity" },
@@ -128,11 +131,11 @@ function Alerts() {
 
             <div className="flex flex-wrap items-center gap-2.5">
               <div className="flex rounded-xl bg-slate-950 p-1 text-xs font-bold border border-slate-800">
-                {[
+                {([
                   ["open", "Open"],
                   ["ack", "Resolved"],
                   ["all", "All Logs"],
-                ].map(([v, l]) => (
+                ] as Array<[Filter, string]>).map(([v, l]) => (
                   <button
                     key={v}
                     onClick={() => setFilter(v)}

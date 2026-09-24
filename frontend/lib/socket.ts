@@ -1,14 +1,14 @@
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 
 // Empty/unset NEXT_PUBLIC_API_URL -> same-origin socket (proxied by
 // next.config.js rewrites to BACKEND_INTERNAL_URL in container deployments).
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+export const API_URL: string = process.env.NEXT_PUBLIC_API_URL || "";
 
-let socket = null;
-let joinedStation = null;
-let joinedTrain = null;
+let socket: Socket | null = null;
+let joinedStation: string | null = null;
+let joinedTrain: string | null = null;
 
-function authPayload() {
+function authPayload(): Record<string, string> | undefined {
   if (typeof window === "undefined") return undefined;
   try {
     const token = sessionStorage.getItem("metroflow_token");
@@ -18,7 +18,7 @@ function authPayload() {
   }
 }
 
-export function getSocket() {
+export function getSocket(): Socket {
   if (socket && socket.connected) return socket;
   if (socket) {
     try { socket.disconnect(); } catch {}
@@ -34,13 +34,13 @@ export function getSocket() {
   });
   // Re-join station/train rooms after reconnects.
   socket.on("connect", () => {
-    if (joinedStation) socket.emit("join_station", { station_id: joinedStation });
-    if (joinedTrain) socket.emit("join_train", { train_id: joinedTrain });
+    if (joinedStation) socket!.emit("join_station", { station_id: joinedStation });
+    if (joinedTrain) socket!.emit("join_train", { train_id: joinedTrain });
   });
   return socket;
 }
 
-export function joinStationRoom(stationId) {
+export function joinStationRoom(stationId: string | null) {
   joinedStation = stationId || null;
   try {
     const s = getSocket();
@@ -55,7 +55,7 @@ export function leaveStationRoom() {
   joinedStation = null;
 }
 
-export function joinTrainRoom(trainId) {
+export function joinTrainRoom(trainId: string | null) {
   joinedTrain = trainId || null;
   try {
     const s = getSocket();

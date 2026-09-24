@@ -1,10 +1,10 @@
-import axios from "axios";
+import axios, { AxiosInstance } from "axios";
 
 // Empty/unset NEXT_PUBLIC_API_URL -> same-origin requests (proxied by
 // next.config.js rewrites to BACKEND_INTERNAL_URL in container deployments).
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+export const API_URL: string = process.env.NEXT_PUBLIC_API_URL || "";
 
-const api = axios.create({
+const api: AxiosInstance = axios.create({
   baseURL: `${API_URL}/api/v1`,
   timeout: 30000,
 });

@@ -1,12 +1,30 @@
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from "react";
 import api from "./api";
-
-const AuthContext = createContext(null);
+import type { User } from "./types";
 
 const TOKEN_KEY = "metroflow_token";
 const USER_KEY = "metroflow_user";
 
-function readSession() {
+interface AuthContextValue {
+  user: User | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<User>;
+  logout: () => void;
+  refreshUser: () => Promise<User>;
+  hasRole: (...roles: string[]) => boolean;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+function readSession(): { token: string | null; user: string | null } {
   if (typeof window === "undefined") return { token: null, user: null };
   return {
     token: sessionStorage.getItem(TOKEN_KEY),
@@ -22,8 +40,8 @@ function clearSession() {
   localStorage.removeItem(USER_KEY);
 }
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,7 +57,7 @@ export function AuthProvider({ children }) {
       } catch {}
     }
     api
-      .get("/auth/me")
+      .get<User>("/auth/me")
       .then((res) => {
         setUser(res.data);
         sessionStorage.setItem(USER_KEY, JSON.stringify(res.data));
@@ -51,22 +69,22 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const refreshUser = useCallback(async () => {
-    const res = await api.get("/auth/me");
+  const refreshUser = useCallback(async (): Promise<User> => {
+    const res = await api.get<User>("/auth/me");
     sessionStorage.setItem(USER_KEY, JSON.stringify(res.data));
     setUser(res.data);
     return res.data;
   }, []);
 
-  const login = useCallback(async (email, password) => {
+  const login = useCallback(async (email: string, password: string): Promise<User> => {
     const form = new URLSearchParams();
     form.append("username", email);
     form.append("password", password);
-    const res = await api.post("/auth/login", form.toString(), {
+    const res = await api.post<{ access_token: string }>("/auth/login", form.toString(), {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
     });
     sessionStorage.setItem(TOKEN_KEY, res.data.access_token);
-    const me = await api.get("/auth/me");
+    const me = await api.get<User>("/auth/me");
     sessionStorage.setItem(USER_KEY, JSON.stringify(me.data));
     setUser(me.data);
     return me.data;
@@ -79,7 +97,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const hasRole = useCallback(
-    (...roles) => user && roles.includes(user.role),
+    (...roles: string[]) => !!(user && roles.includes(user.role)),
     [user]
   );
 
@@ -90,13 +108,16 @@ export function AuthProvider({ children }) {
   );
 }
 
-export function useAuth() {
-  return useContext(AuthContext);
+export function useAuth(): AuthContextValue {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
 }
 
-export function withAuth(Component) {
-  return function Protected(props) {
-    const { user, loading } = useAuth();
+export function withAuth<P extends object>(Component: ComponentType<P>) {
+  return function Protected(props: P) {
+    const auth = useAuth();
+    const { user, loading } = auth || { user: null, loading: true };
     useEffect(() => {
       if (!loading && !user) window.location.href = "/login";
     }, [loading, user]);

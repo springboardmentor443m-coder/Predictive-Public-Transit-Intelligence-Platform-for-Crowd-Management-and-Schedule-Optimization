@@ -8,38 +8,39 @@ import StatusBadge, { congestionColor } from "../../components/StatusBadge";
 import { withAuth } from "../../lib/auth";
 import api from "../../lib/api";
 import { getSocket, joinTrainRoom } from "../../lib/socket";
+import type { TrainLive, ScheduleEntry, PredictionPoint } from "../../lib/types";
 
-const LINE_COLORS = {
+const LINE_COLORS: Record<string, string> = {
   Red: "#f43f5e",
   Blue: "#3b82f6",
   Green: "#10b981",
 };
 
-const LINE_TEXT = {
+const LINE_TEXT: Record<string, string> = {
   Red: "text-rose-400",
   Blue: "text-brand-400",
   Green: "text-emerald-400",
 };
 
-const LINE_ROUTES = {
+const LINE_ROUTES: Record<string, string> = {
   Red: "Central Junction · Riverside Park · Tech District · South Commons",
   Blue: "Old Town Market · Stadium Plaza · University Gate",
   Green: "Airport Terminal · Harbor Front · North Industrial",
 };
 
 function Trains() {
-  const [trains, setTrains] = useState([]);
+  const [trains, setTrains] = useState<TrainLive[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [detail, setDetail] = useState(null);
-  const [schedule, setSchedule] = useState([]);
-  const [forecast, setForecast] = useState([]);
+  const [detail, setDetail] = useState<TrainLive | null>(null);
+  const [schedule, setSchedule] = useState<ScheduleEntry[]>([]);
+  const [forecast, setForecast] = useState<PredictionPoint[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
   const loadTrains = useCallback(async () => {
     try {
-      const res = await api.get("/trains/live");
+      const res = await api.get<TrainLive[]>("/trains/live");
       setTrains(res.data);
       if (!selectedId && res.data.length) setSelectedId((cur) => cur || res.data[0].train_id);
     } catch {}
@@ -52,12 +53,12 @@ function Trains() {
 
   // Realtime: Socket.IO train_update feed + 15s polling fallback.
   useEffect(() => {
-    let s;
+    let s: ReturnType<typeof getSocket> | undefined;
     try {
       s = getSocket();
       s.on("connect", () => setConnected(true));
       s.on("disconnect", () => setConnected(false));
-      s.on("train_update", (tr) => {
+      s.on("train_update", (tr: TrainLive) => {
         setTrains((prev) => {
           const idx = prev.findIndex((t) => t.train_id === tr.train_id);
           if (idx === -1) return [...prev, tr];
@@ -84,12 +85,12 @@ function Trains() {
   }, [selectedId]);
 
   // Load detail panel (schedule + per-stop forecast) when a train is selected.
-  const loadDetail = useCallback((trainId) => {
+  const loadDetail = useCallback((trainId: string) => {
     if (!trainId) return;
     setLoadingDetail(true);
     Promise.all([
-      api.get(`/trains/${trainId}/schedule`).then((r) => r.data).catch(() => []),
-      api.get(`/predictions/train/${trainId}?hours=12`).then((r) => r.data).catch(() => []),
+      api.get<ScheduleEntry[]>(`/trains/${trainId}/schedule`).then((r) => r.data).catch(() => [] as ScheduleEntry[]),
+      api.get<PredictionPoint[]>(`/predictions/train/${trainId}?hours=12`).then((r) => r.data).catch(() => [] as PredictionPoint[]),
     ])
       .then(([sc, fc]) => {
         setSchedule(sc);
@@ -114,7 +115,7 @@ function Trains() {
   const statusCounts = useMemo(() => {
     const counts = { in_transit: 0, at_station: 0, delayed: 0, awaiting_departure: 0, in_depot: 0, out_of_service: 0 };
     trains.forEach((t) => {
-      if (counts[t.status] != null) counts[t.status] += 1;
+      if (counts[t.status as keyof typeof counts] != null) counts[t.status as keyof typeof counts] += 1;
     });
     return counts;
   }, [trains]);
@@ -124,9 +125,9 @@ function Trains() {
   const lineAccent = LINE_COLORS[selLine] || "#3b82f6";
 
   const forecastChart = forecast.map((p) => ({
-    label: new Date(p.arrival).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    label: p.timestamp ? new Date(p.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : `${String(p.hour).padStart(2, "0")}:00`,
     occupancy: p.predicted_occupancy_pct,
-    entries: p.predicted_entries,
+    entries: (p as PredictionPoint & { predicted_entries?: number }).predicted_entries,
   }));
 
   return (
@@ -309,7 +310,7 @@ function Trains() {
                       </tr>
                     ))}
                     {schedule.length === 0 && (
-                      <tr><td colSpan="4" className="py-8 text-center text-xs text-slate-500">No upcoming stops in the current timetable window.</td></tr>
+                      <tr><td colSpan={4} className="py-8 text-center text-xs text-slate-500">No upcoming stops in the current timetable window.</td></tr>
                     )}
                   </tbody>
                 </table>

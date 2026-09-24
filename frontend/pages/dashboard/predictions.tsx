@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { BrainCircuit, CalendarDays, Clock3, Lightbulb, Loader2, Sparkles, TrainFront, TrendingUp } from "lucide-react";
 import {
   Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -9,12 +9,20 @@ import StatusBadge from "../../components/StatusBadge";
 import { withAuth } from "../../lib/auth";
 import { useToast } from "../../components/ToastContext";
 import api from "../../lib/api";
+import type { Station, PredictionPoint, DemandPoint, Recommendation, TrafficPattern, ModelInfo, DelayPredictResponse } from "../../lib/types";
 
-function CrowdTooltip({ active, payload, label }) {
+interface TooltipRow {
+  dataKey?: string | number;
+  value?: number | string | Array<number | string>;
+  name?: string | number;
+}
+
+function CrowdTooltip({ active, payload, label }: { active?: boolean; payload?: TooltipRow[]; label?: string | number }) {
   if (!active || !payload?.length) return null;
-  const base = payload.find((p) => p.dataKey === "bandBase")?.value ?? 0;
-  const width = payload.find((p) => p.dataKey === "bandWidth")?.value ?? 0;
-  const predicted = payload.find((p) => p.dataKey === "predicted")?.value;
+  const base = Number(payload.find((p) => p.dataKey === "bandBase")?.value ?? 0);
+  const width = Number(payload.find((p) => p.dataKey === "bandWidth")?.value ?? 0);
+  const raw = payload.find((p) => p.dataKey === "predicted")?.value;
+  const predicted = raw == null ? null : Number(raw);
   return (
     <div className="rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2.5 text-xs text-white shadow-xl backdrop-blur-xl">
       <p className="font-extrabold text-brand-400">{label}</p>
@@ -40,19 +48,18 @@ const NJ_LINES = [
 
 function Predictions() {
   const { showToast } = useToast();
-  const [stations, setStations] = useState([]);
+  const [stations, setStations] = useState<Station[]>([]);
   const [stationId, setStationId] = useState("");
-  const [crowd, setCrowd] = useState([]);
-  const [demand, setDemand] = useState([]);
-  const [recs, setRecs] = useState([]);
-  const [patterns, setPatterns] = useState([]);
-  const [modelInfo, setModelInfo] = useState(null);
+  const [crowd, setCrowd] = useState<PredictionPoint[]>([]);
+  const [demand, setDemand] = useState<DemandPoint[]>([]);
+  const [recs, setRecs] = useState<Recommendation[]>([]);
+  const [patterns, setPatterns] = useState<TrafficPattern[]>([]);
+  const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Forecast window controls: pick an explicit date + start hour, or run from
   // the current hour ("now"). The models resolve day-of-week per hour so the
   // window can span multiple days.
-  const today = new Date();
   const [forecastDate, setForecastDate] = useState(() => {
     const d = new Date();
     d.setMinutes(0, 0, 0);
@@ -66,9 +73,9 @@ function Predictions() {
     return `${forecastDate}T${String(forecastHour).padStart(2, "0")}:00:00`;
   }, [forecastDate, forecastHour]);
 
-  const formatPoint = (p) => {
-    const t = new Date(p.timestamp);
-    if (Number.isNaN(t.getTime())) return `${String(p.hour).padStart(2, "0")}:00`;
+  const formatPoint = (p: { hour: number; timestamp?: string | null }) => {
+    const t = p.timestamp ? new Date(p.timestamp) : null;
+    if (!t || Number.isNaN(t.getTime())) return `${String(p.hour).padStart(2, "0")}:00`;
     const day = t.toLocaleDateString([], { month: "short", day: "numeric" });
     const todayStr = new Date().toLocaleDateString([], { month: "short", day: "numeric" });
     return day === todayStr ? `${String(p.hour).padStart(2, "0")}:00` : `${day} ${String(p.hour).padStart(2, "0")}:00`;
@@ -78,25 +85,25 @@ function Predictions() {
     line: "Northeast Corrdr",
     from_station: "NY Penn",
     to_station: "Newark Penn",
-    stop_sequence: 5,
-    hour: 8,
-    weekday: 1,
+    stop_sequence: "5",
+    hour: "8",
+    weekday: "1",
     scheduled_time: "08:30",
     train_type: "NJ Transit",
   });
-  const [delayRes, setDelayRes] = useState(null);
+  const [delayRes, setDelayRes] = useState<DelayPredictResponse | null>(null);
   const [delayBusy, setDelayBusy] = useState(false);
   const [delayErr, setDelayErr] = useState("");
 
   useEffect(() => {
-    api.get("/stations/").then((res) => {
+    api.get<Station[]>("/stations/").then((res) => {
       setStations(res.data);
       if (res.data.length) setStationId(res.data[0].id);
     }).catch(() => {});
 
-    api.get("/predictions/recommendations").then((res) => setRecs(res.data)).catch(() => {});
-    api.get("/predictions/patterns").then((res) => setPatterns(res.data)).catch(() => {});
-    api.get("/predictions/model-info").then((res) => setModelInfo(res.data)).catch(() => {});
+    api.get<Recommendation[]>("/predictions/recommendations").then((res) => setRecs(res.data)).catch(() => {});
+    api.get<TrafficPattern[]>("/predictions/patterns").then((res) => setPatterns(res.data)).catch(() => {});
+    api.get<ModelInfo>("/predictions/model-info").then((res) => setModelInfo(res.data)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -106,8 +113,8 @@ function Predictions() {
       `station_id=${stationId}&hours=${forecastSpan}` +
       (startTimeParam ? `&start_time=${encodeURIComponent(startTimeParam)}` : "");
     Promise.all([
-      api.get(`/predictions/crowd?${qs}`),
-      api.get(`/predictions/demand?${qs}`),
+      api.get<PredictionPoint[]>(`/predictions/crowd?${qs}`),
+      api.get<DemandPoint[]>(`/predictions/demand?${qs}`),
     ])
       .then(([c, d]) => {
         setCrowd(c.data);
@@ -135,13 +142,13 @@ function Predictions() {
     demand[0] || { hour: "--", predicted_entries: 0 }
   );
 
-  async function runDelay(e) {
+  async function runDelay(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setDelayBusy(true);
     setDelayErr("");
     setDelayRes(null);
     try {
-      const res = await api.post("/predictions/delay", {
+      const res = await api.post<DelayPredictResponse>("/predictions/delay", {
         line: delayForm.line,
         from_station: delayForm.from_station,
         to_station: delayForm.to_station,
@@ -154,7 +161,7 @@ function Predictions() {
       setDelayRes(res.data);
       showToast(`Predicted delay bucket: ${res.data.delay_bucket}`, "info");
     } catch (err) {
-      setDelayErr(err?.response?.data?.detail || "Delay model offline. Ensure model artifacts exist.");
+      setDelayErr((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Delay model offline. Ensure model artifacts exist.");
     } finally {
       setDelayBusy(false);
     }

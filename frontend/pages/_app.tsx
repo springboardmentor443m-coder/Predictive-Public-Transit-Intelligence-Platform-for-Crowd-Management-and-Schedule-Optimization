@@ -1,9 +1,10 @@
+import type { AppProps } from "next/app";
 import { AuthProvider } from "../lib/auth";
 import { ThemeProvider } from "../components/ThemeContext";
 import { ToastProvider } from "../components/ToastContext";
 import "../styles/globals.css";
 
-export default function App({ Component, pageProps }) {
+export default function App({ Component, pageProps }: AppProps) {
   return (
     <ThemeProvider>
       <ToastProvider>

@@ -12,17 +12,18 @@ import { withAuth, useAuth } from "../../lib/auth";
 import { useToast } from "../../components/ToastContext";
 import api from "../../lib/api";
 import { getSocket } from "../../lib/socket";
+import type { AnalyticsOverview, TrafficSeriesPoint, TrainLive, LiveCrowdSnapshot, AlertItem, AiInsights, ModelInfo } from "../../lib/types";
 
 function Overview() {
   const { user } = useAuth();
   const { showToast } = useToast();
-  const [overview, setOverview] = useState(null);
-  const [live, setLive] = useState([]);
-  const [trains, setTrains] = useState([]);
-  const [traffic, setTraffic] = useState([]);
-  const [alerts, setAlerts] = useState([]);
-  const [insights, setInsights] = useState(null);
-  const [modelInfo, setModelInfo] = useState(null);
+  const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
+  const [live, setLive] = useState<LiveCrowdSnapshot[]>([]);
+  const [trains, setTrains] = useState<TrainLive[]>([]);
+  const [traffic, setTraffic] = useState<TrafficSeriesPoint[]>([]);
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [insights, setInsights] = useState<AiInsights | null>(null);
+  const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
   const [connected, setConnected] = useState(false);
   const [search, setSearch] = useState("");
   const [lineFilter, setLineFilter] = useState("all");
@@ -30,13 +31,13 @@ function Overview() {
   const loadAll = useCallback(async () => {
     try {
       const [ov, lv, trs, tr, al, ins, mi] = await Promise.all([
-        api.get("/analytics/overview"),
-        api.get("/crowd/live"),
-        api.get("/trains/live"),
-        api.get("/analytics/traffic?hours=24"),
-        api.get("/alerts?limit=6"),
-        api.get("/analytics/insights").catch(() => null),
-        api.get("/predictions/model-info").catch(() => null),
+        api.get<AnalyticsOverview>("/analytics/overview"),
+        api.get<LiveCrowdSnapshot[]>("/crowd/live"),
+        api.get<TrainLive[]>("/trains/live"),
+        api.get<TrafficSeriesPoint[]>("/analytics/traffic?hours=24"),
+        api.get<AlertItem[]>("/alerts?limit=6"),
+        api.get<AiInsights>("/analytics/insights").catch(() => null),
+        api.get<ModelInfo>("/predictions/model-info").catch(() => null),
       ]);
       setOverview(ov.data);
       setLive(lv.data);
@@ -55,12 +56,12 @@ function Overview() {
   }, [loadAll]);
 
   useEffect(() => {
-    let s;
+    let s: ReturnType<typeof getSocket> | undefined;
     try {
       s = getSocket();
       s.on("connect", () => setConnected(true));
       s.on("disconnect", () => setConnected(false));
-      s.on("crowd_update", (snap) => {
+      s.on("crowd_update", (snap: LiveCrowdSnapshot) => {
         setLive((prev) => {
           const idx = prev.findIndex((p) => p.station_id === snap.station_id);
           if (idx === -1) return [...prev, snap];
@@ -69,7 +70,7 @@ function Overview() {
           return next;
         });
       });
-      s.on("train_update", (tr) => {
+      s.on("train_update", (tr: TrainLive) => {
         setTrains((prev) => {
           const idx = prev.findIndex((t) => t.train_id === tr.train_id);
           if (idx === -1) return [...prev, tr];
@@ -78,7 +79,7 @@ function Overview() {
           return next;
         });
       });
-      s.on("alert", (newAlert) => {
+      s.on("alert", (newAlert: AlertItem) => {
         showToast(newAlert.title || "New system alert triggered", "warning");
         loadAll();
       });
@@ -120,7 +121,7 @@ function Overview() {
       <div className="hero-gradient relative overflow-hidden rounded-2xl border border-slate-800 p-6 sm:p-8 text-white shadow-2xl">
         <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-brand-500/20 blur-3xl animate-pulse-slow" />
         <div className="absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-emerald-400/20 blur-3xl" />
-        
+
         <div className="relative z-10 flex flex-wrap items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
             <div className="flex items-center gap-2">
@@ -193,7 +194,7 @@ function Overview() {
           label="Active Alerts"
           value={overview?.active_alerts ?? "—"}
           icon={AlertTriangle}
-          accent={overview?.active_alerts > 0 ? "rose" : "emerald"}
+          accent={(overview?.active_alerts ?? 0) > 0 ? "rose" : "emerald"}
           sub={overview?.active_alerts ? "Immediate operator review needed" : "Network operating smoothly"}
         />
       </div>
@@ -393,18 +394,12 @@ function Overview() {
           <h3 className="font-extrabold tracking-tight text-white">Network Traffic Trend — 24 Hours</h3>
           <p className="mb-4 text-xs text-slate-400">Passenger throughput volume (thousands per hour)</p>
           <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={traffic} margin={{ left: -12, right: 12 }}>
-              <defs>
-                <linearGradient id="occGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2563eb" stopOpacity={0.4} />
-                  <stop offset="100%" stopColor="#2563eb" stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
+            <AreaChart data={traffic} margin={{ left: 0, right: 12 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
               <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#94a3b8" }} interval={2} stroke="#334155" />
               <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} stroke="#334155" unit="k" />
               <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }} />
-              <Area type="monotone" dataKey="passenger_k" name="Passengers (k)" stroke="#3b82f6" strokeWidth={3} fill="url(#occGrad)" />
+              <Area type="monotone" dataKey="passenger_k" name="Passengers (k)" stroke="#3b82f6" strokeWidth={3} fill="rgba(37, 99, 235, 0.2)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>

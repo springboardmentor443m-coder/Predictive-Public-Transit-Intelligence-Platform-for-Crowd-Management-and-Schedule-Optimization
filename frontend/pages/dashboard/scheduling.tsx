@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { Download, Loader2, Pencil, Plus, Search, Sparkles, Trash2, Zap } from "lucide-react";
 import DashboardLayout from "../../components/DashboardLayout";
 import StatusBadge from "../../components/StatusBadge";
@@ -6,22 +6,24 @@ import { withAuth, useAuth } from "../../lib/auth";
 import { useToast } from "../../components/ToastContext";
 import api from "../../lib/api";
 import { downloadCsv } from "../../lib/csv";
+import type { ScheduleEntry, Station, Recommendation } from "../../lib/types";
 
 const PAGE_SIZE = 12;
+type LoadState = "loading" | "loaded" | "error";
 
 function Scheduling() {
   const { hasRole } = useAuth();
   const { showToast } = useToast();
   const canEdit = hasRole("admin", "operator");
 
-  const [schedules, setSchedules] = useState([]);
-  const [trains, setTrains] = useState([]);
-  const [stations, setStations] = useState([]);
-  const [recs, setRecs] = useState([]);
-  const [recsState, setRecsState] = useState("loading");
-  const [schedulesState, setSchedulesState] = useState("loading");
+  const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
+  const [trains, setTrains] = useState<string[]>([]);
+  const [stations, setStations] = useState<Station[]>([]);
+  const [recs, setRecs] = useState<Recommendation[]>([]);
+  const [recsState, setRecsState] = useState<LoadState>("loading");
+  const [schedulesState, setSchedulesState] = useState<LoadState>("loading");
   const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState(null);
+  const [editing, setEditing] = useState<ScheduleEntry | null>(null);
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
@@ -36,10 +38,10 @@ function Scheduling() {
   });
 
   const load = useCallback(async () => {
-    const st = await api.get("/stations").catch(() => null);
+    const st = await api.get<Station[]>("/stations").catch(() => null);
     if (st) setStations(st.data);
 
-    api.get("/predictions/recommendations")
+    api.get<Recommendation[]>("/predictions/recommendations")
       .then((res) => {
         setRecs(res.data);
         setRecsState("loaded");
@@ -47,7 +49,7 @@ function Scheduling() {
       .catch(() => setRecsState("error"));
 
     try {
-      const sc = await api.get("/scheduling/schedules?limit=200");
+      const sc = await api.get<ScheduleEntry[]>("/scheduling/schedules?limit=200");
       setSchedules(sc.data);
       setSchedulesState("loaded");
       const ids = [...new Set(sc.data.map((s) => s.train_id))];
@@ -65,7 +67,7 @@ function Scheduling() {
     return () => clearInterval(iv);
   }, [load]);
 
-  const stationName = useCallback((id) => stations.find((s) => s.id === id)?.name || id, [stations]);
+  const stationName = useCallback((id: string) => stations.find((s) => s.id === id)?.name || id, [stations]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -88,7 +90,7 @@ function Scheduling() {
     setShowForm(true);
   }
 
-  function openEdit(s) {
+  function openEdit(s: ScheduleEntry) {
     setEditing(s);
     setForm({
       train_id: s.train_id,
@@ -101,7 +103,7 @@ function Scheduling() {
     setShowForm(true);
   }
 
-  async function saveSchedule(e) {
+  async function saveSchedule(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
     try {
@@ -130,26 +132,29 @@ function Scheduling() {
       setEditing(null);
       load();
     } catch (err) {
-      showToast(err?.response?.data?.detail || "Failed to save schedule", "error");
+      showToast((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to save schedule", "error");
     } finally {
       setBusy(false);
     }
   }
 
-  async function applyHeadway(stationId) {
+  async function applyHeadway(stationId: string) {
     try {
-      const res = await api.post(`/scheduling/apply-headway/${stationId}`, {});
+      const res = await api.post<{ applied_headway_min: number; station_name: string; schedules_updated: number }>(
+        `/scheduling/apply-headway/${stationId}`,
+        {}
+      );
       showToast(
         `Applied ${res.data.applied_headway_min}m headway at ${res.data.station_name} (${res.data.schedules_updated} updated)`,
         "success"
       );
       load();
     } catch (err) {
-      showToast(err?.response?.data?.detail || "Failed to apply headway", "error");
+      showToast((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to apply headway", "error");
     }
   }
 
-  async function reportDelay(s) {
+  async function reportDelay(s: ScheduleEntry) {
     const val = prompt(`Report delay (minutes) for ${s.train_id} at ${stationName(s.station_id)}:`, "5");
     if (val === null) return;
     try {
@@ -157,11 +162,11 @@ function Scheduling() {
       showToast(`Reported +${val} min delay on ${s.train_id}`, "warning");
       load();
     } catch (err) {
-      showToast(err?.response?.data?.detail || "Failed to report delay", "error");
+      showToast((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to report delay", "error");
     }
   }
 
-  async function removeSchedule(id) {
+  async function removeSchedule(id: string) {
     if (!confirm("Delete this schedule entry?")) return;
     try {
       await api.delete(`/scheduling/schedules/${id}`);
@@ -171,7 +176,7 @@ function Scheduling() {
   }
 
   function exportCsv() {
-    downloadCsv(`metroflow-schedules-${Date.now()}.csv`, filtered, [
+    downloadCsv<ScheduleEntry>(`metroflow-schedules-${Date.now()}.csv`, filtered, [
       { label: "id", key: "id" },
       { label: "train_id", key: "train_id" },
       { label: "station", get: (r) => stationName(r.station_id) },
@@ -455,7 +460,7 @@ function Scheduling() {
                   max="30"
                   className="input"
                   value={form.headway_min}
-                  onChange={(e) => setForm({ ...form, headway_min: e.target.value })}
+                  onChange={(e) => setForm({ ...form, headway_min: e.target.value === "" ? 0 : Number(e.target.value) })}
                 />
               </div>
 

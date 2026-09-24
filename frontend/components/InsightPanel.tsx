@@ -1,7 +1,24 @@
 import { AlertTriangle, ArrowRight, Lightbulb, TrendingUp } from "lucide-react";
 import StatusBadge from "./StatusBadge";
+import type {
+  AiInsights,
+  InsightAction,
+  InsightDemandOutlook,
+  InsightStation,
+} from "../lib/types";
 
-export default function InsightPanel({ insights, onSelectStation }) {
+interface InsightPanelProps {
+  insights: AiInsights | null | undefined;
+  onSelectStation?: (stationId: string) => void;
+}
+
+const statusStyleMap: Record<string, string> = {
+  healthy: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+  watch: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+  strained: "bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse",
+};
+
+export default function InsightPanel({ insights, onSelectStation }: InsightPanelProps) {
   if (!insights) {
     return (
       <div className="card card-pad text-sm text-slate-400 flex items-center justify-center py-8">
@@ -10,11 +27,12 @@ export default function InsightPanel({ insights, onSelectStation }) {
     );
   }
 
-  const statusStyle = {
-    healthy: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-    watch: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-    strained: "bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse",
-  }[insights.network_status] || "bg-slate-800 text-slate-300 border-slate-700";
+  const statusStyle =
+    statusStyleMap[insights.network_status] || "bg-slate-800 text-slate-300 border-slate-700";
+
+  const topActions: InsightAction[] = insights.top_actions || [];
+  const criticalStations: InsightStation[] = insights.critical_stations || [];
+  const demandOutlook: InsightDemandOutlook[] = insights.demand_outlook || [];
 
   return (
     <div className="card overflow-hidden border-slate-800">
@@ -37,20 +55,20 @@ export default function InsightPanel({ insights, onSelectStation }) {
         {/* Left Column: Top Recommended Actions */}
         <div className="p-5 space-y-3">
           <p className="section-title">Top Recommended Dispatch Actions</p>
-          {(insights.top_actions || []).length === 0 ? (
+          {topActions.length === 0 ? (
             <p className="text-xs text-slate-500 py-4">All stations within target capacity. No emergency dispatch required.</p>
           ) : (
             <ul className="space-y-2.5">
-              {(insights.top_actions || []).map((a) => (
-                <li key={a.station_id} className="flex items-start gap-3 rounded-xl bg-slate-950/60 p-3 border border-slate-800/80 hover:border-slate-700 transition">
+              {topActions.map((a) => (
+                <li key={a.station_id || a.station_name} className="flex items-start gap-3 rounded-xl bg-slate-950/60 p-3 border border-slate-800/80 hover:border-slate-700 transition">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-extrabold text-white">{a.station_name}</p>
                     <p className="text-[11px] text-slate-400 mt-0.5">{a.action} · {a.reason}</p>
                   </div>
-                  {onSelectStation && (
+                  {onSelectStation && a.station_id && (
                     <button
-                      onClick={() => onSelectStation(a.station_id)}
+                      onClick={() => onSelectStation(a.station_id!)}
                       className="inline-flex shrink-0 items-center gap-1 text-xs font-extrabold text-brand-400 hover:text-brand-300 transition"
                     >
                       View <ArrowRight className="h-3.5 w-3.5" />
@@ -66,11 +84,11 @@ export default function InsightPanel({ insights, onSelectStation }) {
         <div className="p-5 space-y-4">
           <div>
             <p className="section-title mb-2.5">Strained Stations Monitor</p>
-            {(insights.critical_stations || []).length === 0 ? (
+            {criticalStations.length === 0 ? (
               <p className="text-xs text-slate-500">No high/critical congestion across network.</p>
             ) : (
               <ul className="space-y-2.5">
-                {(insights.critical_stations || []).slice(0, 4).map((s) => (
+                {criticalStations.slice(0, 4).map((s) => (
                   <li key={s.station_id} className="flex items-center gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline justify-between gap-2">
@@ -92,14 +110,14 @@ export default function InsightPanel({ insights, onSelectStation }) {
           </div>
 
           {/* Demand Outlook */}
-          {(insights.demand_outlook || []).length > 0 && (
+          {demandOutlook.length > 0 && (
             <div className="rounded-xl bg-brand-950/40 p-3.5 border border-brand-800/40">
               <p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-brand-400 mb-1.5">
                 <TrendingUp className="h-3.5 w-3.5" /> 3-Hour Passenger Inflow Outlook
               </p>
               <div className="space-y-1">
-                {insights.demand_outlook.slice(0, 3).map((d) => (
-                  <p key={d.station_id} className="text-xs text-slate-300">
+                {demandOutlook.slice(0, 3).map((d) => (
+                  <p key={d.station_id || d.station_name} className="text-xs text-slate-300">
                     <span className="font-bold text-white">{d.station_name}:</span>{" "}
                     <span className="font-mono text-brand-300">
                       {(d.next_3h_entries || []).map((v) => Number(v).toLocaleString()).join(" → ")} pax

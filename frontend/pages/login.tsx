@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { AlertCircle, Eye, EyeOff, Loader2, ShieldCheck, Sparkles, TrainFront, Activity, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { useToast } from "../components/ToastContext";
@@ -10,6 +10,10 @@ const DEMO = [
   { role: "Viewer", email: "viewer@metroflow.io", password: "Viewer@123", desc: "Read-only live monitoring & analytics" },
 ];
 
+interface AxiosErrorLike {
+  response?: { status?: number; data?: { detail?: string } };
+}
+
 export default function Login() {
   const { login } = useAuth();
   const { showToast } = useToast();
@@ -18,16 +22,21 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [apiOnline, setApiOnline] = useState(null);
+  const [apiOnline, setApiOnline] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // Check if backend is reachable
-    api.get("/analytics/overview")
+    // Check if backend is reachable (public /health endpoint, no auth needed).
+    api
+      .get("/health")
       .then(() => setApiOnline(true))
-      .catch(() => setApiOnline(false));
+      .catch((err: AxiosErrorLike) => {
+        // Any HTTP response (even 401/5xx) means the server is reachable;
+        // only a network-level failure (no response) means it is down.
+        setApiOnline(err?.response != null);
+      });
   }, []);
 
-  async function submit(e) {
+  async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
     setBusy(true);
@@ -36,10 +45,10 @@ export default function Login() {
       showToast("Signed in successfully. Welcome to MetroFlow!", "success");
       window.location.href = "/dashboard";
     } catch (err) {
-      const detail = err?.response?.data?.detail;
+      const detail = (err as AxiosErrorLike)?.response?.data?.detail;
       if (detail === "Incorrect email or password") {
         setError("Invalid email or password. Please verify credentials.");
-      } else if (err?.response?.status === 403 || /deactivated/i.test(detail || "")) {
+      } else if ((err as AxiosErrorLike)?.response?.status === 403 || /deactivated/i.test(detail || "")) {
         setError("This account has been deactivated. Please contact your administrator.");
       } else {
         setError("Unable to connect to MetroFlow backend. Ensure Python FastAPI is running on port 8000.");
@@ -51,12 +60,12 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-brand-500 selection:text-white overflow-hidden">
+    <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-brand-500 selection:text-white">
       {/* Left Brand & Live Metro Visualizer Panel */}
       <div className="relative hidden flex-1 flex-col justify-between overflow-hidden bg-slate-950 p-12 lg:flex border-r border-slate-800/80">
         {/* Ambient Glowing Gradients */}
-        <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-brand-600/25 blur-3xl animate-pulse-slow" />
-        <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-emerald-500/20 blur-3xl animate-pulse-slow" />
+        <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-brand-600/25 blur-3xl" />
+        <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-emerald-500/20 blur-3xl" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-indigo-600/10 blur-3xl" />
 
         {/* Top Header */}
@@ -71,7 +80,7 @@ export default function Login() {
             </div>
           </div>
           <span className="inline-flex items-center gap-2 rounded-full bg-slate-900/90 px-3 py-1.5 text-xs font-bold text-slate-300 ring-1 ring-slate-800 backdrop-blur-md">
-            <span className={`h-2 w-2 rounded-full ${apiOnline === true ? "bg-emerald-400 animate-ping" : apiOnline === false ? "bg-rose-400" : "bg-amber-400"}`} />
+            <span className={`h-2 w-2 rounded-full ${apiOnline === true ? "bg-emerald-400" : apiOnline === false ? "bg-rose-400" : "bg-amber-400"}`} />
             {apiOnline === true ? "Backend Online · :8000" : apiOnline === false ? "Backend Offline" : "Checking Backend..."}
           </span>
         </div>
@@ -96,7 +105,7 @@ export default function Login() {
               <span className="flex items-center gap-2 text-white"><Activity className="h-4 w-4 text-brand-400" /> LIVE NETWORK TOPOLOGY</span>
               <span className="text-emerald-400 font-mono">10 Stations Monitored</span>
             </div>
-            
+
             <svg viewBox="0 0 400 120" className="w-full h-auto">
               {/* Red Line */}
               <path d="M 30 30 L 150 30 L 250 80 L 370 80" fill="none" stroke="#ef4444" strokeWidth="4" strokeLinecap="round" opacity="0.8" />
@@ -106,7 +115,7 @@ export default function Login() {
               <path d="M 80 10 L 80 110" fill="none" stroke="#10b981" strokeWidth="3" strokeDasharray="6 4" opacity="0.6" />
 
               {/* Station Dots */}
-              {[[30,30,"ST01"], [150,30,"ST02"], [250,80,"ST03"], [370,80,"ST04"], [30,80,"ST05"], [150,80,"ST06"], [250,30,"ST07"], [370,30,"ST08"]].map(([x,y,id], i) => (
+              {([[30, 30, "ST01"], [150, 30, "ST02"], [250, 80, "ST03"], [370, 80, "ST04"], [30, 80, "ST05"], [150, 80, "ST06"], [250, 30, "ST07"], [370, 30, "ST08"]] as Array<[number, number, string]>).map(([x, y, id], i) => (
                 <g key={id}>
                   <circle cx={x} cy={y} r="6" fill="#0f172a" stroke="#ffffff" strokeWidth="2" />
                   <circle cx={x} cy={y} r="3" fill={i % 3 === 0 ? "#ef4444" : i % 2 === 0 ? "#10b981" : "#3b82f6"} />
@@ -137,8 +146,8 @@ export default function Login() {
       </div>
 
       {/* Right Login Form Panel */}
-      <div className="flex flex-1 items-center justify-center p-6 sm:p-12 relative">
-        <div className="w-full max-w-md space-y-6">
+      <div className="relative sticky top-0 flex h-screen flex-1 items-center justify-center overflow-y-auto p-6 sm:p-12">
+        <div className="my-auto w-full max-w-md space-y-6">
           {/* Mobile Logo Branding */}
           <div className="flex items-center gap-3 lg:hidden mb-4">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600 shadow-lg">
@@ -211,7 +220,7 @@ export default function Login() {
                 </p>
                 <span className="text-[10px] text-brand-400 font-semibold">Click to autofill</span>
               </div>
-              
+
               <div className="space-y-2">
                 {DEMO.map((d) => (
                   <button

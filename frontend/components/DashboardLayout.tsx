@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import {
@@ -18,6 +18,7 @@ import {
   Volume2,
   VolumeX,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { useTheme } from "./ThemeContext";
@@ -25,7 +26,18 @@ import { useToast } from "./ToastContext";
 import CommandPalette from "./CommandPalette";
 import api from "../lib/api";
 
-const NAV = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  roles: string[];
+  section: string;
+  shortcut: string;
+  badge?: boolean;
+  lockFor?: string[];
+}
+
+const NAV: NavItem[] = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, roles: ["admin", "operator", "viewer"], section: "Operate", shortcut: "1" },
   { href: "/dashboard/crowd", label: "Crowd Monitoring", icon: Activity, roles: ["admin", "operator", "viewer"], section: "Operate", shortcut: "2" },
   { href: "/dashboard/scheduling", label: "Scheduling", icon: CalendarClock, roles: ["admin", "operator"], section: "Operate", lockFor: ["viewer"], shortcut: "3" },
@@ -35,8 +47,16 @@ const NAV = [
   { href: "/dashboard/alerts", label: "Alerts", icon: Bell, roles: ["admin", "operator", "viewer"], section: "Intelligence", badge: true, shortcut: "7" },
 ];
 
-export default function DashboardLayout({ title, subtitle, children }) {
-  const { user, logout } = useAuth();
+interface DashboardLayoutProps {
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+}
+
+export default function DashboardLayout({ title, subtitle, children }: DashboardLayoutProps) {
+  const auth = useAuth();
+  const user = auth?.user ?? null;
+  const logout = auth?.logout ?? (() => {});
   const { theme, toggleTheme } = useTheme();
   const { soundEnabled, setSoundEnabled } = useToast();
   const router = useRouter();
@@ -58,11 +78,11 @@ export default function DashboardLayout({ title, subtitle, children }) {
     api.get("/alerts?acknowledged=false&limit=1").then((r) => {
       if (!alive) return;
       return api.get("/analytics/overview").then((ov) => {
-        if (alive) setOpenAlerts(ov.data?.active_alerts ?? r.data?.length ?? 0);
+        if (alive) setOpenAlerts((ov.data?.active_alerts as number | undefined) ?? (r.data as unknown[] | undefined)?.length ?? 0);
       });
     }).catch(() => {});
     const iv = setInterval(() => {
-      api.get("/analytics/overview").then((ov) => { if (alive) setOpenAlerts(ov.data?.active_alerts ?? 0); }).catch(() => {});
+      api.get("/analytics/overview").then((ov) => { if (alive) setOpenAlerts((ov.data?.active_alerts as number | undefined) ?? 0); }).catch(() => {});
     }, 25000);
     return () => { alive = false; clearInterval(iv); };
   }, []);
@@ -127,13 +147,13 @@ export default function DashboardLayout({ title, subtitle, children }) {
                     >
                       <Icon className={`h-4 w-4 shrink-0 transition-transform ${active ? "text-white scale-110" : "opacity-80 group-hover:opacity-100"}`} />
                       <span className="truncate text-xs font-semibold">{label}</span>
-                      
+
                       {badge && openAlerts > 0 && (
                         <span className="ml-auto inline-flex min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-extrabold text-white animate-pulse">
                           {openAlerts > 99 ? "99+" : openAlerts}
                         </span>
                       )}
-                      
+
                       {locked && <Lock className="ml-auto h-3.5 w-3.5 opacity-40" />}
                       {!locked && !badge && (
                         <span className="ml-auto text-[10px] font-mono text-slate-600 group-hover:text-slate-400 transition hidden lg:inline">
@@ -165,7 +185,7 @@ export default function DashboardLayout({ title, subtitle, children }) {
               {role}
             </span>
           </Link>
-          
+
           <button
             onClick={logout}
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-300"

@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
-import { Cpu, Database, Loader2, ShieldCheck, UserCog, KeyRound } from "lucide-react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Cpu, KeyRound, Loader2, ShieldCheck, UserCog } from "lucide-react";
 import DashboardLayout from "../../components/DashboardLayout";
 import StatusBadge from "../../components/StatusBadge";
 import { useAuth, withAuth } from "../../lib/auth";
 import { useToast } from "../../components/ToastContext";
 import api from "../../lib/api";
+import type { User } from "../../lib/types";
 
 function Settings() {
   const { user, hasRole, refreshUser } = useAuth();
@@ -15,7 +16,7 @@ function Settings() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMsg, setProfileMsg] = useState("");
 
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [newUser, setNewUser] = useState({ email: "", full_name: "", role: "operator", password: "" });
   const [creatingUser, setCreatingUser] = useState(false);
 
@@ -25,17 +26,17 @@ function Settings() {
 
   const loadUsers = useCallback(() => {
     if (!isAdmin) return;
-    api.get("/users").then((r) => setUsers(r.data)).catch(() => {});
+    api.get<User[]>("/users").then((r) => setUsers(r.data)).catch(() => {});
   }, [isAdmin]);
 
   useEffect(loadUsers, [loadUsers]);
 
-  async function saveProfile(e) {
+  async function saveProfile(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSavingProfile(true);
     setProfileMsg("");
     try {
-      const payload = { full_name: profileForm.full_name };
+      const payload: { full_name: string; password?: string } = { full_name: profileForm.full_name };
       if (profileForm.password) payload.password = profileForm.password;
       await api.put("/users/me", payload);
       await refreshUser();
@@ -43,7 +44,9 @@ function Settings() {
       showToast("Profile settings saved", "success");
       setProfileForm((f) => ({ ...f, password: "" }));
     } catch (err) {
-      const msg = err?.response?.data?.detail ? `Update failed: ${err.response.data.detail}` : "Update failed.";
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+        ? `Update failed: ${(err as { response: { data: { detail: string } } }).response.data.detail}`
+        : "Update failed.";
       setProfileMsg(msg);
       showToast(msg, "error");
     } finally {
@@ -51,7 +54,7 @@ function Settings() {
     }
   }
 
-  async function createUser(e) {
+  async function createUser(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setCreatingUser(true);
     try {
@@ -60,13 +63,13 @@ function Settings() {
       setNewUser({ email: "", full_name: "", role: "operator", password: "" });
       loadUsers();
     } catch (err) {
-      showToast(err?.response?.data?.detail || "Failed to create user", "error");
+      showToast((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Failed to create user", "error");
     } finally {
       setCreatingUser(false);
     }
   }
 
-  async function toggleActive(u) {
+  async function toggleActive(u: User) {
     try {
       await api.post(`/users/${u.id}/deactivate`);
       showToast(`Toggled activation status for ${u.full_name}`, "info");
@@ -75,6 +78,13 @@ function Settings() {
       showToast("Could not update user status", "error");
     }
   }
+
+  const infra: Array<[string, string, string]> = [
+    ["FastAPI Backend", "Running :8000", "Python 3.11"],
+    ["PostgreSQL Relational DB", "Active Session", "Core Storage"],
+    ["Socket.IO Realtime", "Broadcast Loop", "WebSocket / WSS"],
+    ["Redis & Mongo Cache", "Operational", "In-Memory Fallback"],
+  ];
 
   return (
     <DashboardLayout title="Settings & User Administration" subtitle="Account preferences · security · role-based access control (RBAC)">
@@ -255,12 +265,7 @@ function Settings() {
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            ["FastAPI Backend", "Running :8000", "Python 3.11", true],
-            ["PostgreSQL Relational DB", "Active Session", "Core Storage", true],
-            ["Socket.IO Realtime", "Broadcast Loop", "WebSocket / WSS", true],
-            ["Redis & Mongo Cache", "Operational", "In-Memory Fallback", true],
-          ].map(([name, status, tech, ok]) => (
+          {infra.map(([name, status, tech]) => (
             <div key={name} className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-extrabold text-white">{name}</p>

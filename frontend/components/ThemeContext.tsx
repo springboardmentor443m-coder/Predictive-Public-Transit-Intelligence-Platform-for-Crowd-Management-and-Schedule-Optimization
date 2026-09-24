@@ -1,13 +1,21 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-const ThemeContext = createContext({
+type Theme = "light" | "dark";
+
+interface ThemeContextValue {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
+}
+
+const ThemeContext = createContext<ThemeContextValue>({
   theme: "dark",
   setTheme: () => {},
   toggleTheme: () => {},
 });
 
-export function ThemeProvider({ children }) {
-  const [theme, setThemeState] = useState("dark");
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [theme, setThemeState] = useState<Theme>("dark");
 
   useEffect(() => {
     const saved = localStorage.getItem("metroflow_theme");
@@ -41,6 +49,6 @@ export function ThemeProvider({ children }) {
   );
 }
 
-export function useTheme() {
+export function useTheme(): ThemeContextValue {
   return useContext(ThemeContext);
 }

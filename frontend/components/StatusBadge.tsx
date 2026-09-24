@@ -1,4 +1,6 @@
-const STYLES = {
+import type { ReactNode } from "react";
+
+const STYLES: Record<string, string> = {
   low: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
   medium: "bg-amber-500/15 text-amber-300 border-amber-500/30",
   high: "bg-orange-500/15 text-orange-300 border-orange-500/30",
@@ -15,11 +17,15 @@ const STYLES = {
   viewer: "bg-slate-500/20 text-slate-300 border-slate-500/30",
 };
 
-const LABELS = {
+const LABELS: Record<string, string> = {
   on_time: "On time",
 };
 
-export default function StatusBadge({ value }) {
+interface StatusBadgeProps {
+  value: string | number | null | undefined;
+}
+
+export default function StatusBadge({ value }: StatusBadgeProps): ReactNode {
   const key = String(value || "").toLowerCase();
   const style = STYLES[key] || "bg-slate-800 text-slate-300 border-slate-700";
   return (
@@ -29,7 +35,8 @@ export default function StatusBadge({ value }) {
   );
 }
 
-export function congestionColor(pct) {
+export function congestionColor(pct: number | null | undefined): string {
+  if (pct == null) return "#334155";
   if (pct >= 90) return "#f43f5e"; // rose-500
   if (pct >= 75) return "#f97316"; // orange-500
   if (pct >= 55) return "#eab308"; // yellow-500
