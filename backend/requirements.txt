@@ -1,0 +1,9 @@
+fastapi
+httpx2
+uvicorn
+pydantic
+pymongo
+pandas
+numpy
+scikit-learn==1.7.2
+joblib

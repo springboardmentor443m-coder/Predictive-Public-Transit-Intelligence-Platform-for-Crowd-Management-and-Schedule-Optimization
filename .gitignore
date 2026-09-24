@@ -1,0 +1,5 @@
+
+data/
+backend/__pycache__/
+*.db
+backend/models/*.joblib
