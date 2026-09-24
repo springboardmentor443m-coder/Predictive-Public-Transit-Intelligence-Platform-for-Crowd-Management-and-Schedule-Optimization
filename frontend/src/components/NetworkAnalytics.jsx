@@ -141,11 +141,11 @@ export default function NetworkAnalytics() {
         />
         <StatCard
           title="Mean Absolute Error (MAE)"
-          value="±111.3 pax"
-          subtitle="Validated across 5,000 master trips"
+          value="±9.4%"
+          subtitle="Mean deviation from actual counts across 5,000 trips"
           icon={TrendingUp}
           color="emerald"
-          badge="High Precision"
+          badge="90.6% Precision"
         />
         <StatCard
           title="Critical Surge Windows"

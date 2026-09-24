@@ -1,5 +1,6 @@
+# MetroFlow Requirements — PostgreSQL Edition
 fastapi
-uvicorn
+uvicorn[standard]
 pandas
 numpy
 xgboost
@@ -7,3 +8,12 @@ scikit-learn
 openpyxl
 pydantic
 joblib
+passlib[cryptography]
+psycopg2-binary
+sqlalchemy[asyncio]
+aiosqlite
+asyncpg
+python-multipart
+python-jose[cryptography]
+bcrypt<4
+python-dotenv
