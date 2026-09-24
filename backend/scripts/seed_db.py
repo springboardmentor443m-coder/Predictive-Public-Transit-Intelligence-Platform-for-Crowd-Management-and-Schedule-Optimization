@@ -199,7 +199,7 @@ def seed(refresh: bool = False) -> None:
         lines = sorted(stations_df["line"].unique())
 
     print("Seeding schedules (7-day history + next 24h rolling window) ...")
-    now = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
+    now = datetime.now(timezone.utc).replace(tzinfo=None).replace(minute=0, second=0, microsecond=0)
     peak_hours = {7, 8, 9, 16, 17, 18}
     _train_map = {t.code: t.id for t in db.query(train.Train).all()}
     gen_start = now - timedelta(days=HISTORY_DAYS)
@@ -208,35 +208,46 @@ def seed(refresh: bool = False) -> None:
     for line in lines:
         line_stations = [c for c, r in zip(stations_df["code"], stations_df["line"]) if r == line]
         line_trains = [t for t in _train_map if t.startswith(f"TR-{line[0]}")][:3]
+        if not line_trains and line_stations:
+            # Imported datasets may carry line names that don't match the
+            # seeded TR-* fleet; fall back to any train so the timetable,
+            # live train map and traffic series still populate.
+            line_trains = list(_train_map)[:3]
         for t_idx, tcode in enumerate(line_trains):
-            offset = t_idx * 53
             for i in range(gen_hours):
-                ts = gen_start + timedelta(hours=i, minutes=offset % 60)
+                ts = gen_start + timedelta(hours=i)
                 hour = ts.hour
+                # Headway sets service frequency: 4 min during peak (~15 tph,
+                # 60//4) vs 8 min off-peak (7 tph). Spacing arrivals at the
+                # headway interval gives the traffic series a recognizable
+                # morning/evening rush-hour shape instead of a flat line.
                 headway = 4 if hour in peak_hours else 8
-                st_code = line_stations[(hour + t_idx) % len(line_stations)]
-                if hour in peak_hours:
-                    disrupted = line_stations[ts.day % len(line_stations)]
-                    if st_code == disrupted:
-                        delay = 5 + ((ts.hour + t_idx) % 3)
+                runs_per_hour = 60 // headway
+                for run in range(runs_per_hour):
+                    ts_run = ts + timedelta(minutes=run * headway)
+                    st_code = line_stations[(hour + t_idx + run) % len(line_stations)]
+                    if hour in peak_hours:
+                        disrupted = line_stations[ts_run.day % len(line_stations)]
+                        if st_code == disrupted:
+                            delay = 5 + ((ts_run.hour + t_idx) % 3)
+                        else:
+                            delay = int((sched_count * 7) % 4)
                     else:
-                        delay = int((sched_count * 7) % 4)
-                else:
-                    delay = 0
-                status = "on_time" if delay <= 2 else "delayed"
-                db.add(schedule.TrainSchedule(
-                    id=f"SCH-{tcode}-{ts.strftime('%m%d%H%M')}-{st_code}",
-                    train_id=tcode,
-                    station_id=st_code,
-                    direction=("northbound" if (hour + t_idx) % 2 == 0 else "southbound"),
-                    arrival=ts,
-                    departure=ts + timedelta(seconds=30),
-                    headway_min=headway,
-                    status=status,
-                    delay_min=delay,
-                    is_peak="yes" if hour in peak_hours else "no",
-                ))
-                sched_count += 1
+                        delay = 0
+                    status = "on_time" if delay <= 2 else "delayed"
+                    db.add(schedule.TrainSchedule(
+                        id=f"SCH-{tcode}-{ts_run.strftime('%m%d%H%M')}-{st_code}",
+                        train_id=tcode,
+                        station_id=st_code,
+                        direction=("northbound" if (hour + t_idx) % 2 == 0 else "southbound"),
+                        arrival=ts_run,
+                        departure=ts_run + timedelta(seconds=30),
+                        headway_min=headway,
+                        status=status,
+                        delay_min=delay,
+                        is_peak="yes" if hour in peak_hours else "no",
+                    ))
+                    sched_count += 1
     db.commit()
     print(f"  {sched_count} schedules created")
 
