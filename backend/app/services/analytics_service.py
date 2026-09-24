@@ -1,6 +1,8 @@
 import logging
 from datetime import datetime, timedelta
 
+from app.core.time import utcnow
+
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -30,7 +32,7 @@ def _predicted_peak_hour(weekday: int) -> int:
 
 
 def overview(db: Session) -> dict:
-    now = datetime.utcnow()
+    now = utcnow()
     total_stations = db.query(Station).count()
     total_trains = db.query(Train).count()
     active_alerts = db.query(Alert).filter(Alert.is_acknowledged.is_(False)).count()
@@ -66,7 +68,7 @@ def traffic_series(db: Session, hours: int = 24, start_time: datetime | None = N
     if start_time is not None:
         window_start = start_time
     else:
-        window_start = datetime.utcnow() - timedelta(hours=hours)
+        window_start = utcnow() - timedelta(hours=hours)
     window_end = window_start + timedelta(hours=hours)
     rows = (
         db.query(TrainSchedule.train_id, TrainSchedule.arrival)
@@ -116,7 +118,7 @@ def station_performance(
             window_start = start_time
             window_end = start_time + timedelta(hours=hours)
         else:
-            window_end = datetime.utcnow()
+            window_end = utcnow()
             window_start = window_end - timedelta(hours=hours)
 
     stations = db.query(Station).all()
@@ -232,7 +234,7 @@ def ai_insights(db: Session) -> dict:
         model = get_demand_model()
         for s in critical[:3]:
             fc = model.forecast_hourly(
-                __import__("datetime").datetime.utcnow().hour,
+                utcnow().hour,
                 hours_ahead=3,
                 station={"id": s["station_id"], "capacity_per_hour": s.get("capacity")},
             )
@@ -246,7 +248,7 @@ def ai_insights(db: Session) -> dict:
 
     open_alerts = db.query(Alert).filter(Alert.is_acknowledged.is_(False)).count()
     return {
-        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "generated_at": utcnow().isoformat() + "Z",
         "network_status": "strained" if critical else ("watch" if ov.get("active_alerts") else "healthy"),
         "predicted_peak_hour": ov.get("predicted_peak_hour"),
         "on_time_pct": ov.get("on_time_pct"),

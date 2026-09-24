@@ -1,9 +1,8 @@
-from datetime import datetime
-
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
+from app.core.time import utcnow
 
 
 class TrainSchedule(Base):
@@ -13,8 +12,8 @@ class TrainSchedule(Base):
     train_id = Column(String, ForeignKey("trains.id"), nullable=False, index=True)
     station_id = Column(String, ForeignKey("stations.id"), nullable=False, index=True)
     direction = Column(String, nullable=False)
-    arrival = Column(DateTime, default=lambda: datetime.utcnow())
-    departure = Column(DateTime, default=lambda: datetime.utcnow())
+    arrival = Column(DateTime, default=utcnow)
+    departure = Column(DateTime, default=utcnow)
     headway_min = Column(Integer, nullable=False, default=5)
     status = Column(String, default="on_time", nullable=False)
     delay_min = Column(Integer, default=0, nullable=False)

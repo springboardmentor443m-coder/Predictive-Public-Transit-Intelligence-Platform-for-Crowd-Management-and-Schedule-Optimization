@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
+from app.core.time import utcnow
+
 from app.models.schedule import TrainSchedule
 from app.models.station import Station
 from app.models.train import Train
@@ -29,7 +31,7 @@ def compute_recommended_headway(demand_entries: int, train_capacity: int = TRAIN
 
 
 def get_optimization_recommendations(db: Session) -> list[dict]:
-    now = datetime.utcnow()
+    now = utcnow()
     weekday = now.weekday()
     recommendations = []
     stations = db.query(Station).all()
@@ -134,7 +136,7 @@ def apply_headway(db: Session, station_id: str, headway_min: int | None = None) 
         source = "ai_recommendation"
 
     target = max(2, min(30, int(target)))
-    now = datetime.utcnow()
+    now = utcnow()
     rows = (
         db.query(TrainSchedule)
         .filter(TrainSchedule.station_id == station_id, TrainSchedule.arrival >= now)

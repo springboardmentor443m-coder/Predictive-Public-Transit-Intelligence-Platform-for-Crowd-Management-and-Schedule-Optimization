@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from app.core.database import Base, SessionLocal, engine  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
+from app.core.time import utcnow  # noqa: E402
 from app.models import alert, ridership, schedule, station, train, user  # noqa: E402,F401
 from app.main import app  # noqa: E402
 
@@ -32,7 +33,7 @@ def seed_database():
     db.add(train.Train(id="TR-R01", code="TR-R01", model="M8", capacity=1000, status="active"))
     from datetime import datetime, timedelta
 
-    now = datetime.utcnow()
+    now = utcnow()
     db.add(schedule.TrainSchedule(
         id="SCH-T1", train_id="TR-R01", station_id="ST01", direction="northbound",
         arrival=now + timedelta(hours=1), departure=now + timedelta(hours=1, minutes=1),
@@ -315,7 +316,7 @@ def test_predictions_differ_per_station(client, viewer_headers):
 def test_crowd_prediction_with_custom_start_time(client, viewer_headers):
     from datetime import datetime, timedelta
 
-    future = datetime.utcnow() + timedelta(days=2)
+    future = utcnow() + timedelta(days=2)
     iso = future.strftime("%Y-%m-%dT%H:%M:%S")
     pred = client.get(
         f"/api/v1/predictions/crowd?station_id=ST01&start_time={iso}&hours=50",
@@ -331,7 +332,7 @@ def test_crowd_prediction_with_custom_start_time(client, viewer_headers):
 def test_demand_prediction_with_custom_start_time(client, viewer_headers):
     from datetime import datetime, timedelta
 
-    future = datetime.utcnow() + timedelta(days=3)
+    future = utcnow() + timedelta(days=3)
     iso = future.strftime("%Y-%m-%dT%H:%M:%S")
     dem = client.get(
         f"/api/v1/predictions/demand?station_id=ST01&start_time={iso}&hours=26",
@@ -458,7 +459,7 @@ def test_traffic_series_with_start_time(client, viewer_headers):
     from datetime import datetime, timedelta
     from urllib.parse import quote
 
-    start = datetime.utcnow() - timedelta(hours=12)
+    start = utcnow() - timedelta(hours=12)
     tr = client.get(
         f"/api/v1/analytics/traffic?hours=24&start_time={quote(start.isoformat())}",
         headers=viewer_headers,

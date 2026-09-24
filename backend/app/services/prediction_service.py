@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta
 
+from app.core.time import utcnow
 from app.ml.model_wrappers import get_crowd_model, get_delay_model, get_demand_model
 from app.services import scheduling_service
 
 
 def _resolve_time(hour: int | None, weekday: int | None, scheduled_time: str | None) -> tuple[int, int, float]:
-    now = datetime.utcnow()
+    now = utcnow()
     if hour is None:
         hour = now.hour
     if weekday is None:
@@ -52,7 +53,7 @@ def _station_ctx(db, station_id: str | None) -> dict | None:
 
 def predict_crowd(station_id: str | None = None, hours: int = 12, db=None) -> list[dict]:
     model = get_crowd_model()
-    base_hour = datetime.utcnow().hour
+    base_hour = utcnow().hour
     if db is None:
         from app.core.database import SessionLocal
 
@@ -88,7 +89,7 @@ def predict_crowd_at(
 
 def forecast_demand(station_id: str | None = None, hours: int = 12, db=None) -> list[dict]:
     model = get_demand_model()
-    base_hour = datetime.utcnow().hour
+    base_hour = utcnow().hour
     if db is None:
         from app.core.database import SessionLocal
 
@@ -146,7 +147,7 @@ def forecast_train(
         train = db.query(Train).filter(Train.id == train_id).first()
         if train is None:
             return None
-        now = datetime.utcnow()
+        now = utcnow()
         horizon = now + timedelta(hours=hours)
         stops = (
             db.query(TrainSchedule)

@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pandas as pd
@@ -39,7 +39,7 @@ def station_factor(idx: int) -> float:
 
 def generate_ridership() -> pd.DataFrame:
     rows = []
-    start = datetime.utcnow().replace(minute=0, second=0, microsecond=0) - timedelta(days=DAYS)
+    start = datetime.now(timezone.utc).replace(tzinfo=None).replace(minute=0, second=0, microsecond=0) - timedelta(days=DAYS)
     for si, (code, name, line, cap) in enumerate(STATIONS):
         f = station_factor(si)
         for d in range(DAYS):
@@ -95,7 +95,7 @@ def generate_ticketing_events(ridership: pd.DataFrame, n: int = 50000) -> pd.Dat
 def generate_train_status(ridership: pd.DataFrame) -> pd.DataFrame:
     rows = []
     trains_per_station = 3
-    start = datetime.utcnow().replace(hour=5, minute=0, second=0, microsecond=0) - timedelta(days=14)
+    start = datetime.now(timezone.utc).replace(tzinfo=None).replace(hour=5, minute=0, second=0, microsecond=0) - timedelta(days=14)
     for si, (code, name, line, cap) in enumerate(STATIONS):
         for t in range(trains_per_station):
             train_code = f"TR-{line[:1]}{si * 3 + t + 1:02d}"

@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -7,8 +6,8 @@ from pydantic import BaseModel, ConfigDict
 class KpiStat(BaseModel):
     label: str
     value: str
-    change: Optional[str] = None
-    trend: Optional[str] = "neutral"
+    change: str | None = None
+    trend: str | None = "neutral"
 
 
 class TrafficSeriesPoint(BaseModel):

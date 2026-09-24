@@ -1,8 +1,7 @@
-from datetime import datetime
-
 from sqlalchemy import Boolean, Column, DateTime, String
 
 from app.core.database import Base
+from app.core.time import utcnow
 
 
 class User(Base):
@@ -14,4 +13,4 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     role = Column(String, default="viewer", nullable=False)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=utcnow)

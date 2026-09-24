@@ -2,6 +2,8 @@ import logging
 import random
 from datetime import datetime, timedelta
 
+from app.core.time import utcnow
+
 from sqlalchemy.orm import Session
 
 from app.core.cache import cache_get, cache_set
@@ -38,7 +40,7 @@ def log_sensor_event(snapshot: dict) -> None:
             "congestion_level": snapshot.get("congestion_level"),
             "inflow_per_min": snapshot.get("inflow_rate"),
             "outflow_per_min": snapshot.get("outflow_rate"),
-            "recorded_at": datetime.utcnow(),
+            "recorded_at": utcnow(),
         })
     except Exception as e:
         logger.debug(f"sensor event log skipped: {e}")
@@ -55,7 +57,7 @@ def compute_congestion_level(pct_float: float) -> str:
 
 
 def get_live_snapshot(db: Session, station_id: str) -> dict:
-    now = datetime.utcnow()
+    now = utcnow()
     key = f"crowd:latest:{station_id}"
     cached = cache_get(key)
     if cached:
@@ -119,12 +121,12 @@ def get_all_live_snapshots(db: Session) -> list[dict]:
 
 def get_heatmap(db: Session) -> list[dict]:
     stations = db.query(Station).all()
-    weekday = datetime.utcnow().weekday()
+    weekday = utcnow().weekday()
 
     # Load recent records once and bucket by (station, hour) in Python —
     # portable across SQLite/PostgreSQL (no dialect-specific datetime matching)
     # and avoids 240+ per-cell queries.
-    cutoff = datetime.utcnow() - timedelta(days=45)
+    cutoff = utcnow() - timedelta(days=45)
     recs = (
         db.query(RidershipRecord.station_id, RidershipRecord.timestamp, RidershipRecord.occupancy)
         .filter(RidershipRecord.timestamp >= cutoff)
@@ -171,7 +173,7 @@ def get_station_history(
     it the window is the last `hours` ending at now. Missing samples are filled
     with the baseline occupancy curve so charts never render empty.
     """
-    now = datetime.utcnow()
+    now = utcnow()
     if start_at is not None:
         window_start = start_at
         window_end = start_at + timedelta(hours=hours)
@@ -229,7 +231,7 @@ def ingest_crowd_record(
     station = db.query(Station).filter(Station.id == station_id).first()
     if not station:
         return None
-    ts = timestamp or datetime.utcnow()
+    ts = timestamp or utcnow()
     # Derive congestion from occupancy vs capacity when not supplied.
     pct = min(1.2, max(0.0, occupancy / max(1, station.capacity_per_hour)))
     congestion = compute_congestion_level(pct)
@@ -248,7 +250,7 @@ def ingest_crowd_record(
     try:
         from app.core.cache import cache_set
 
-        now = datetime.utcnow()
+        now = utcnow()
         occupancy_pct = round(min(1.0, occupancy / max(1, station.capacity_per_hour)) * 100, 1)
         snapshot = {
             "station_id": station.id,

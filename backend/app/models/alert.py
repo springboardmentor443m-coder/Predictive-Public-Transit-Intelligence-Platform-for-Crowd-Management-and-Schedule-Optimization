@@ -1,8 +1,7 @@
-from datetime import datetime
-
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
 
 from app.core.database import Base
+from app.core.time import utcnow
 
 
 class Alert(Base):
@@ -16,5 +15,5 @@ class Alert(Base):
     title = Column(String, nullable=False)
     message = Column(String, nullable=False)
     is_acknowledged = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=utcnow)
     resolved_at = Column(DateTime, nullable=True)

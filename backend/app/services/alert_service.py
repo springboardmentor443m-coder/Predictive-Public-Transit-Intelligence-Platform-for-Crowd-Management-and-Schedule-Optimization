@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
+from app.core.time import utcnow
+
 from app.models.alert import Alert
 from app.schemas.alert import AlertBroadcast
 from app.services import socketio_state
@@ -40,7 +42,7 @@ def evaluate_alerts(db: Session) -> list[dict]:
 
     created: list[dict] = []
     snapshots = get_all_live_snapshots(db)
-    now = datetime.utcnow()
+    now = utcnow()
 
     for snap in snapshots:
         pct = snap["occupancy_pct"]
@@ -131,7 +133,7 @@ def acknowledge_alert(db: Session, alert_id: str) -> Alert:
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
     alert.is_acknowledged = True
-    alert.resolved_at = datetime.utcnow()
+    alert.resolved_at = utcnow()
     db.add(alert)
     db.commit()
     db.refresh(alert)
@@ -163,7 +165,7 @@ def broadcast_alert(db: Session, payload: AlertBroadcast) -> Alert:
 
 
 def recent_unbroadcast_alerts(db: Session, within_seconds: int = 12) -> list[dict]:
-    cutoff = datetime.utcnow() - timedelta(seconds=within_seconds)
+    cutoff = utcnow() - timedelta(seconds=within_seconds)
     rows = (
         db.query(Alert)
         .filter(Alert.created_at >= cutoff)

@@ -12,6 +12,8 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
+from app.core.time import utcnow
+
 from app.models.schedule import TrainSchedule
 from app.models.station import Station
 from app.models.train import Train
@@ -42,8 +44,8 @@ def _station_name(station_names: dict, station_id: str | None) -> str | None:
 
 def _collect_schedules(db: Session, train_id: str | None = None) -> list[TrainSchedule]:
     q = db.query(TrainSchedule).filter(
-        TrainSchedule.arrival >= datetime.utcnow() - timedelta(hours=_HISTORY_LOOKBACK_HOURS),
-        TrainSchedule.arrival <= datetime.utcnow() + timedelta(hours=_FORWARD_LOOKAHEAD_HOURS),
+        TrainSchedule.arrival >= utcnow() - timedelta(hours=_HISTORY_LOOKBACK_HOURS),
+        TrainSchedule.arrival <= utcnow() + timedelta(hours=_FORWARD_LOOKAHEAD_HOURS),
     )
     if train_id:
         q = q.filter(TrainSchedule.train_id == train_id)
@@ -147,7 +149,7 @@ def get_live_trains(db: Session) -> list[dict]:
     by_train: dict[str, list[TrainSchedule]] = {}
     for s in _collect_schedules(db):
         by_train.setdefault(s.train_id, []).append(s)
-    now = datetime.utcnow()
+    now = utcnow()
     return [
         _compute_train(t, by_train.get(t.id, []), station_names, now)
         for t in trains
@@ -159,7 +161,7 @@ def get_live_train(db: Session, train_id: str) -> dict | None:
     if train is None:
         return None
     station_names = {s.id: s for s in db.query(Station).all()}
-    return _compute_train(train, _collect_schedules(db, train_id), station_names, datetime.utcnow())
+    return _compute_train(train, _collect_schedules(db, train_id), station_names, utcnow())
 
 
 def upcoming_schedule(db: Session, train_id: str, limit: int = 50) -> list[dict]:
@@ -168,7 +170,7 @@ def upcoming_schedule(db: Session, train_id: str, limit: int = 50) -> list[dict]
         db.query(TrainSchedule)
         .filter(
             TrainSchedule.train_id == train_id,
-            TrainSchedule.arrival >= datetime.utcnow(),
+            TrainSchedule.arrival >= utcnow(),
         )
         .order_by(TrainSchedule.arrival.asc())
         .limit(limit)
