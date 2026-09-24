@@ -112,8 +112,8 @@ Redis keys: `crowd:latest:{station_id}` snapshots, `alerts:recent` list.
 | POST | /api/v1/alerts/{id}/acknowledge | operator+ | acknowledge |
 | POST | /api/v1/alerts/broadcast | admin | emergency announcement |
 | GET | /api/v1/analytics/overview | any | KPI summary |
-| GET | /api/v1/analytics/traffic | any | traffic analytics series |
-| GET | /api/v1/analytics/station-performance | any | station report cards |
+| GET | /api/v1/analytics/traffic | any | traffic analytics series (optional `start_time` replays a historical day) |
+| GET | /api/v1/analytics/station-performance | any | station report cards (optional `hours`+`start_time` windowing) |
 | GET | /api/v1/analytics/insights | any | consolidated AI insight panel |
 | WS | /socket.io | any (JWT optional) | live crowd + train + alert events; rooms station:{id} via join_station, train:{id} via join_train |
 

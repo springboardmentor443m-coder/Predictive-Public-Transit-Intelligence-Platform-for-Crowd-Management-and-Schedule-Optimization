@@ -62,12 +62,15 @@ def overview(db: Session) -> dict:
     }
 
 
-def traffic_series(db: Session, hours: int = 24) -> list[dict]:
-    now = datetime.utcnow()
-    window_start = now - timedelta(hours=hours)
+def traffic_series(db: Session, hours: int = 24, start_time: datetime | None = None) -> list[dict]:
+    if start_time is not None:
+        window_start = start_time
+    else:
+        window_start = datetime.utcnow() - timedelta(hours=hours)
+    window_end = window_start + timedelta(hours=hours)
     rows = (
         db.query(TrainSchedule.train_id, TrainSchedule.arrival)
-        .filter(TrainSchedule.arrival >= window_start)
+        .filter(TrainSchedule.arrival >= window_start, TrainSchedule.arrival < window_end)
         .all()
     )
 
@@ -94,31 +97,59 @@ def traffic_series(db: Session, hours: int = 24) -> list[dict]:
     ]
 
 
-def station_performance(db: Session, limit: int = 15) -> list[dict]:
+def station_performance(
+    db: Session,
+    limit: int = 15,
+    hours: int | None = None,
+    start_time: datetime | None = None,
+) -> list[dict]:
+    """Per-station health metrics, optionally scoped to a historical window.
+
+    With no window the latest ``_PERF_SAMPLE_WINDOW`` records per station are
+    used (default behaviour). With ``hours`` the window is the last ``hours``
+    ending now, or ``[start_time, start_time + hours)`` when ``start_time`` is
+    given so a past as-of date can be analysed.
+    """
+    window_start = window_end = None
+    if hours and hours > 0:
+        if start_time is not None:
+            window_start = start_time
+            window_end = start_time + timedelta(hours=hours)
+        else:
+            window_end = datetime.utcnow()
+            window_start = window_end - timedelta(hours=hours)
+
     stations = db.query(Station).all()
 
-    # Latest `_PERF_SAMPLE_WINDOW` records per station, loaded once.
-    rec_rows = (
-        db.query(
-            RidershipRecord.station_id,
-            RidershipRecord.entries,
-            RidershipRecord.exits,
-            RidershipRecord.occupancy,
-        )
-        .order_by(RidershipRecord.timestamp.desc())
-        .all()
+    # Up to `_PERF_SAMPLE_WINDOW` records per station within the window.
+    latest_q = db.query(
+        RidershipRecord.station_id,
+        RidershipRecord.entries,
+        RidershipRecord.exits,
+        RidershipRecord.occupancy,
     )
+    if window_start is not None:
+        latest_q = latest_q.filter(
+            RidershipRecord.timestamp >= window_start,
+            RidershipRecord.timestamp < window_end,
+        )
+    rec_rows = latest_q.order_by(RidershipRecord.timestamp.desc()).all()
+
     latest_by_station: dict[str, list[tuple[int, int, int]]] = {}
     for station_id, entries, exits, occupancy in rec_rows:
         samples = latest_by_station.setdefault(station_id, [])
         if len(samples) < _PERF_SAMPLE_WINDOW:
             samples.append((entries, exits, occupancy))
 
+    schedule_q = db.query(TrainSchedule.station_id, TrainSchedule.status, func.count())
+    if window_start is not None:
+        schedule_q = schedule_q.filter(
+            TrainSchedule.arrival >= window_start,
+            TrainSchedule.arrival < window_end,
+        )
     schedule_stats: dict[str, dict[str, int]] = {}
     for station_id, status, count in (
-        db.query(TrainSchedule.station_id, TrainSchedule.status, func.count())
-        .group_by(TrainSchedule.station_id, TrainSchedule.status)
-        .all()
+        schedule_q.group_by(TrainSchedule.station_id, TrainSchedule.status).all()
     ):
         stats = schedule_stats.setdefault(station_id, {"total": 0, "on_time": 0})
         stats["total"] += count

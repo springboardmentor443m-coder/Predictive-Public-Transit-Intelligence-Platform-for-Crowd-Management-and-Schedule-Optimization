@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -18,13 +20,24 @@ async def get_overview(db: Session = Depends(get_db), _=Depends(require_roles())
 
 
 @router.get("/traffic", response_model=list[dict])
-async def get_traffic(hours: int = Query(24, ge=1, le=168), db: Session = Depends(get_db), _=Depends(require_roles())):
-    return traffic_series(db, hours)
+async def get_traffic(
+    hours: int = Query(24, ge=1, le=168),
+    start_time: datetime | None = Query(None),
+    db: Session = Depends(get_db),
+    _=Depends(require_roles()),
+):
+    return traffic_series(db, hours, start_time=start_time)
 
 
 @router.get("/station-performance", response_model=list[dict])
-async def get_station_performance(limit: int = Query(15, le=50), db: Session = Depends(get_db), _=Depends(require_roles())):
-    return station_performance(db, limit)
+async def get_station_performance(
+    limit: int = Query(15, le=50),
+    hours: int = Query(0, ge=0, le=168),
+    start_time: datetime | None = Query(None),
+    db: Session = Depends(get_db),
+    _=Depends(require_roles()),
+):
+    return station_performance(db, limit, hours=hours or None, start_time=start_time)
 
 
 @router.get("/insights", response_model=dict)

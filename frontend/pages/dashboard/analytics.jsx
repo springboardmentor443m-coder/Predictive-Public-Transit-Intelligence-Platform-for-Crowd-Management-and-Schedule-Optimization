@@ -20,12 +20,26 @@ function Analytics() {
   const [perf, setPerf] = useState([]);
   const [insights, setInsights] = useState(null);
   const [trafficHours, setTrafficHours] = useState(24);
+  const [histDate, setHistDate] = useState("");
+  const [histHour, setHistHour] = useState("now");
+
+  const windowLabel = `last ${trafficHours}h`;
+  const anchorLabel = histDate
+    ? `as-of ${histDate} ${histHour === "now" ? "00:00" : `${histHour}:00`}`
+    : `rolling ${windowLabel}`;
+
+  const today = new Date();
+  const minDate = new Date(today.getTime() - 6 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+  const maxDate = today.toISOString().slice(0, 10);
 
   useEffect(() => {
+    const anchor = histDate
+      ? `&start_time=${encodeURIComponent(`${histDate}T${histHour === "now" ? "00" : histHour}:00:00`)}`
+      : "";
     Promise.all([
       api.get("/analytics/overview"),
-      api.get(`/analytics/traffic?hours=${trafficHours}`),
-      api.get("/analytics/station-performance?limit=10"),
+      api.get(`/analytics/traffic?hours=${trafficHours}${anchor}`),
+      api.get(`/analytics/station-performance?limit=10&hours=${trafficHours}${anchor}`),
       api.get("/analytics/insights").catch(() => null),
     ])
       .then(([ov, tr, pf, ins]) => {
@@ -35,12 +49,12 @@ function Analytics() {
         if (ins) setInsights(ins.data);
       })
       .catch(() => {});
-  }, [trafficHours]);
+  }, [trafficHours, histDate, histHour]);
 
   const radarData = perf.slice(0, 6).map((p) => ({
     station: p.station_name.length > 12 ? p.station_name.slice(0, 11) + "…" : p.station_name,
     congestion: p.congestion_score,
-    punctuality: p.punctuality_pct,
+    punctuality: p.punctuality_pct ?? null,
   }));
 
   function exportPerf() {
@@ -104,6 +118,66 @@ function Analytics() {
         </div>
       </div>
 
+      {/* Shared Historical Data Tracker — drives traffic, radar, tables and bar chart */}
+      <div className="mt-5 card card-pad border-slate-800">
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="mr-auto">
+            <h3 className="font-extrabold tracking-tight text-white">Historical Data Tracker</h3>
+            <p className="text-xs text-slate-400">
+              Pick an as-of date/time to replay historical analytics — or use the rolling window.
+            </p>
+          </div>
+          <div>
+            <label className="label">As-of Date</label>
+            <input
+              type="date"
+              className="input py-1.5 text-xs"
+              value={histDate}
+              min={minDate}
+              max={maxDate}
+              onChange={(e) => setHistDate(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label">Start Hour</label>
+            <select
+              className="input py-1.5 text-xs"
+              value={histHour}
+              disabled={!histDate}
+              onChange={(e) => setHistHour(e.target.value)}
+            >
+              <option value="now">12:00 AM</option>
+              {Array.from({ length: 24 }, (_, h) => (
+                <option key={h} value={String(h).padStart(2, "0")}>
+                  {String(h).padStart(2, "0")}:00
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label">Window</label>
+            <select
+              className="input py-1.5 text-xs"
+              value={trafficHours}
+              onChange={(e) => setTrafficHours(Number(e.target.value))}
+            >
+              <option value="24">Last 24 hours</option>
+              <option value="48">Last 48 hours (2 days)</option>
+              <option value="72">Last 72 hours (3 days)</option>
+              <option value="168">Last 7 days</option>
+            </select>
+          </div>
+          {histDate && (
+            <button onClick={() => { setHistDate(""); setHistHour("now"); }} className="btn-ghost py-1.5 text-xs font-bold">
+              Reset to live
+            </button>
+          )}
+        </div>
+        <div className="mt-3 font-mono text-[11px] text-brand-400">
+          Applied: {trafficHours}h window · {anchorLabel}
+        </div>
+      </div>
+
       {/* Charts Grid */}
       <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
         {/* Hourly Passenger Traffic Chart */}
@@ -112,21 +186,8 @@ function Analytics() {
             <div>
               <h3 className="font-extrabold tracking-tight text-white">Hourly Passenger Throughput Volume</h3>
               <p className="text-xs text-slate-400">
-                Estimated passenger volume (thousands per hour) · {trafficHours}h rolling historical window
+                Estimated passenger volume (thousands per hour) · {anchorLabel}
               </p>
-            </div>
-            <div>
-              <label className="label">Historical Window</label>
-              <select
-                className="input py-1 text-xs"
-                value={trafficHours}
-                onChange={(e) => setTrafficHours(Number(e.target.value))}
-              >
-                <option value="24">Last 24 hours</option>
-                <option value="48">Last 48 hours (2 days)</option>
-                <option value="72">Last 72 hours (3 days)</option>
-                <option value="168">Last 7 days</option>
-              </select>
             </div>
           </div>
           
@@ -144,7 +205,9 @@ function Analytics() {
         {/* Station Health Radar */}
         <div className="card card-pad border-slate-800">
           <h3 className="font-extrabold tracking-tight text-white">Station Health Radar</h3>
-          <p className="mb-4 text-xs text-slate-400">Congestion Score vs Punctuality % (Top 6 major stations)</p>
+          <p className="mb-4 text-xs text-slate-400">
+            Congestion Score vs Punctuality % (Top 6 major stations) · {anchorLabel}
+          </p>
 
           <ResponsiveContainer width="100%" height={300}>
             <RadarChart data={radarData} outerRadius="70%">
@@ -164,7 +227,7 @@ function Analytics() {
         <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
           <div>
             <h3 className="font-extrabold tracking-tight text-white">Station Performance Detailed Report</h3>
-            <p className="text-xs text-slate-400">Ranked by congestion score — worst performing stations first (48h rolling)</p>
+            <p className="text-xs text-slate-400">Ranked by congestion score — worst performing stations first · {anchorLabel}</p>
           </div>
           <button onClick={exportPerf} className="btn-ghost no-print py-1.5 text-xs font-bold">
             <Download className="h-3.5 w-3.5 text-brand-400" /> Export CSV
@@ -180,8 +243,8 @@ function Analytics() {
                 <th>Avg Occupancy</th>
                 <th>Peak Occupancy</th>
                 <th>Congestion Score</th>
-                <th>Entries Total (48h)</th>
-                <th>Exits Total (48h)</th>
+                <th>Entries Total ({trafficHours}h)</th>
+                <th>Exits Total ({trafficHours}h)</th>
                 <th>Punctuality Rate</th>
               </tr>
             </thead>
@@ -206,13 +269,17 @@ function Analytics() {
                   <td className="font-mono">{p.entries_total.toLocaleString()}</td>
                   <td className="font-mono">{p.exits_total.toLocaleString()}</td>
                   <td>
-                    <span
-                      className={`font-mono font-extrabold ${
-                        p.punctuality_pct >= 90 ? "text-emerald-400" : "text-amber-400"
-                      }`}
-                    >
-                      {p.punctuality_pct}%
-                    </span>
+                    {p.punctuality_pct == null ? (
+                      <span className="font-mono text-slate-500">—</span>
+                    ) : (
+                      <span
+                        className={`font-mono font-extrabold ${
+                          p.punctuality_pct >= 90 ? "text-emerald-400" : "text-amber-400"
+                        }`}
+                      >
+                        {p.punctuality_pct}%
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -230,8 +297,8 @@ function Analytics() {
 
       {/* Bar chart */}
       <div className="card card-pad mt-5 border-slate-800">
-        <h3 className="font-extrabold tracking-tight text-white">48-Hour Average Occupancy per Station</h3>
-        <p className="mb-4 text-xs text-slate-400">Color mapped by congestion level</p>
+        <h3 className="font-extrabold tracking-tight text-white">{trafficHours}-Hour Average Occupancy per Station</h3>
+        <p className="mb-4 text-xs text-slate-400">Color mapped by congestion level · {anchorLabel}</p>
 
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={perf.slice().reverse()} margin={{ left: -10, right: 10 }}>

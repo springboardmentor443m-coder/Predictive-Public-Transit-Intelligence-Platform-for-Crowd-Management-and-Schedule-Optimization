@@ -198,31 +198,39 @@ def seed(refresh: bool = False) -> None:
     else:
         lines = sorted(stations_df["line"].unique())
 
-    print("Seeding schedules (next 24h rolling window) ...")
+    print("Seeding schedules (7-day history + next 24h rolling window) ...")
     now = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
     peak_hours = {7, 8, 9, 16, 17, 18}
     _train_map = {t.code: t.id for t in db.query(train.Train).all()}
+    gen_start = now - timedelta(days=HISTORY_DAYS)
+    gen_hours = HISTORY_DAYS * 24 + 24
     sched_count = 0
     for line in lines:
         line_stations = [c for c, r in zip(stations_df["code"], stations_df["line"]) if r == line]
         line_trains = [t for t in _train_map if t.startswith(f"TR-{line[0]}")][:3]
         for t_idx, tcode in enumerate(line_trains):
-            offset = t_idx * 20
-            for h in range(1, 25):
-                ts = now + timedelta(hours=h, minutes=offset)
+            offset = t_idx * 53
+            for i in range(gen_hours):
+                ts = gen_start + timedelta(hours=i, minutes=offset % 60)
                 hour = ts.hour
                 headway = 4 if hour in peak_hours else 8
                 st_code = line_stations[(hour + t_idx) % len(line_stations)]
-                arrival = ts
-                delay = 0 if hour not in peak_hours else int((sched_count * 7) % 4)
+                if hour in peak_hours:
+                    disrupted = line_stations[ts.day % len(line_stations)]
+                    if st_code == disrupted:
+                        delay = 5 + ((ts.hour + t_idx) % 3)
+                    else:
+                        delay = int((sched_count * 7) % 4)
+                else:
+                    delay = 0
                 status = "on_time" if delay <= 2 else "delayed"
                 db.add(schedule.TrainSchedule(
                     id=f"SCH-{tcode}-{ts.strftime('%m%d%H%M')}-{st_code}",
                     train_id=tcode,
                     station_id=st_code,
                     direction=("northbound" if (hour + t_idx) % 2 == 0 else "southbound"),
-                    arrival=arrival,
-                    departure=arrival + timedelta(seconds=30),
+                    arrival=ts,
+                    departure=ts + timedelta(seconds=30),
                     headway_min=headway,
                     status=status,
                     delay_min=delay,

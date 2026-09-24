@@ -441,6 +441,31 @@ def test_station_performance(client, viewer_headers):
     assert all(0 <= row["punctuality_pct"] <= 100 for row in perf)
 
 
+def test_station_performance_windowed(client, viewer_headers):
+    from datetime import datetime, timedelta, timezone
+    from urllib.parse import quote
+
+    start = datetime.now(timezone.utc) - timedelta(hours=24)
+    perf = client.get(
+        f"/api/v1/analytics/station-performance?limit=10&hours=24&start_time={quote(start.isoformat())}",
+        headers=viewer_headers,
+    ).json()
+    assert {row["station_id"] for row in perf} == {"ST01", "ST02"}
+    assert all(0 <= row["punctuality_pct"] <= 100 for row in perf)
+
+
+def test_traffic_series_with_start_time(client, viewer_headers):
+    from datetime import datetime, timedelta
+    from urllib.parse import quote
+
+    start = datetime.utcnow() - timedelta(hours=12)
+    tr = client.get(
+        f"/api/v1/analytics/traffic?hours=24&start_time={quote(start.isoformat())}",
+        headers=viewer_headers,
+    ).json()
+    assert isinstance(tr, list) and len(tr) == 24
+
+
 def test_traffic_series(client, viewer_headers):
     tr = client.get("/api/v1/analytics/traffic?hours=12", headers=viewer_headers).json()
     assert len(tr) == 12

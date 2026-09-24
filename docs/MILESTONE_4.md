@@ -9,15 +9,17 @@
 
 - `GET /analytics/overview` — fleet KPIs: total stations/trains, active schedules,
   avg platform occupancy, on-time %, open alerts.
-- `GET /analytics/traffic?hours=N` — hourly entries/exits series (Recharts area chart).
-- `GET /analytics/station-performance?limit=N` — per-station report card: ridership,
-  punctuality %, peak congestion, delay minutes.
-- UI: `pages/dashboard/analytics.jsx` (KPI cards, radar + bar reports, performance
-  table) and Settings → admin user management.
+- `GET /analytics/traffic?hours=N&start_time=ISO` — hourly entries/exits series
+  (Recharts area chart); `start_time` replays a chosen historical day.
+- `GET /analytics/station-performance?limit=N&hours=N&start_time=ISO` — per-station
+  report card: ridership, punctuality %, peak congestion; scoped to a rolling or
+  as-of historical window.
+- UI: `pages/dashboard/analytics.jsx` (KPI cards, radar + bar reports, historical
+  data tracker, performance table) and Settings → admin user management.
 
 ## 2. End-to-End Testing
 
-Automated suite: `backend/tests/test_api.py` (50 tests, all passing) run with:
+Automated suite: `backend/tests/test_api.py` (52 tests, all passing) run with:
 
 ```bash
 cd backend && pip install -r requirements-dev.txt
@@ -34,11 +36,12 @@ Coverage by module:
 | Trains | live fleet telemetry, single-train lookup + 404, train schedule stops, fleet registry sync |
 | Scheduling | viewer blocked, CRUD round-trip, delay→alert linkage, apply-headway |
 | Alerts | broadcast admin-only, acknowledge flow |
-| Analytics | overview counts, station performance bounds, traffic series, AI insights panel |
+| Analytics | overview counts, station performance bounds, windowed station performance + traffic with `start_time`, AI insights panel |
 | System | crowd ingest RBAC, alert type/severity/station filters, single-schedule fetch, model-info provenance, delay 503 fallback |
 
-Manual E2E: seeded demo data (10 stations, 12 trains, ~170 schedules, 60 days of
-ridership), three demo roles; frontend production build passes (`npm run build`).
+Manual E2E: seeded demo data (10 stations, 12 trains, ~1700 schedules over 8 days,
+plus 7 days of ridership history), three demo roles; frontend production build
+passes (`npm run build`).
 
 ## 3. Performance & Scalability
 
@@ -74,7 +77,7 @@ Measured results in [`PERFORMANCE_METRICS.md`](PERFORMANCE_METRICS.md). Key leve
 | Criterion | Status |
 |---|---|
 | Analytics dashboard delivering actionable insights | ✅ insights + model badge (AI Predictions page) + CSV/print |
-| System tested end-to-end with reliable AI outputs | ✅ 50 automated API tests + 7 model tests |
+| System tested end-to-end with reliable AI outputs | ✅ 52 automated API tests + 7 model tests |
 | Platform deployed and accessible via Docker/cloud setup | ✅ compose + k8s + cloud docs |
 | Complete documentation and presentation delivered | ✅ |
 
