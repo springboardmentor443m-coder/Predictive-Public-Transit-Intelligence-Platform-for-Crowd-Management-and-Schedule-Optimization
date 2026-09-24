@@ -19,7 +19,7 @@
 
 ## 2. End-to-End Testing
 
-Automated suite: `backend/tests/test_api.py` (52 tests, all passing) run with:
+Automated suite: `backend/tests/test_api.py` (52 API tests) + `test_model_wrappers.py` (7 model tests) = **59 tests**, all passing, run with:
 
 ```bash
 cd backend && pip install -r requirements-dev.txt
@@ -86,3 +86,22 @@ Measured results in [`PERFORMANCE_METRICS.md`](PERFORMANCE_METRICS.md). Key leve
 Strengthened deployment and DevOps skills; learned to translate analytical outputs into
 operational dashboards; delivered a complete, tested, documented smart transportation
 platform.
+
+## Addendum -- Post-Milestone-4 Engineering Hardening
+
+Delivered on branch `KOKKIRIGADDA-MANOJ-BABU` after M4 wrap-up (see `CHANGELOG.md`):
+
+- **Frontend fully TypeScript** -- every page/component/lib converted .js/.jsx -> .ts/.tsx;
+  	sc --noEmit and 
+pm run build green.
+- **Public health endpoint** -- GET /api/v1/health (login page + k8s probes); login no longer
+  probes an auth-protected route (fixes false *Backend Offline*).
+- **Chart resilience** -- analytics/crowd-history charts gained loading + empty states.
+- **Realistic traffic curve** -- schedules now respect headways (4-min peak / 8-min off-peak),
+  so the Network Traffic Trend shows real rush-hour shape instead of a flat line.
+- **Advanced ML** -- quantile GradientBoosting crowd model with native lower/upper intervals
+  (docs/ML_MODELS.md).
+- **Dataset importers** -- MTA / Seoul / TfL real CSV ingestion feeding the seed pipeline
+  (docs/IMPORTERS.md).
+- **Python hygiene** -- `datetime.utcnow()` fully replaced by `app.core.time.utcnow()`;
+  modern | None type hints.

@@ -5,7 +5,9 @@ Derived strictly from the PRD: *MetroFlow: AI Platform for Metro Crowd Managemen
 ## 1. Objectives
 
 - Monitor passenger flow and station congestion in real time (ticketing + sensor datasets, no CCTV/CV).
-- Predict crowd density and passenger demand with ML models.
+- Predict crowd density and passenger demand with ML models, including lower/upper confidence intervals from a quantile ensemble.
+- Ingest genuine transit-agency datasets (MTA, Seoul, TfL) into the operational pipeline.
+- Keep the codebase modern and typed: TypeScript frontend + deprecation-free Python (pp/core/time.utcnow).
 - Optimize train scheduling and frequency, especially during peak hours.
 - Deliver operational alerts, emergency notifications, and analytics dashboards.
 - Deploy a scalable Python backend + modern web frontend via Docker/cloud.
@@ -22,7 +24,7 @@ Derived strictly from the PRD: *MetroFlow: AI Platform for Metro Crowd Managemen
 │  api/v1: auth │ users │ stations │ crowd │ scheduling │ predictions │ alerts │ analytics│
 │  services: crowd_service │ scheduling_service │ prediction_service │ alert_service     │
 │            analytics_service │ realtime (Socket.IO broadcaster)                        │
-│  ml/: feature engineering → scikit-learn crowd model + demand forecaster (joblib)      │
+│  ml/: feature engineering → scikit-learn crowd/demand models + quantile ensemble (joblib)      │
 └───────┬───────────────────────┬──────────────────────────┬────────────────────────────┘
         ▼                       ▼                          ▼
    PostgreSQL              MongoDB                    Redis
@@ -84,6 +86,7 @@ Redis keys: `crowd:latest:{station_id}` snapshots, `alerts:recent` list.
 | Method | Path | Role | Description |
 |---|---|---|---|
 | POST | /api/v1/auth/login | public | JWT login |
+| GET | /api/v1/health | public | liveness/health probe (login page + k8s) |
 | GET | /api/v1/auth/me | any | current profile |
 | PUT | /api/v1/users/me | any | update profile/password |
 | GET/POST | /api/v1/users | admin | manage operators |

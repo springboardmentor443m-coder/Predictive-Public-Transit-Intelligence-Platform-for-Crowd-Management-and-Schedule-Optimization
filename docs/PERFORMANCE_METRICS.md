@@ -46,6 +46,21 @@ and drop the zipped outputs into `models_store/`.
 > `{city}_model_outputs/metrics.json`. Promote a city by copying its
 > `*_model.joblib` pair into `models_store/` as `{city}_crowd/demand_model.joblib`.
 
+### 1.1.1 Quantile crowd ensemble (advanced, native confidence intervals)
+
+Trained with `scripts/train_quantile_crowd.py` (three GradientBoostingRegressors with quantile
+loss `alpha = 0.05 / 0.50 / 0.95`) on `data/ridership_hourly.csv`, held-out 20% split.
+
+| Metric | Value |
+|---|---|
+| MAE | 0.0282 (occupancy) |
+| R2 | 0.9803 |
+| residual_std | 0.0406 |
+
+`GET /predictions/crowd` returns `lower`/`upper` from the q05/q95 estimators whenever
+`hangzhou_crowd_quantile_model.joblib` is present; the interval width is a live confidence
+signal. Legacy artifacts fall back to a symmetric `residual_std` band -- see `docs/ML_MODELS.md`.
+
 ### 1.2 NJ Transit delay models (real-world)
 
 Trained with `kaggle/03_nj_transit_delay.py` (XGBoost, 3M stop-level rows from

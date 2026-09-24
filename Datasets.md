@@ -100,3 +100,32 @@ Excludes Ridership / Ticketing / Smart Card datasets per request.)
 
 6. Railway Delay Dataset (2015) — https://www.kaggle.com/datasets/anuragraturi/railway-delay-dataset
 7. NJ Transit + Amtrak NEC Performance (2018-2019) — https://www.kaggle.com/datasets/pranavbadami/nj-transit-amtrak-nec-performance
+---
+
+## Ingesting Rigidly-Formatted Datasets (Production Importers)
+
+Beyond Kaggle training, the platform exposes **first-class importers** that read the *raw,
+agency-published* files directly into the demo pipeline (`backend/scripts/importers/`). These
+consume the genuine export formats (not the Kaggle re-packages) and normalize them to
+`ridership_hourly.csv` + `stations.csv`, which `seed_db.py` then loads.
+
+| Importer | Consumes the agency/turnstile format of | Common source |
+|---|---|---|
+| `scripts/importers/mta.py` | NYC MTA turnstile (`turnstile_*.txt` cumulative counters, `C/A,UNIT,SCP,STATION,DATE,TIME,DESC,ENTRIES,EXITS`) | MTA Turnstile open data |
+| `scripts/importers/seoul.py` | Seoul Metro card-swipe CSVs — English **or** Korean columns (`역명`, `승차총승객수`, `하차총승객수`…), hourly **or** daily totals | data.go.kr / 서울 열린데이터광장 |
+| `scripts/importers/tfl.py` | TfL "Entry & Exit counts" annual station totals (`Year, Station, Entrances, Exits`) | TfL open data |
+
+Full reference (column aliases, capacity inference, re-anchoring, end-to-end verification,
+extension guide): [`docs/IMPORTERS.md`](docs/IMPORTERS.md).
+
+```bash
+cd backend
+python scripts/importers/cli.py --city mta   --input turnstile_240515.txt    --output-dir data
+python scripts/importers/cli.py --city seoul --input seoul_metro.csv          --output-dir data
+python scripts/importers/cli.py --city tfl   --input tfl_entry_exit.csv       --output-dir data
+python scripts/seed_db.py --refresh
+```
+
+> Training coverage note above (7/7 Kaggle scripts) is about *model training*. The importers are a
+> separate data path for seeding the *operational/live* side of the platform and can be combined
+> with any trained model artifact.
