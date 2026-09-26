@@ -6,7 +6,8 @@ from app.services.crowd_service import (
     get_hourly_ridership,
     get_daily_ridership,
     get_peak_period_ridership,
-    get_station_hour_hotspots
+    get_station_hour_hotspots,
+    get_station_crowd_status
 )
 
 router = APIRouter(
@@ -55,4 +56,13 @@ def station_hour_hotspots(
 ):
     return {
         "hotspots": get_station_hour_hotspots()
+    }
+
+
+@router.get("/status")
+def station_crowd_status(
+    current_user=Depends(get_current_user)
+):
+    return {
+        "crowd_status": get_station_crowd_status()
     }

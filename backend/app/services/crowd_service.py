@@ -139,3 +139,30 @@ def get_station_hour_hotspots(limit=10):
     return hotspot_data.to_dict(
         orient="records"
     )
+
+
+def get_station_crowd_status():
+    df = load_ridership_data()
+
+    station_hour_data = (
+        df.groupby(["Station", "Hour"])["Ridership"]
+        .sum()
+        .reset_index()
+    )
+
+    def classify_demand(ridership):
+        if ridership < 68:
+            return "Low"
+        elif ridership <= 371:
+            return "Moderate"
+        else:
+            return "High"
+
+    station_hour_data["Demand Status"] = (
+        station_hour_data["Ridership"]
+        .apply(classify_demand)
+    )
+
+    return station_hour_data.to_dict(
+        orient="records"
+    )
