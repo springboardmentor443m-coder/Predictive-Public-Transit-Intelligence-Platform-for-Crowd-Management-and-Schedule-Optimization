@@ -25,9 +25,28 @@ type WeatherResponse = {
   average_wind_speed: number;
 };
 
+type StationCongestion = {
+  station: string;
+  ridership: number;
+  congestion_level: string;
+};
+
+type CongestionResponse = {
+  date: string;
+  hour: number;
+  total_stations: number;
+  stations: StationCongestion[];
+};
+
 export default function Home() {
   const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);
   const [weather, setWeather] = useState<WeatherResponse | null>(null);
+  const [congestionData, setCongestionData] = useState<CongestionResponse | null>(null);
+  const [congestionLoading, setCongestionLoading] = useState(false);
+  const [congestionError, setCongestionError] = useState("");
+  const [filterLevel, setFilterLevel] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
   const [result, setResult] = useState<PredictionResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -35,6 +54,7 @@ export default function Home() {
   const [hour, setHour] = useState(18);
   const [dayOfWeek, setDayOfWeek] = useState(1);
   const [currentRidership, setCurrentRidership] = useState(100);
+
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
@@ -68,8 +88,27 @@ export default function Home() {
       }
     };
 
+    const fetchCongestion = async () => {
+      setCongestionLoading(true);
+      setCongestionError("");
+      try {
+        const response = await fetch("http://127.0.0.1:8000/stations/congestion");
+        if (!response.ok) {
+          throw new Error("Failed to fetch station congestion data");
+        }
+        const data: CongestionResponse = await response.json();
+        setCongestionData(data);
+      } catch (err) {
+        console.error("Congestion fetch error:", err);
+        setCongestionError("Unable to connect to station congestion API.");
+      } finally {
+        setCongestionLoading(false);
+      }
+    };
+
     fetchAnalytics();
     fetchWeather();
+    fetchCongestion();
   }, []);
 
   const predictRidership = async () => {
@@ -118,6 +157,29 @@ export default function Home() {
         return "crowd low";
     }
   };
+
+  const getCongestionBadgeClass = (level: string) => {
+    switch (level.toLowerCase()) {
+      case "critical":
+        return "crowd critical";
+      case "high":
+        return "crowd high";
+      case "medium":
+        return "crowd medium";
+      default:
+        return "crowd low";
+    }
+  };
+
+  const filteredStations = (congestionData?.stations || []).filter((item) => {
+    const matchesSearch = item.station
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    const matchesFilter =
+      filterLevel === "ALL" ||
+      item.congestion_level.toUpperCase() === filterLevel;
+    return matchesSearch && matchesFilter;
+  });
 
   return (
     <main className="dashboard">
@@ -336,6 +398,91 @@ export default function Home() {
                 <h4>{result.recommendation}</h4>
               </div>
             </>
+          )}
+        </div>
+      </section>
+
+      {/* Station Crowd Monitoring Section */}
+      <section className="congestion-section">
+        <div className="card">
+          <div className="congestion-header">
+            <div>
+              <p className="eyebrow">NETWORK-WIDE OPERATIONS</p>
+              <h2 className="text-2xl font-bold text-slate-800">
+                Station Crowd Monitoring
+              </h2>
+              <p className="text-slate-500">
+                {congestionData
+                  ? `Active passenger density tracking across ${congestionData.total_stations} stations (Operational Hour: ${congestionData.hour}:00, Date: ${congestionData.date})`
+                  : "Live passenger density tracking across Bengaluru Metro stations"}
+              </p>
+            </div>
+
+            <div className="congestion-controls">
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Search station..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+
+              <div className="filter-group">
+                {["ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"].map((level) => (
+                  <button
+                    key={level}
+                    className={`filter-btn ${filterLevel === level ? "active" : ""}`}
+                    onClick={() => setFilterLevel(level)}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {congestionLoading && (
+            <div className="empty-state">
+              <div className="empty-icon">⏳</div>
+              <p>Loading real-time station congestion data...</p>
+            </div>
+          )}
+
+          {congestionError && <p className="error">{congestionError}</p>}
+
+          {!congestionLoading && congestionData && (
+            <div className="station-cards-grid">
+              {filteredStations.map((item) => (
+                <div
+                  key={item.station}
+                  className={`station-item-card border-${item.congestion_level.toLowerCase()}`}
+                  onClick={() => setStation(item.station)}
+                  style={{ cursor: "pointer" }}
+                  title="Click to select this station in prediction form"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-bold text-slate-800 text-base leading-snug">
+                      {item.station}
+                    </h4>
+                    <span className={getCongestionBadgeClass(item.congestion_level)}>
+                      {item.congestion_level}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-sm">
+                    <span className="text-slate-500">Current Ridership</span>
+                    <strong className="text-slate-800 text-base">
+                      {item.ridership.toLocaleString()}
+                    </strong>
+                  </div>
+                </div>
+              ))}
+              {filteredStations.length === 0 && (
+                <div className="col-span-full py-8 text-center text-slate-500">
+                  No stations match the selected filter.
+                </div>
+              )}
+            </div>
           )}
         </div>
       </section>

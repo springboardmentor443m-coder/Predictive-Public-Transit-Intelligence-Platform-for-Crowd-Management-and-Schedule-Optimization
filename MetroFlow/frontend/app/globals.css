@@ -212,6 +212,12 @@ body {
   color: #b91c1c;
 }
 
+.crowd.critical {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #f87171;
+}
+
 .metrics {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -262,6 +268,105 @@ footer {
   margin-top: 30px;
   color: #94a3b8;
   font-size: 13px;
+}
+
+.congestion-section {
+  margin-top: 32px;
+}
+
+.congestion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.congestion-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filter-btn:hover {
+  background: #f1f5f9;
+}
+
+.filter-btn.active {
+  background: #172554;
+  color: white;
+  border-color: #172554;
+}
+
+.search-input {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  font-size: 14px;
+  min-width: 220px;
+  background: white;
+}
+
+.station-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.station-item-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.station-item-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+}
+
+.station-item-card.border-critical {
+  border-left: 5px solid #dc2626;
+}
+
+.station-item-card.border-high {
+  border-left: 5px solid #ea580c;
+}
+
+.station-item-card.border-medium {
+  border-left: 5px solid #d97706;
+}
+
+.station-item-card.border-low {
+  border-left: 5px solid #16a34a;
 }
 
 @media (max-width: 800px) {

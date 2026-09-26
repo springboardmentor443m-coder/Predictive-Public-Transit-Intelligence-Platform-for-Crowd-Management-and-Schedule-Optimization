@@ -42,6 +42,80 @@ app.add_middleware(
 def create_tables():
     Base.metadata.create_all(bind=engine)
 
+@app.get("/stations/congestion")
+def get_station_congestion(hour: int | None = None, date: str | None = None):
+    data_path = (
+        Path(__file__).resolve().parents[1]
+        / "datasets"
+        / "raw"
+        / "station-hourly.csv"
+    )
+    if not data_path.exists():
+        data_path = Path("../datasets/raw/station-hourly.csv")
+
+    pred_path = (
+        Path(__file__).resolve().parents[1]
+        / "datasets"
+        / "processed"
+        / "metroflow_predictions.csv"
+    )
+    if not pred_path.exists():
+        pred_path = Path("../datasets/processed/metroflow_predictions.csv")
+
+    df = pd.read_csv(data_path, sep=";")
+    target_date = date if date else str(df["Date"].max())
+    target_hour = hour if hour is not None else 18
+
+    subset = df[(df["Date"] == target_date) & (df["Hour"] == target_hour)].copy()
+    if subset.empty:
+        target_date = str(df["Date"].max())
+        target_hour = 18
+        subset = df[(df["Date"] == target_date) & (df["Hour"] == target_hour)].copy()
+
+    if pred_path.exists():
+        pred_df = pd.read_csv(pred_path)
+        thresholds = pred_df[["Station", "Medium_Threshold", "High_Threshold", "Very_High_Threshold"]].drop_duplicates()
+        merged = subset.merge(thresholds, on="Station", how="left")
+    else:
+        merged = subset.copy()
+        merged["Medium_Threshold"] = None
+        merged["High_Threshold"] = None
+        merged["Very_High_Threshold"] = None
+
+    def classify_congestion(row):
+        r = row["Ridership"]
+        vh = row.get("Very_High_Threshold")
+        h = row.get("High_Threshold")
+        m = row.get("Medium_Threshold")
+
+        if pd.notna(vh) and r >= vh:
+            return "Critical"
+        elif pd.notna(h) and r >= h:
+            return "High"
+        elif pd.notna(m) and r >= m:
+            return "Medium"
+        else:
+            return "Low"
+
+    merged["congestion_level"] = merged.apply(classify_congestion, axis=1)
+    merged = merged.sort_values(by="Ridership", ascending=False)
+
+    station_list = [
+        {
+            "station": str(row["Station"]),
+            "ridership": int(row["Ridership"]),
+            "congestion_level": str(row["congestion_level"]),
+        }
+        for _, row in merged.iterrows()
+    ]
+
+    return {
+        "date": target_date,
+        "hour": target_hour,
+        "total_stations": len(station_list),
+        "stations": station_list,
+    }
+
 app.include_router(station_router)
 
 @app.post("/predict")
