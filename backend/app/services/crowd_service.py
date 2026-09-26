@@ -121,3 +121,21 @@ def get_peak_period_ridership():
     return period_data.to_dict(
         orient="records"
     )
+
+def get_station_hour_hotspots(limit=10):
+    df = load_ridership_data()
+
+    hotspot_data = (
+        df.groupby(["Station", "Hour"])["Ridership"]
+        .sum()
+        .reset_index()
+        .sort_values(
+            "Ridership",
+            ascending=False
+        )
+        .head(limit)
+    )
+
+    return hotspot_data.to_dict(
+        orient="records"
+    )
