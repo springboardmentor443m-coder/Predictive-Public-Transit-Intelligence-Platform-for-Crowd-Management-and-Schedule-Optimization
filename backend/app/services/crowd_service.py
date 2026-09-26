@@ -166,3 +166,46 @@ def get_station_crowd_status():
     return station_hour_data.to_dict(
         orient="records"
     )
+
+
+def get_station_flow():
+    entries_df = pd.read_csv(
+        "../data/bmrcl/station-hourly.csv",
+        sep=";"
+    )
+
+    exits_df = pd.read_csv(
+        "../data/bmrcl/station-hourly-exits.csv",
+        sep=";"
+    )
+
+    flow_df = pd.merge(
+        entries_df,
+        exits_df,
+        on=["Date", "Hour", "Station"],
+        how="inner",
+        suffixes=("_entry", "_exit")
+    )
+
+    flow_df["Net Flow"] = (
+        flow_df["Ridership_entry"]
+        - flow_df["Ridership_exit"]
+    )
+
+    station_flow = (
+        flow_df
+        .groupby("Station")[
+            ["Ridership_entry", "Ridership_exit", "Net Flow"]
+        ]
+        .sum()
+        .reset_index()
+    )
+
+    station_flow = station_flow.sort_values(
+        "Net Flow",
+        ascending=False
+    )
+
+    return station_flow.to_dict(
+        orient="records"
+    )
