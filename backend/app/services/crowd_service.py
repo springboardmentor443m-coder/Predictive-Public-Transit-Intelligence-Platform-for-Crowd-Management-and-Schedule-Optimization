@@ -47,3 +47,36 @@ def get_hourly_ridership():
     return hourly_data.to_dict(
         orient="records"
     )
+
+
+def get_daily_ridership():
+    df = pd.read_csv(
+        "../data/bmrcl/daily-ridership.csv"
+    )
+
+    df["Record Date"] = pd.to_datetime(
+        df["Record Date"],
+        format="%d-%m-%Y"
+    )
+
+    df["Total Ridership"] = (
+        df["Total Smart Cards"]
+        + df["Total Tokens"]
+        + df["Total NCMC"]
+        + df["Group Ticket"]
+        + df["Total QR"]
+    )
+
+    daily_data = (
+        df[["Record Date", "Total Ridership"]]
+        .sort_values("Record Date")
+    )
+
+    daily_data["Record Date"] = (
+        daily_data["Record Date"]
+        .dt.strftime("%Y-%m-%d")
+    )
+
+    return daily_data.to_dict(
+        orient="records"
+    )

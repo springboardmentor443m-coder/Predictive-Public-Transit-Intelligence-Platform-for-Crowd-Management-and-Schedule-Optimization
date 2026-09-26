@@ -3,7 +3,8 @@ from fastapi import APIRouter, Depends
 from app.auth_utils import get_current_user
 from app.services.crowd_service import (
     get_station_ridership,
-    get_hourly_ridership
+    get_hourly_ridership,
+    get_daily_ridership
 )
 
 router = APIRouter(
@@ -27,4 +28,12 @@ def hourly_ridership(
 ):
     return {
         "hourly_ridership": get_hourly_ridership()
+    }
+
+@router.get("/daily")
+def daily_ridership(
+    current_user=Depends(get_current_user)
+):
+    return {
+        "daily_ridership": get_daily_ridership()
     }
