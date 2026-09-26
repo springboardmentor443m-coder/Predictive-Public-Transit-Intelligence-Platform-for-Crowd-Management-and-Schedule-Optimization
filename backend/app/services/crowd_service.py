@@ -31,3 +31,19 @@ def get_station_ridership():
     return station_data.to_dict(
         orient="records"
     )
+
+def get_hourly_ridership():
+    df = load_ridership_data()
+
+    hourly_data = (
+        df.groupby("Hour")["Ridership"]
+        .sum()
+        .reset_index()
+        .sort_values(
+            "Hour"
+        )
+    )
+
+    return hourly_data.to_dict(
+        orient="records"
+    )

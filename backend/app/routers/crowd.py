@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends
 
 from app.auth_utils import get_current_user
-from app.services.crowd_service import get_station_ridership
-
+from app.services.crowd_service import (
+    get_station_ridership,
+    get_hourly_ridership
+)
 
 router = APIRouter(
     prefix="/crowd",
@@ -16,4 +18,13 @@ def station_ridership(
 ):
     return {
         "stations": get_station_ridership()
+    }
+
+
+@router.get("/hourly")
+def hourly_ridership(
+    current_user=Depends(get_current_user)
+):
+    return {
+        "hourly_ridership": get_hourly_ridership()
     }
