@@ -80,3 +80,44 @@ def get_daily_ridership():
     return daily_data.to_dict(
         orient="records"
     )
+
+
+def get_peak_period_ridership():
+    df = load_ridership_data()
+
+    def classify_period(hour):
+        if 7 <= hour <= 10:
+            return "Morning Peak"
+        elif 11 <= hour <= 16:
+            return "Midday"
+        elif 17 <= hour <= 20:
+            return "Evening Peak"
+        else:
+            return "Off-Peak"
+
+    df["Period"] = df["Hour"].apply(classify_period)
+
+    period_data = (
+        df.groupby("Period")["Ridership"]
+        .sum()
+        .reset_index()
+    )
+
+    period_order = [
+        "Morning Peak",
+        "Midday",
+        "Evening Peak",
+        "Off-Peak"
+    ]
+
+    period_data["Period"] = pd.Categorical(
+        period_data["Period"],
+        categories=period_order,
+        ordered=True
+    )
+
+    period_data = period_data.sort_values("Period")
+
+    return period_data.to_dict(
+        orient="records"
+    )

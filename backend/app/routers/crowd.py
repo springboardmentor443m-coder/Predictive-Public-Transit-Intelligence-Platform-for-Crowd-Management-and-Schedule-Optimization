@@ -4,7 +4,8 @@ from app.auth_utils import get_current_user
 from app.services.crowd_service import (
     get_station_ridership,
     get_hourly_ridership,
-    get_daily_ridership
+    get_daily_ridership,
+    get_peak_period_ridership
 )
 
 router = APIRouter(
@@ -36,4 +37,13 @@ def daily_ridership(
 ):
     return {
         "daily_ridership": get_daily_ridership()
+    }
+
+
+@router.get("/peak-periods")
+def peak_period_ridership(
+    current_user=Depends(get_current_user)
+):
+    return {
+        "peak_periods": get_peak_period_ridership()
     }
