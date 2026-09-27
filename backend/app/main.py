@@ -2,7 +2,7 @@ from fastapi import FastAPI
 
 from app.database import Base, engine
 from app.models import user
-from app.routers import health, auth, crowd
+from app.routers import health, auth, crowd, scheduling
 
 Base.metadata.create_all(bind=engine)
 
@@ -17,6 +17,7 @@ app = FastAPI(
 app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(crowd.router)
+app.include_router(scheduling.router)
 
 
 @app.get("/")
