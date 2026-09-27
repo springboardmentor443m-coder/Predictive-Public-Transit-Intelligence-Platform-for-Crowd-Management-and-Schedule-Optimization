@@ -1,9 +1,9 @@
-import json
 import hashlib
 import hmac
 import os
 import re
 import secrets
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -30,10 +30,18 @@ MONGODB_DATABASE = os.getenv("MONGODB_DATABASE", "metroflow")
 JWT_SECRET = os.getenv("METROFLOW_JWT_SECRET", "development-only-change-this-secret")
 JWT_EXPIRY_HOURS = int(os.getenv("METROFLOW_JWT_EXPIRY_HOURS", "8"))
 
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    load_artifacts()
+    yield
+
+
 app = FastAPI(
     title="MetroFlow Transit Intelligence Platform",
     description="Multi-station passenger flow forecasting, congestion tracking, and AI schedule optimization.",
     version="2.0.0",
+    lifespan=lifespan,
 )
 
 allowed_origins = os.getenv(
@@ -61,7 +69,6 @@ operations_collection = None
 auth_scheme = HTTPBearer(auto_error=False)
 
 
-@app.on_event("startup")
 def load_artifacts():
     initialize_auth_db()
 
@@ -280,8 +287,8 @@ def register(data: RegisterRequest):
     return {"success": True, "message": "Account created. You can now sign in."}
 
 
-@app.get("/api/v1/health")
-def health_check(current_user: dict = Depends(require_auth)):
+@app.get("/api/v1/health", dependencies=[Depends(require_auth)])
+def health_check():
     return {
         "status": "healthy",
         "model_loaded": ai_model_store["weights"] is not None,
@@ -290,8 +297,8 @@ def health_check(current_user: dict = Depends(require_auth)):
     }
 
 
-@app.get("/api/v1/stations")
-def get_station_network(current_user: dict = Depends(require_auth)):
+@app.get("/api/v1/stations", dependencies=[Depends(require_auth)])
+def get_station_network():
     if ai_model_store["network_df"] is None:
         raise HTTPException(status_code=500, detail="Transit network data unavailable.")
 
@@ -305,8 +312,12 @@ def get_station_network(current_user: dict = Depends(require_auth)):
     return stations.to_dict(orient="records")
 
 
-@app.post("/api/v1/predict/demand", response_model=PredictionResponse)
-def predict_station_demand(req: PredictionRequest, current_user: dict = Depends(require_auth)):
+@app.post(
+    "/api/v1/predict/demand",
+    response_model=PredictionResponse,
+    dependencies=[Depends(require_auth)],
+)
+def predict_station_demand(req: PredictionRequest):
     if ai_model_store["weights"] is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -346,8 +357,8 @@ def predict_station_demand(req: PredictionRequest, current_user: dict = Depends(
     )
 
 
-@app.get("/api/v1/operations/summary")
-def get_operations_summary(current_user: dict = Depends(require_auth)):
+@app.get("/api/v1/operations/summary", dependencies=[Depends(require_auth)])
+def get_operations_summary():
     if operations_collection is not None:
         latest_snapshot = operations_collection.find_one(sort=[("received_at", -1)])
         if latest_snapshot is not None:
@@ -429,8 +440,12 @@ def get_operations_summary(current_user: dict = Depends(require_auth)):
     }
 
 
-@app.post("/api/v1/schedules/recommend", response_model=ScheduleRecommendationResponse)
-def recommend_schedule(req: ScheduleRecommendationRequest, current_user: dict = Depends(require_auth)):
+@app.post(
+    "/api/v1/schedules/recommend",
+    response_model=ScheduleRecommendationResponse,
+    dependencies=[Depends(require_auth)],
+)
+def recommend_schedule(req: ScheduleRecommendationRequest):
     occupancy = req.predicted_demand / max(req.station_capacity, 1)
 
     if occupancy >= 0.85:
@@ -468,8 +483,8 @@ def recommend_schedule(req: ScheduleRecommendationRequest, current_user: dict = 
     )
 
 
-@app.get("/api/v1/analytics/peak-hours")
-def get_peak_hour_insights(current_user: dict = Depends(require_auth)):
+@app.get("/api/v1/analytics/peak-hours", dependencies=[Depends(require_auth)])
+def get_peak_hour_insights():
     if ai_model_store["network_df"] is None:
         raise HTTPException(status_code=500, detail="Data unavailable.")
 
@@ -498,10 +513,9 @@ def get_peak_hour_insights(current_user: dict = Depends(require_auth)):
     }
 
 
-@app.post("/api/v1/operations/telemetry")
+@app.post("/api/v1/operations/telemetry", dependencies=[Depends(require_auth)])
 def ingest_operations_telemetry(
     data: OperationsTelemetryRequest,
-    current_user: dict = Depends(require_auth),
 ):
     if operations_collection is None:
         raise HTTPException(status_code=503, detail="Operations database is unavailable.")
@@ -517,8 +531,8 @@ def ingest_operations_telemetry(
     }
 
 
-@app.get("/api/v1/admin/users")
-def get_admin_users(current_user: dict = Depends(require_admin)):
+@app.get("/api/v1/admin/users", dependencies=[Depends(require_admin)])
+def get_admin_users():
     if auth_users_collection is None:
         raise HTTPException(status_code=503, detail="Authentication database is unavailable.")
     return [
