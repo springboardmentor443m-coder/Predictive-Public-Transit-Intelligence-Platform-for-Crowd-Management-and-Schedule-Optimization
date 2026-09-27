@@ -3,3 +3,7 @@ data/
 backend/__pycache__/
 *.db
 backend/models/*.joblib
+.env
+.env.*
+!/.env.example
+!frontend/.env.example

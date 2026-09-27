@@ -1,8 +1,10 @@
 fastapi
-httpx2
+httpx
 uvicorn
 pydantic
 pymongo
+PyJWT==2.10.1
+python-dotenv
 pandas
 numpy
 scikit-learn==1.7.2
