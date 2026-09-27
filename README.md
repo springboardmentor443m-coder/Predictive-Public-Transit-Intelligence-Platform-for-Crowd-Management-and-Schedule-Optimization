@@ -1,57 +1,135 @@
-## Contributing Guidelines (For Interns / Collaborators)
+# MetroFlow 🚇
 
-All interns added as collaborators to this repository must follow the branch workflow below. **Direct commits or pushes to the `main` branch are not allowed.**
+### AI-Powered Metro Crowd Management and Schedule Optimization Platform
 
-> Note: `main` only contains the `LICENSE` and `README.md` — it is not used for active development. There is no need to pull the latest `main` into your branch at any point.
+MetroFlow is an AI-powered decision-support platform designed to analyze metro ridership patterns, predict station crowd levels, monitor congestion, and provide operational recommendations for metro crowd management and scheduling.
 
-### 1. Branch Naming
+The platform uses historical station-wise ridership data along with weather information to generate data-driven insights for metro operators.
 
-- Every intern must create their own branch off `main`, named after themselves.
-- Suggested naming convention: `firstname-lastname` (all lowercase, hyphen-separated).
-  - Example: `john-doe`, `aisha-khan`
+---
 
-### 2. How to Create Your Branch
+## 🎯 Project Objective
 
-**Option A — Clone and push (recommended)**
+The main objective of MetroFlow is to provide an intelligent platform for:
 
-```bash
-# Clone the repository
-git clone https://github.com/springboardmentor443m-coder/Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization.git
+- Monitoring station-wise passenger demand
+- Identifying crowded and congested metro stations
+- Predicting next-hour passenger demand
+- Classifying crowd levels
+- Providing operational recommendations
+- Analyzing metro ridership patterns
+- Understanding the influence of weather conditions on metro demand
+- Supporting data-driven metro scheduling decisions
 
-# Move into the project folder
-cd Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization
+---
 
-# Create and switch to your own branch (off main)
-git checkout -b your-name
+## 🚀 Key Features
 
-# ... make your changes ...
+### 1. Metro Analytics Dashboard
 
-# Stage, commit, and push your changes to YOUR branch only
-git add .
-git commit -m "Describe your change here"
-git push origin your-name
-```
+The dashboard provides important metro-level KPIs including:
 
-**Option B — GitHub UI upload**
+- Total Ridership
+- Total Number of Stations
+- Busiest Station
+- Peak Ridership Hour
 
-1. Go to the repository on GitHub.
-2. Switch the branch dropdown from `main` to your own branch (create it first via **Branch: main → View all branches → New branch**, named after yourself).
-3. Once on your branch, use **Add file → Upload files** to upload your code.
-4. Commit directly to your branch (not `main`).
+These values are calculated from the station-wise ridership dataset.
 
-### 3. Rules
+---
 
-- ❌ Do **not** push or upload code directly to `main`.
-- ❌ Do **not** push code to another intern's branch.
-- ✅ Only push/upload code to the branch that carries your own name.
-- Keep uploading/pushing your code to your branch regularly as you make progress. No pull requests are required — your branch itself is the deliverable.
+### 2. AI-Based Crowd Prediction
 
-### 4. Summary
+MetroFlow uses an XGBoost regression model to predict next-hour station ridership.
 
-| Action | Allowed? |
-|---|---|
-| Push to `main` directly | ❌ No |
-| Create your own branch from `main` | ✅ Yes |
-| Push/upload code to your own branch | ✅ Yes |
-| Push/upload code to someone else's branch | ❌ No |
-| Open a Pull Request | Not required |
+The prediction system considers:
+
+- Station
+- Hour of day
+- Day of week
+- Current ridership
+- Weekend information
+- Peak-hour information
+
+The system returns:
+
+- Predicted next-hour ridership
+- Crowd level
+- Operational recommendation
+
+---
+
+### 3. Station Crowd Monitoring
+
+The platform provides station-wise congestion monitoring.
+
+Stations are classified into:
+
+- 🟢 Low
+- 🟡 Medium
+- 🟠 High
+- 🔴 Critical
+
+The monitoring dashboard allows users to:
+
+- Search stations
+- Filter stations by congestion level
+- View station ridership
+- Identify highly congested stations
+- Select a station for further prediction
+
+---
+
+### 4. Weather and Environmental Insights
+
+MetroFlow integrates Bengaluru weather data with metro analytics.
+
+The dashboard provides:
+
+- Average Temperature
+- Average Humidity
+- Total Rainfall
+- Average Wind Speed
+
+This information can be used alongside ridership patterns for transportation analysis.
+
+---
+
+### 5. Station Management
+
+The backend provides station management APIs for:
+
+- Creating stations
+- Listing stations
+- Viewing individual station details
+
+Station information includes:
+
+- Station name
+- Location
+- Latitude
+- Longitude
+- Capacity
+
+---
+
+## 🤖 Machine Learning
+
+MetroFlow uses an XGBoost regression model for passenger demand prediction.
+
+### Prediction Pipeline
+
+```text
+Historical Ridership Data
+          ↓
+Data Preprocessing
+          ↓
+Feature Engineering
+          ↓
+XGBoost Regression Model
+          ↓
+Next-Hour Ridership Prediction
+          ↓
+Crowd Level Classification
+          ↓
+Operational Recommendation
