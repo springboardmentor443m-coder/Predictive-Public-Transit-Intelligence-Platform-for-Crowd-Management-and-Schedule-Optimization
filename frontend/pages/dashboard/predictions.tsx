@@ -312,7 +312,7 @@ function Predictions() {
 
       {/* Delay Predictor Widget */}
       <div className="card mt-5 border-slate-800 overflow-hidden">
-        <div className="flex items-center gap-3 border-b border-slate-800 bg-gradient-to-r from-indigo-950/40 to-transparent px-5 py-4">
+        <div className="panel-head-indigo flex items-center gap-3 border-b border-slate-800 px-5 py-4">
           <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-400">
             <TrainFront className="h-5 w-5" />
           </span>

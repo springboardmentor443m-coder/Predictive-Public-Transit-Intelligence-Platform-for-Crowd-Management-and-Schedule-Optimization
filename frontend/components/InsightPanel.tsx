@@ -36,7 +36,7 @@ export default function InsightPanel({ insights, onSelectStation }: InsightPanel
 
   return (
     <div className="card overflow-hidden border-slate-800">
-      <div className="flex flex-wrap items-center gap-3 border-b border-slate-800 bg-gradient-to-r from-brand-950/40 via-slate-900/60 to-transparent px-5 py-4">
+      <div className="panel-head-indigo flex flex-wrap items-center gap-3 border-b border-slate-800 px-5 py-4">
         <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 shadow-lg shadow-amber-500/10">
           <Lightbulb className="h-5 w-5" />
         </span>

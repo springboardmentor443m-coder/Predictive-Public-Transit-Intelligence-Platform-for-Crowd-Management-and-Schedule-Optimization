@@ -89,7 +89,7 @@ export default function HeatmapGrid({ points, stations, onSelectStation }: Heatm
                     <td key={h} className="p-0">
                       <div
                         title={`${st.name} (${st.id})\nHour: ${String(h).padStart(2, "0")}:00 - ${String(h + 1).padStart(2, "0")}:00\nAverage Occupancy: ${pct}%\nStatus: ${cell?.congestion_level || "low"}`}
-                        className="h-6 w-7 rounded-[4px] transition-all duration-200 hover:scale-125 hover:z-30 hover:shadow-lg hover:ring-2 hover:ring-white"
+                        className="heat-cell"
                         style={{
                           backgroundColor: color,
                           opacity: 0.3 + Math.min(1, pct / 100) * 0.7,

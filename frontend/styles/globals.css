@@ -4,9 +4,188 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   METROFLOW DESIGN TOKENS
+   --------------------------------------------------------------------------
+   Every colour in the product resolves through custom properties, so switching
+   themes is a token swap instead of a pile of `html.light .bg-slate-900`
+   patch rules that fight the very utilities they target.
+
+   The `slate` ramp is wired into tailwind.config.js as
+   `rgb(var(--mf-slate-*) / <alpha-value>)`, which makes utilities such as
+   `bg-slate-900`, `border-slate-800` and *every* hover/alpha variant of them
+   theme-aware with zero page-level overrides.
+
+   Dark theme  -> :root        (base definition, byte-identical to before)
+   Light theme -> html.light   (token swap only)
+   ========================================================================== */
+
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
+
+  /* ---- Neutral ramp (dark theme) ---- */
+  --mf-slate-50: 248 250 252;
+  --mf-slate-100: 241 245 249;
+  --mf-slate-200: 226 232 240;
+  --mf-slate-300: 203 213 225;
+  --mf-slate-400: 148 163 184;
+  --mf-slate-500: 100 116 139;
+  --mf-slate-600: 71 85 105;
+  --mf-slate-700: 51 65 85;
+  --mf-slate-800: 30 41 59;
+  --mf-slate-850: 19 29 51;
+  --mf-slate-900: 15 23 42;
+  --mf-slate-950: 9 13 22;
+
+  /* ---- App chrome ---- */
+  --mf-canvas: 9 13 22;
+  --mf-shell: 9 13 22;
+  --mf-shell-line: rgb(30 41 59 / 0.8);
+  --mf-ring-offset: 9 13 22;
+  --mf-scrim: rgb(9 13 22 / 0.8);
+
+  /* ---- Surfaces ---- */
+  --mf-card-bg: rgb(15 23 42 / 0.9);
+  --mf-card-line: rgb(30 41 59 / 0.8);
+  --mf-card-line-hover: rgb(51 65 85 / 0.8);
+
+  --mf-input-bg: rgb(9 13 22 / 0.8);
+  --mf-input-line: 30 41 59;
+  --mf-input-fg: 241 245 249;
+  --mf-input-shadow: 0 0 #0000;
+
+  --mf-label-fg: 148 163 184;
+  --mf-ink: 203 213 225;
+
+  --mf-table-line: rgb(30 41 59 / 0.8);
+  --mf-table-head-bg: rgb(9 13 22 / 0.9);
+  --mf-table-head-fg: 148 163 184;
+  --mf-table-fg: 203 213 225;
+  --mf-table-row-hover: rgb(19 29 51 / 0.6);
+
+  /* ---- Elevation ---- */
+  --mf-shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.05);
+  --mf-shadow-elev: 0 12px 30px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(29, 98, 241, 0.15);
+  --mf-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --mf-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  --mf-shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+  /* ---- Accent glows ---- */
+  --mf-glow-brand: 0 0 20px rgba(29, 98, 241, 0.35);
+  --mf-glow-emerald: 0 0 20px rgba(16, 185, 129, 0.35);
+  --mf-glow-rose: 0 0 20px rgba(244, 63, 94, 0.35);
+  --mf-glow-amber: 0 0 20px rgba(245, 158, 11, 0.35);
+
+  /* ---- Feature surfaces ---- */
+  --mf-hero: linear-gradient(135deg, #0b0f19 0%, #1e1b4b 40%, #1e3a8a 80%, #0284c7 100%);
+  --mf-hero-line: 30 41 59;
+  --mf-panel-brand: linear-gradient(90deg, rgba(21, 37, 86, 0.6) 0%, rgba(2, 44, 34, 0.4) 100%);
+  --mf-panel-indigo: linear-gradient(90deg, rgba(30, 27, 75, 0.45) 0%, rgba(15, 23, 42, 0.55) 45%, rgba(0, 0, 0, 0) 100%);
+
+  /* ---- Schematic map / data-viz ---- */
+  --mf-map-ring: 15 23 42;
+  --mf-map-label: 226 232 240;
+  --mf-map-select: 255 255 255;
+  --mf-map-grid: 255 255 255;
+  --mf-map-grid-alpha: 0.03;
+  --mf-heat-ring: 255 255 255;
+
+  /* ---- Toasts ---- */
+  --mf-toast-bg: 15 23 42;
+  --mf-toast-success-fg: 209 250 229;
+  --mf-toast-warning-fg: 254 243 199;
+  --mf-toast-error-fg: 254 205 211;
+  --mf-toast-info-fg: 219 234 254;
+
+  /* ---- Scrollbar ---- */
+  --mf-scroll-thumb: 30 41 59;
+  --mf-scroll-thumb-hover: 51 65 85;
 }
+
+/* ==========================================================================
+   LIGHT THEME — a token swap, nothing more.
+   The dark end of the ramp is re-mapped so the *same* utility yields a light
+   surface in light mode (bg-slate-900 -> white card, bg-slate-950 -> soft
+   panel, border-slate-800 -> hairline). The light end keeps Tailwind's
+   surface/border values, and type is pinned to ink just below.
+   ========================================================================== */
+html.light {
+  color-scheme: light;
+
+  /* surfaces & borders */
+  --mf-slate-50: 248 250 252;  /* #f8fafc */
+  --mf-slate-100: 241 245 249; /* #f1f5f9 */
+  --mf-slate-200: 226 232 240; /* #e2e8f0 */
+  --mf-slate-300: 203 213 225; /* #cbd5e1 */
+  --mf-slate-400: 194 206 222; /* #c2cede */
+  --mf-slate-500: 100 116 139; /* #64748b */
+  --mf-slate-600: 219 227 238; /* #dbe3ee */
+  --mf-slate-700: 203 213 225; /* #cbd5e1 */
+  --mf-slate-800: 226 232 240; /* #e2e8f0 */
+  --mf-slate-850: 219 229 241; /* #dbe5f1 */
+  --mf-slate-900: 255 255 255; /* #ffffff */
+  --mf-slate-950: 233 239 246; /* #e9eff6 */
+
+  --mf-canvas: 248 250 252;
+  --mf-shell: 255 255 255;
+  --mf-shell-line: rgb(226 232 240 / 0.9);
+  --mf-ring-offset: 255 255 255;
+  --mf-scrim: rgb(15 23 42 / 0.45);
+
+  --mf-card-bg: #ffffff;
+  --mf-card-line: rgb(226 232 240 / 0.9);
+  --mf-card-line-hover: #bcdcff;
+
+  --mf-input-bg: #ffffff;
+  --mf-input-line: 203 213 225;
+  --mf-input-fg: 15 23 42;
+  --mf-input-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+
+  --mf-label-fg: 91 107 128;
+  --mf-ink: 51 65 85;
+
+  --mf-table-line: rgb(226 232 240);
+  --mf-table-head-bg: rgb(241 245 249 / 0.9);
+  --mf-table-head-fg: 91 107 128;
+  --mf-table-fg: 51 65 85;
+  --mf-table-row-hover: rgb(248 250 252);
+
+  --mf-shadow-card: 0 4px 20px -4px rgba(15, 23, 42, 0.07), 0 1px 3px rgba(15, 23, 42, 0.04);
+  --mf-shadow-elev: 0 14px 30px -8px rgba(15, 23, 42, 0.1), 0 0 0 1px rgba(37, 99, 235, 0.07);
+  --mf-shadow-lg: 0 10px 22px -12px rgba(15, 23, 42, 0.16);
+  --mf-shadow-xl: 0 18px 36px -18px rgba(15, 23, 42, 0.2);
+  --mf-shadow-2xl: 0 22px 44px -20px rgba(15, 23, 42, 0.24);
+
+  --mf-glow-brand: 0 10px 26px -14px rgba(29, 98, 241, 0.55);
+  --mf-glow-emerald: 0 10px 26px -14px rgba(16, 185, 129, 0.55);
+  --mf-glow-rose: 0 10px 26px -14px rgba(244, 63, 94, 0.55);
+  --mf-glow-amber: 0 10px 26px -14px rgba(245, 158, 11, 0.55);
+
+  --mf-hero: linear-gradient(135deg, #e4eeff 0%, #dde8ff 34%, #dff4ed 68%, #ebeeff 100%);
+  --mf-hero-line: 186 214 250;
+  --mf-panel-brand: linear-gradient(90deg, rgba(219, 234, 254, 0.95) 0%, rgba(209, 250, 229, 0.9) 100%);
+  --mf-panel-indigo: linear-gradient(90deg, rgba(224, 231, 255, 0.95) 0%, rgba(241, 245, 249, 0.9) 50%, rgba(255, 255, 255, 0) 100%);
+
+  --mf-map-ring: 255 255 255;
+  --mf-map-label: 51 65 85;
+  --mf-map-select: 29 78 216;
+  --mf-map-grid: 15 23 42;
+  --mf-map-grid-alpha: 0.05;
+  --mf-heat-ring: 15 23 42;
+
+  --mf-toast-bg: 255 255 255;
+  --mf-toast-success-fg: 6 95 70;
+  --mf-toast-warning-fg: 120 53 15;
+  --mf-toast-error-fg: 136 19 55;
+  --mf-toast-info-fg: 30 58 138;
+
+  --mf-scroll-thumb: 203 213 225;
+  --mf-scroll-thumb-hover: 148 163 184;
+}
+
+/* ==========================================================================
+   BASE
+   ========================================================================== */
 
 html {
   font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -14,7 +193,9 @@ html {
 }
 
 body {
-  @apply bg-slate-950 text-slate-100 antialiased selection:bg-brand-500 selection:text-white transition-colors duration-200;
+  @apply antialiased selection:bg-brand-500 selection:text-white transition-colors duration-200;
+  background-color: rgb(var(--mf-slate-950));
+  color: rgb(var(--mf-slate-100));
   background-image:
     radial-gradient(1200px 500px at 15% -10%, rgba(29, 98, 241, 0.15), transparent 70%),
     radial-gradient(1000px 450px at 85% 5%, rgba(16, 185, 129, 0.12), transparent 70%),
@@ -24,21 +205,24 @@ body {
 }
 
 html.light body {
-  @apply bg-slate-50 text-slate-800;
+  background-color: rgb(var(--mf-canvas));
+  color: #1e293b;
   background-image:
-    radial-gradient(1200px 500px at 15% -10%, rgba(47, 109, 246, 0.08), transparent 70%),
-    radial-gradient(1000px 450px at 85% 5%, rgba(16, 185, 129, 0.07), transparent 70%);
+    radial-gradient(1100px 480px at 12% -12%, rgba(47, 109, 246, 0.09), transparent 70%),
+    radial-gradient(900px 420px at 88% 2%, rgba(16, 185, 129, 0.08), transparent 70%),
+    radial-gradient(760px 380px at 50% 104%, rgba(99, 102, 241, 0.05), transparent 70%);
 }
 
-/* Glassmorphism Cards */
+/* ==========================================================================
+   COMPONENT LAYER
+   ========================================================================== */
+
+/* ---- Surfaces ---- */
 .card {
-  @apply relative rounded-2xl bg-slate-900/90 border border-slate-800/80 backdrop-blur-xl transition-all duration-300;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.05);
-}
-
-html.light .card {
-  @apply bg-white/90 border-slate-200/90;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  @apply relative rounded-2xl border backdrop-blur-xl transition-all duration-300;
+  background-color: var(--mf-card-bg);
+  border-color: var(--mf-card-line);
+  box-shadow: var(--mf-shadow-card);
 }
 
 .card-pad {
@@ -46,25 +230,33 @@ html.light .card {
 }
 
 .card-hover {
-  @apply transition-all duration-300 hover:-translate-y-1 hover:border-slate-700/80;
-}
-html.light .card-hover {
-  @apply hover:border-slate-300 hover:shadow-lg;
+  @apply transition-all duration-300 hover:-translate-y-1;
 }
 .card-hover:hover {
-  box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(29, 98, 241, 0.15);
-}
-html.light .card-hover:hover {
-  box-shadow: 0 12px 30px -5px rgba(15, 23, 42, 0.12);
+  border-color: var(--mf-card-line-hover);
+  box-shadow: var(--mf-shadow-elev);
 }
 
+/* Full-bleed modal / drawer backdrop. Deliberately dark in both themes. */
+.scrim {
+  background-color: var(--mf-scrim);
+}
+
+/* ---- Type helpers ---- */
 .section-title {
-  @apply text-[11px] font-extrabold text-slate-400 dark:text-slate-400 uppercase tracking-[0.14em];
+  @apply text-[11px] font-extrabold uppercase tracking-[0.14em];
+  color: rgb(var(--mf-label-fg));
 }
 
-/* Modern Buttons */
+.label {
+  @apply block text-[11px] font-extrabold mb-1.5 uppercase tracking-[0.1em];
+  color: rgb(var(--mf-label-fg));
+}
+
+/* ---- Buttons ---- */
 .btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98];
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98];
+  --tw-ring-offset-color: rgb(var(--mf-ring-offset));
 }
 
 .btn-primary {
@@ -77,10 +269,21 @@ html.light .card-hover:hover {
 }
 
 .btn-ghost {
-  @apply btn bg-slate-800/80 border border-slate-700/80 text-slate-200 hover:bg-slate-700/80 hover:text-white dark:bg-slate-800/80 dark:border-slate-700/80 dark:text-slate-200 dark:hover:bg-slate-700/80 dark:hover:text-white;
+  @apply btn hover:text-white;
+  background-color: rgb(var(--mf-slate-800) / 0.8);
+  border-color: rgb(var(--mf-slate-700) / 0.8);
+  color: rgb(var(--mf-slate-200));
+}
+.btn-ghost:hover {
+  background-color: rgb(var(--mf-slate-700) / 0.8);
 }
 html.light .btn-ghost {
-  @apply bg-white border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900;
+  @apply border-slate-200 shadow-sm hover:border-slate-300;
+  color: #475569;
+}
+html.light .btn-ghost:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
 }
 
 .btn-danger {
@@ -91,63 +294,315 @@ html.light .btn-ghost {
   box-shadow: 0 0 20px rgba(244, 63, 94, 0.4);
 }
 
+/* ---- Form controls ---- */
 .input {
-  @apply w-full rounded-xl border border-slate-800 bg-slate-950/80 px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition-all duration-200;
+  @apply w-full rounded-xl border px-3.5 py-2.5 text-sm placeholder-slate-500 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition-all duration-200;
+  background-color: rgb(var(--mf-input-bg));
+  border-color: rgb(var(--mf-input-line));
+  color: rgb(var(--mf-input-fg));
+  box-shadow: var(--mf-input-shadow);
 }
-html.light .input {
-  @apply border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:border-brand-500 focus:ring-brand-200;
+html.light .input:focus {
+  --tw-ring-color: rgb(191 219 254 / 0.7);
+}
+html.light select.input option {
+  @apply bg-white text-slate-900;
 }
 
-.label {
-  @apply block text-[11px] font-extrabold text-slate-400 mb-1.5 uppercase tracking-[0.1em];
-}
-
-/* Tables */
+/* ---- Tables ---- */
 .table-base {
-  @apply min-w-full divide-y divide-slate-800/80 text-sm;
+  @apply min-w-full divide-y text-sm;
 }
-html.light .table-base {
-  @apply divide-slate-200;
-}
-
 .table-base thead th {
-  @apply px-4 py-3 text-left text-[11px] font-extrabold uppercase tracking-[0.1em] text-slate-400 bg-slate-950/90 backdrop-blur sticky top-0 z-10;
+  @apply px-4 py-3 text-left text-[11px] font-extrabold uppercase tracking-[0.1em] backdrop-blur sticky top-0 z-10;
+  background-color: var(--mf-table-head-bg);
+  color: rgb(var(--mf-table-head-fg));
+}
+.table-base tbody td {
+  @apply px-4 py-3.5 whitespace-nowrap;
+  color: rgb(var(--mf-table-fg));
+}
+.table-base tbody tr {
+  @apply transition-colors duration-150;
+}
+.table-base tbody tr:hover {
+  background-color: var(--mf-table-row-hover);
 }
 html.light .table-base thead th {
-  @apply bg-slate-100/90 text-slate-600;
+  @apply border-b border-slate-200;
 }
 
-.table-base tbody td {
-  @apply px-4 py-3.5 whitespace-nowrap text-slate-300;
-}
-html.light .table-base tbody td {
-  @apply text-slate-700;
-}
-
-.table-base tbody tr {
-  @apply hover:bg-slate-850/60 transition-colors duration-150;
-}
-html.light .table-base tbody tr {
-  @apply hover:bg-slate-50/80;
-}
-
+/* ---- Feature surfaces ---- */
 .hero-gradient {
-  background: linear-gradient(135deg, #0b0f19 0%, #1e1b4b 40%, #1e3a8a 80%, #0284c7 100%);
+  background-image: var(--mf-hero);
+  border-color: rgb(var(--mf-hero-line));
+}
+html.light .hero-gradient {
+  box-shadow: 0 20px 44px -26px rgba(29, 98, 241, 0.3);
 }
 
-.kpi-glow-brand { box-shadow: 0 8px 30px -10px rgba(47, 109, 246, 0.4); }
-.kpi-glow-emerald { box-shadow: 0 8px 30px -10px rgba(16, 185, 129, 0.4); }
-.kpi-glow-amber { box-shadow: 0 8px 30px -10px rgba(245, 158, 11, 0.4); }
-.kpi-glow-rose { box-shadow: 0 8px 30px -10px rgba(244, 63, 94, 0.4); }
+/* Tinted widget headers. The light theme swaps in a soft wash so the dark
+   ink used throughout these panels stays legible. */
+.panel-head-brand {
+  background-image: var(--mf-panel-brand);
+}
+.panel-head-indigo {
+  background-image: var(--mf-panel-indigo);
+}
 
+.kpi-glow-brand { box-shadow: var(--mf-glow-brand); }
+.kpi-glow-emerald { box-shadow: var(--mf-glow-emerald); }
+.kpi-glow-amber { box-shadow: var(--mf-glow-amber); }
+.kpi-glow-rose { box-shadow: var(--mf-glow-rose); }
+
+/* ---- Toasts ---- */
+.toast {
+  @apply pointer-events-auto flex items-start gap-3 rounded-2xl border p-4 shadow-2xl backdrop-blur-xl;
+  background-color: rgb(var(--mf-toast-bg));
+}
+.toast-success { border-color: rgb(16 185 129 / 0.4); color: rgb(var(--mf-toast-success-fg)); }
+.toast-warning { border-color: rgb(245 158 11 / 0.4); color: rgb(var(--mf-toast-warning-fg)); }
+.toast-error { border-color: rgb(244 63 94 / 0.4); color: rgb(var(--mf-toast-error-fg)); }
+.toast-info { border-color: rgb(51 130 252 / 0.4); color: rgb(var(--mf-toast-info-fg)); }
+
+/* ---- Heatmap cells ---- */
+.heat-cell {
+  @apply h-6 w-7 rounded-[4px] transition-all duration-200;
+}
+.heat-cell:hover {
+  transform: scale(1.25);
+  z-index: 30;
+  box-shadow: var(--mf-shadow-lg), 0 0 0 2px rgb(var(--mf-heat-ring));
+}
+
+/* ---- Schematic map ---- */
+.map-grid-pattern path {
+  stroke: rgb(var(--mf-map-grid) / var(--mf-map-grid-alpha));
+}
+.map-node-ring { stroke: rgb(var(--mf-map-ring)); }
+.map-select-ring { stroke: rgb(var(--mf-map-select)); }
+.map-label { fill: rgb(var(--mf-map-label)); }
+.group:hover .map-label { fill: #59a5ff; }
+
+/* ---- Scrollbar ---- */
 .scroll-thin::-webkit-scrollbar { height: 6px; width: 6px; }
 .scroll-thin::-webkit-scrollbar-track { @apply bg-transparent; }
-.scroll-thin::-webkit-scrollbar-thumb { @apply bg-slate-800 rounded-full hover:bg-slate-700; }
-html.light .scroll-thin::-webkit-scrollbar-thumb { @apply bg-slate-300 hover:bg-slate-400; }
+.scroll-thin::-webkit-scrollbar-thumb {
+  @apply rounded-full;
+  background-color: rgb(var(--mf-scroll-thumb));
+}
+.scroll-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(var(--mf-scroll-thumb-hover));
+}
 
-/* Custom Code Font */
+/* ---- Custom Code Font ---- */
 code, pre {
   font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* ==========================================================================
+   INK ON LIGHT SURFACES
+   `text-white` and the slate type scale are authored for a dark canvas. In
+   light mode they resolve to ink — except where the element genuinely sits on
+   a saturated brand fill or a dark brand gradient, which keep white type.
+   ========================================================================== */
+html.light .text-slate-100 { color: #0f172a; }
+html.light .text-slate-200 { color: #1e293b; }
+html.light .text-slate-300 { color: #334155; }
+html.light .text-slate-400 { color: #475569; }
+html.light .text-slate-500 { color: #5b6b80; }
+html.light .text-slate-600 { color: #475569; }
+html.light .text-slate-700 { color: #334155; }
+html.light .text-white { color: #0f172a; }
+html.light :is(h1, h2, h3, h4, h5, h6) { color: #0f172a; }
+
+html.light :is(
+    [class*="from-brand-400"],
+    [class*="from-brand-500"],
+    [class*="from-brand-600"],
+    [class*="bg-brand-500"]:not([class*="/"]),
+    [class*="bg-brand-600"]:not([class*="/"]),
+    [class*="bg-rose-500"]:not([class*="/"]),
+    [class*="bg-emerald-600"]:not([class*="/"]),
+    [class*="bg-indigo-600"]:not([class*="/"]),
+    [class*="bg-indigo-700"]:not([class*="/"])
+  )
+  :is(.text-white, h1, h2, h3, h4, h5, h6),
+html.light :is(.text-white, h1, h2, h3, h4, h5, h6):is(
+    [class*="from-brand-400"],
+    [class*="from-brand-500"],
+    [class*="from-brand-600"],
+    [class*="bg-brand-500"]:not([class*="/"]),
+    [class*="bg-brand-600"]:not([class*="/"]),
+    [class*="bg-rose-500"]:not([class*="/"]),
+    [class*="bg-emerald-600"]:not([class*="/"]),
+    [class*="bg-indigo-600"]:not([class*="/"]),
+    [class*="bg-indigo-700"]:not([class*="/"])
+  ) {
+  color: #ffffff;
+}
+
+/* Light-filled chips (white / brand tint) always take dark ink, in both themes. */
+:is(.bg-white, .bg-slate-50, .bg-slate-100, [class*="bg-brand-500/"])
+  :is(.text-slate-900, .text-slate-950),
+:is(.bg-white, .bg-slate-50, .bg-slate-100, [class*="bg-brand-500/"]):is(
+    .text-slate-900,
+    .text-slate-950
+  ) {
+  color: #0f172a;
+}
+
+/* ==========================================================================
+   STATUS / ACCENT INK
+   The -300 / -400 shades are tuned for a dark canvas; on white they fall
+   below AA, so light mode swaps in their darker siblings.
+   ========================================================================== */
+html.light .text-emerald-100 { color: #065f46; }
+html.light .text-emerald-300 { color: #065f46; }
+html.light .text-emerald-400 { color: #047857; }
+html.light .text-amber-100 { color: #78350f; }
+html.light .text-amber-300 { color: #92400e; }
+html.light .text-amber-400 { color: #b45309; }
+html.light .text-orange-300 { color: #9a3412; }
+html.light .text-orange-400 { color: #c2410c; }
+html.light .text-rose-100 { color: #881337; }
+html.light .text-rose-300 { color: #be123c; }
+html.light .text-rose-400 { color: #e11d48; }
+html.light .text-brand-300 { color: #1e40af; }
+html.light .text-brand-400 { color: #1d4ed8; }
+html.light .text-sky-300 { color: #075985; }
+html.light .text-sky-400 { color: #0369a1; }
+html.light .text-indigo-300 { color: #4338ca; }
+html.light .text-indigo-400 { color: #4f46e5; }
+html.light .text-blue-100 { color: #1e3a8a; }
+
+/* Tinted accent wells (bg-*-950/*) become soft pastel containers. */
+html.light .bg-brand-950\/60,
+html.light .bg-brand-950\/40,
+html.light .bg-brand-950\/20 {
+  background-color: rgba(239, 246, 255, 0.9);
+  border-color: rgba(191, 219, 254, 0.8);
+  color: #1e3a8a;
+}
+html.light .bg-emerald-950\/40,
+html.light .bg-emerald-950\/30 {
+  background-color: rgba(236, 253, 245, 0.9);
+  border-color: rgba(167, 243, 208, 0.8);
+  color: #064e3b;
+}
+html.light .bg-amber-950\/40,
+html.light .bg-amber-950\/30 {
+  background-color: rgba(254, 252, 232, 0.9);
+  border-color: rgba(254, 240, 138, 0.8);
+  color: #78350f;
+}
+html.light .bg-rose-950\/40,
+html.light .bg-rose-950\/30,
+html.light .bg-rose-950\/20 {
+  background-color: rgba(255, 241, 242, 0.9);
+  border-color: rgba(254, 205, 211, 0.8);
+  color: #881337;
+}
+html.light .bg-sky-950\/30 {
+  background-color: rgba(240, 249, 255, 0.9);
+  border-color: rgba(186, 230, 253, 0.8);
+  color: #0c4a6e;
+}
+html.light .bg-indigo-950\/40 {
+  background-color: rgba(238, 242, 255, 0.9);
+  border-color: rgba(199, 210, 254, 0.8);
+  color: #312e81;
+}
+
+/* ==========================================================================
+   LAYOUT CHROME
+   `html.light aside` / `html.light header` intentionally outrank the utility
+   classes on those elements, so the sidebar and top bar read as white glass.
+   ========================================================================== */
+html.light aside {
+  background-color: rgb(var(--mf-shell) / 0.96);
+  border-color: var(--mf-shell-line);
+  color: #1e293b;
+}
+html.light aside header {
+  border-color: rgb(226 232 240 / 0.8);
+}
+html.light aside a:not(.bg-gradient-to-r) {
+  color: #475569;
+}
+html.light aside a:not(.bg-gradient-to-r):hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+html.light header {
+  background-color: rgb(var(--mf-shell) / 0.88);
+  border-color: var(--mf-shell-line);
+  color: #0f172a;
+}
+html.light header button {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+  color: #334155;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+html.light header button:hover {
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+html.light header div.bg-slate-900 {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+  color: #0f172a;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+html.light footer {
+  border-color: rgb(226 232 240 / 0.8);
+  color: #64748b;
+}
+
+/* Neutralise Tailwind's heavy drop shadows on light surfaces.
+   `:where()` keeps specificity at (0,1,0) so focus rings (utilities at
+   (0,2,0)) still win on elements that carry both a shadow and a ring. */
+html.light :where(.shadow-lg, .shadow-xl, .shadow-2xl) {
+  box-shadow: var(--mf-shadow-lg);
+}
+html.light :where(.shadow-2xl) {
+  box-shadow: var(--mf-shadow-2xl);
+}
+
+/* ==========================================================================
+   DATA VISUALISATION
+   Recharts is configured with inline hex, so these need !important.
+   ========================================================================== */
+html.light .recharts-default-tooltip {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: var(--mf-shadow-2xl) !important;
+  border-radius: 12px !important;
+}
+html.light .recharts-default-tooltip .recharts-tooltip-item {
+  color: #1e293b !important;
+}
+html.light .recharts-cartesian-grid line,
+html.light .recharts-polar-grid line {
+  stroke: #e9eff6 !important;
+}
+html.light .recharts-cartesian-axis-line,
+html.light .recharts-cartesian-axis-tick-line,
+html.light .recharts-polar-axis-line,
+html.light .recharts-polar-axis-tick-line {
+  stroke: #cbd5e1 !important;
+}
+html.light .recharts-text,
+html.light .recharts-cartesian-axis-tick-value,
+html.light .recharts-polar-angle-axis-tick-value {
+  fill: #5b6b80 !important;
+}
+html.light .recharts-legend-item-text {
+  color: #475569 !important;
 }
 
 @media print {

@@ -14,17 +14,18 @@ const ThemeContext = createContext<ThemeContextValue>({
   toggleTheme: () => {},
 });
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("dark");
+const STORAGE_KEY = "metroflow_theme";
 
-  useEffect(() => {
-    const saved = localStorage.getItem("metroflow_theme");
-    if (saved === "light" || saved === "dark") {
-      setThemeState(saved);
-    } else {
-      setThemeState("dark");
-    }
-  }, []);
+function readInitialTheme(): Theme {
+  if (typeof window === "undefined") return "dark";
+  const saved = window.localStorage.getItem(STORAGE_KEY);
+  return saved === "light" || saved === "dark" ? saved : "dark";
+}
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  // Read synchronously so the first client render already matches the class
+  // that the inline bootstrap script in _document.tsx put on <html>.
+  const [theme, setThemeState] = useState<Theme>(readInitialTheme);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -35,7 +36,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.classList.add("dark");
       root.classList.remove("light");
     }
-    localStorage.setItem("metroflow_theme", theme);
+    localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
   const toggleTheme = () => {

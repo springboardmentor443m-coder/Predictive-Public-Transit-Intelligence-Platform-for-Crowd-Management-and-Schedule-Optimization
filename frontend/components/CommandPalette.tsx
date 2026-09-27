@@ -68,7 +68,7 @@ export default function CommandPalette({ isOpen, onClose, onOpen }: CommandPalet
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-slate-950/80 backdrop-blur-md p-4" onClick={onClose}>
+    <div className="scrim fixed inset-0 z-50 flex items-start justify-center pt-20 backdrop-blur-md p-4" onClick={onClose}>
       <div
         className="w-full max-w-xl rounded-2xl border border-slate-700/80 bg-slate-900 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
@@ -83,7 +83,7 @@ export default function CommandPalette({ isOpen, onClose, onOpen }: CommandPalet
             onChange={(e) => setQuery(e.target.value)}
             className="w-full bg-transparent text-sm text-slate-100 placeholder-slate-500 focus:outline-none"
           />
-          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-slate-300">
             <X className="h-4 w-4" />
           </button>
         </div>

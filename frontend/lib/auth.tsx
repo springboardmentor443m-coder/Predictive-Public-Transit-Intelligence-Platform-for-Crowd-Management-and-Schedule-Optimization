@@ -123,8 +123,8 @@ export function withAuth<P extends object>(Component: ComponentType<P>) {
     }, [loading, user]);
     if (loading || !user) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-100">
-          <div className="animate-pulse text-slate-500 font-medium">Loading MetroFlow…</div>
+        <div className="flex min-h-screen items-center justify-center bg-slate-950">
+          <div className="animate-pulse text-slate-400 font-medium">Loading MetroFlow…</div>
         </div>
       );
     }

@@ -1,7 +1,8 @@
 import { useState, useEffect, type FormEvent } from "react";
-import { AlertCircle, Eye, EyeOff, Loader2, ShieldCheck, Sparkles, TrainFront, Activity, CheckCircle2 } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Loader2, ShieldCheck, Sparkles, TrainFront, Activity, CheckCircle2, Moon, Sun } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { useToast } from "../components/ToastContext";
+import { useTheme } from "../components/ThemeContext";
 import api from "../lib/api";
 
 const DEMO = [
@@ -17,6 +18,7 @@ interface AxiosErrorLike {
 export default function Login() {
   const { login } = useAuth();
   const { showToast } = useToast();
+  const { theme, toggleTheme } = useTheme();
   const [email, setEmail] = useState("admin@metroflow.io");
   const [password, setPassword] = useState("Admin@123");
   const [showPassword, setShowPassword] = useState(false);
@@ -60,13 +62,13 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-brand-500 selection:text-white">
+    <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-brand-500 selection:text-white transition-colors duration-200">
       {/* Left Brand & Live Metro Visualizer Panel */}
       <div className="relative hidden flex-1 flex-col justify-between overflow-hidden bg-slate-950 p-12 lg:flex border-r border-slate-800/80">
         {/* Ambient Glowing Gradients */}
-        <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-brand-600/25 blur-3xl" />
-        <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-emerald-500/20 blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-indigo-600/10 blur-3xl" />
+        <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-brand-600/25 blur-3xl opacity-80" />
+        <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-emerald-500/20 blur-3xl opacity-80" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-indigo-600/10 blur-3xl opacity-80" />
 
         {/* Top Header */}
         <div className="relative z-10 flex items-center justify-between">
@@ -79,10 +81,22 @@ export default function Login() {
               <p className="text-xs font-semibold text-brand-400 tracking-wide">AI Transit Intelligence Console</p>
             </div>
           </div>
-          <span className="inline-flex items-center gap-2 rounded-full bg-slate-900/90 px-3 py-1.5 text-xs font-bold text-slate-300 ring-1 ring-slate-800 backdrop-blur-md">
-            <span className={`h-2 w-2 rounded-full ${apiOnline === true ? "bg-emerald-400" : apiOnline === false ? "bg-rose-400" : "bg-amber-400"}`} />
-            {apiOnline === true ? "Backend Online · :8000" : apiOnline === false ? "Backend Offline" : "Checking Backend..."}
-          </span>
+
+          <div className="flex items-center gap-3">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              title={`Switch to ${theme === "light" ? "Dark" : "Light"} mode`}
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/90 text-slate-300 hover:border-slate-700 hover:text-white transition backdrop-blur-md shadow-sm"
+            >
+              {theme === "light" ? <Moon className="h-4 w-4 text-indigo-400" /> : <Sun className="h-4 w-4 text-amber-400" />}
+            </button>
+
+            <span className="inline-flex items-center gap-2 rounded-full bg-slate-900/90 px-3 py-1.5 text-xs font-bold text-slate-300 ring-1 ring-slate-800 backdrop-blur-md">
+              <span className={`h-2 w-2 rounded-full ${apiOnline === true ? "bg-emerald-400" : apiOnline === false ? "bg-rose-400" : "bg-amber-400"}`} />
+              {apiOnline === true ? "Backend Online · :8000" : apiOnline === false ? "Backend Offline" : "Checking Backend..."}
+            </span>
+          </div>
         </div>
 
         {/* Center Futuristic Transit Map Simulation Graphic */}
@@ -117,9 +131,9 @@ export default function Login() {
               {/* Station Dots */}
               {([[30, 30, "ST01"], [150, 30, "ST02"], [250, 80, "ST03"], [370, 80, "ST04"], [30, 80, "ST05"], [150, 80, "ST06"], [250, 30, "ST07"], [370, 30, "ST08"]] as Array<[number, number, string]>).map(([x, y, id], i) => (
                 <g key={id}>
-                  <circle cx={x} cy={y} r="6" fill="#0f172a" stroke="#ffffff" strokeWidth="2" />
+                  <circle cx={x} cy={y} r="6" fill={theme === "light" ? "#ffffff" : "#0f172a"} stroke={theme === "light" ? "#475569" : "#ffffff"} strokeWidth="2" />
                   <circle cx={x} cy={y} r="3" fill={i % 3 === 0 ? "#ef4444" : i % 2 === 0 ? "#10b981" : "#3b82f6"} />
-                  <text x={x} y={y - 10} textAnchor="middle" fill="#94a3b8" fontSize="8" fontWeight="bold">{id}</text>
+                  <text x={x} y={y - 10} textAnchor="middle" fill={theme === "light" ? "#475569" : "#94a3b8"} fontSize="8" fontWeight="bold">{id}</text>
                 </g>
               ))}
             </svg>
@@ -147,6 +161,17 @@ export default function Login() {
 
       {/* Right Login Form Panel */}
       <div className="relative sticky top-0 flex h-screen flex-1 items-center justify-center overflow-y-auto p-6 sm:p-12">
+        {/* Top Floating Mobile Theme Toggle */}
+        <div className="absolute top-6 right-6 lg:hidden">
+          <button
+            onClick={toggleTheme}
+            title={`Switch to ${theme === "light" ? "Dark" : "Light"} mode`}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/90 text-slate-300 hover:text-white transition shadow-sm"
+          >
+            {theme === "light" ? <Moon className="h-4 w-4 text-indigo-400" /> : <Sun className="h-4 w-4 text-amber-400" />}
+          </button>
+        </div>
+
         <div className="my-auto w-full max-w-md space-y-6">
           {/* Mobile Logo Branding */}
           <div className="flex items-center gap-3 lg:hidden mb-4">
@@ -199,7 +224,7 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -233,7 +258,7 @@ export default function Login() {
                     }}
                     className={`w-full flex items-center justify-between rounded-xl border px-3 py-2 text-xs transition text-left ${
                       email === d.email
-                        ? "border-brand-500 bg-brand-500/15 text-white ring-1 ring-brand-500/30"
+                        ? "border-brand-500 bg-brand-500/15 text-slate-900 ring-1 ring-brand-500/30"
                         : "border-slate-800 bg-slate-950/40 text-slate-300 hover:border-slate-700 hover:bg-slate-800/60"
                     }`}
                   >

@@ -85,11 +85,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     info: <Info className="h-5 w-5 text-brand-400 shrink-0 mt-0.5" />,
   };
 
-  const borders: Record<ToastType, string> = {
-    success: "border-emerald-500/40 bg-slate-900/95 text-emerald-100",
-    warning: "border-amber-500/40 bg-slate-900/95 text-amber-100",
-    error: "border-rose-500/40 bg-slate-900/95 text-rose-100",
-    info: "border-brand-500/40 bg-slate-900/95 text-blue-100",
+  const variants: Record<ToastType, string> = {
+    success: "toast-success",
+    warning: "toast-warning",
+    error: "toast-error",
+    info: "toast-info",
   };
 
   return (
@@ -100,7 +100,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex items-start gap-3 rounded-2xl border ${borders[t.type]} p-4 shadow-2xl backdrop-blur-xl animate-in slide-in-from-right duration-300`}
+            className={`toast animate-toast-in ${variants[t.type]}`}
           >
             {icons[t.type]}
             <div className="min-w-0 flex-1">
@@ -109,7 +109,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             </div>
             <button
               onClick={() => dismiss(t.id)}
-              className="text-slate-400 hover:text-white transition p-1 rounded-lg hover:bg-white/10"
+              className="text-slate-500 hover:text-white transition p-1 rounded-lg hover:bg-slate-800"
             >
               <X className="h-4 w-4" />
             </button>

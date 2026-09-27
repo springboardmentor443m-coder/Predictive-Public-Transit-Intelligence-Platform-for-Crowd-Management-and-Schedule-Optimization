@@ -387,7 +387,7 @@ function Scheduling() {
       {/* Modal Dialog Form */}
       {showForm && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md"
+          className="scrim fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md"
           onClick={() => {
             setShowForm(false);
             setEditing(null);

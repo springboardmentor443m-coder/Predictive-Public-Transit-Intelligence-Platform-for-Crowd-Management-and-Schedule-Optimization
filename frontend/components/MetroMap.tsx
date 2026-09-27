@@ -73,7 +73,7 @@ export default function MetroMap({ stations = [], live = [], selected, onSelect 
                   ? `${ln} Line — a color-coded rail corridor serving: ${LINE_ROUTES[ln]}. Click to show only its stations.`
                   : `${ln} Line corridor`
               }
-              className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${filterLine === ln ? "bg-white text-slate-900 shadow" : "bg-slate-800 text-slate-400 hover:text-white"}`}
+              className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${filterLine === ln ? "bg-brand-600 text-white shadow" : "bg-slate-800 text-slate-400 hover:text-white"}`}
             >
               <span className="inline-block h-2 w-2 rounded-full mr-1.5" style={{ backgroundColor: LINE_COLORS[ln] }} />
               {ln} Line
@@ -105,7 +105,7 @@ export default function MetroMap({ stations = [], live = [], selected, onSelect 
 
           {/* Grid Background Lines */}
           <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255, 255, 255, 0.03)" strokeWidth="1" />
+            <path d="M 40 0 L 0 0 0 40" fill="none" className="map-grid-pattern" strokeWidth="1" />
           </pattern>
           <rect width={W} height={H} fill="url(#grid)" />
 
@@ -171,10 +171,9 @@ export default function MetroMap({ stations = [], live = [], selected, onSelect 
                       cy={y}
                       r={16}
                       fill="none"
-                      stroke="#ffffff"
+                      className="map-select-ring animate-spin"
                       strokeWidth={2}
                       strokeDasharray="4 3"
-                      className="animate-spin"
                     />
                   )}
 
@@ -193,9 +192,8 @@ export default function MetroMap({ stations = [], live = [], selected, onSelect 
                     cy={y}
                     r={7}
                     fill={col}
-                    stroke="#0f172a"
+                    className="map-node-ring transition-transform group-hover:scale-125"
                     strokeWidth={2.5}
-                    className="transition-transform group-hover:scale-125"
                   />
                   {/* Station Label Above */}
                   <text
@@ -204,8 +202,7 @@ export default function MetroMap({ stations = [], live = [], selected, onSelect 
                     textAnchor="middle"
                     fontSize={10}
                     fontWeight={700}
-                    fill="#e2e8f0"
-                    className="select-none transition-colors group-hover:fill-brand-400"
+                    className="map-label select-none"
                   >
                     {s.name.length > 13 ? s.name.slice(0, 12) + "…" : s.name}
                   </text>

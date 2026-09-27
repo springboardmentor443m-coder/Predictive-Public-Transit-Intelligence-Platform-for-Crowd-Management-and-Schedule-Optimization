@@ -113,7 +113,7 @@ export default function DashboardLayout({ title, subtitle, children }: Dashboard
         </div>
 
         {/* Live Network Status Indicator Widget */}
-        <div className="mx-3 mt-3 rounded-2xl bg-gradient-to-r from-brand-950/60 to-emerald-950/40 p-3.5 border border-slate-800/90 shadow-inner">
+        <div className="panel-head-brand mx-3 mt-3 rounded-2xl p-3.5 border border-slate-800/90 shadow-inner">
           <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-slate-400">Network Telemetry</p>
           <p className="mt-1 flex items-center gap-2 text-xs font-bold text-white">
             <span className="relative flex h-2 w-2">
@@ -175,7 +175,7 @@ export default function DashboardLayout({ title, subtitle, children }: Dashboard
             onClick={() => setOpen(false)}
             className={`flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold transition ${
               router.pathname === "/dashboard/settings"
-                ? "bg-brand-600/20 text-white border border-brand-500/30"
+                ? "bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-lg shadow-brand-600/30 border border-brand-400/30"
                 : "text-slate-400 hover:bg-slate-900 hover:text-white"
             }`}
           >
@@ -198,7 +198,7 @@ export default function DashboardLayout({ title, subtitle, children }: Dashboard
 
       {/* Mobile Backdrop */}
       {open && (
-        <div className="fixed inset-0 z-30 bg-slate-950/80 backdrop-blur-sm lg:hidden" onClick={() => setOpen(false)} />
+        <div className="scrim fixed inset-0 z-30 backdrop-blur-sm lg:hidden" onClick={() => setOpen(false)} />
       )}
 
       {/* Main Container */}
