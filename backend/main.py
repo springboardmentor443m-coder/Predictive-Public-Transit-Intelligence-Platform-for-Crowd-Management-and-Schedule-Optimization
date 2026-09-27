@@ -11,9 +11,11 @@ Then visit http://localhost:8000/docs for interactive API docs.
 import re
 import sys
 import os
+import secrets
+from datetime import datetime, timezone
 import joblib
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "model"))
@@ -43,6 +45,40 @@ CAPACITY_TABLE = build_capacity_table(raw_df)
 
 # In-memory emergency broadcast (resets on server restart - fine for this scope)
 _broadcast = {"message": None}
+
+# In-memory alert history (resets on server restart - fine for this scope;
+# a real deployment would persist this to a database)
+_alert_history = []
+
+# ---------------------------------------------------------------------------
+# Real authentication (fixes a genuine gap: broadcast used to be "protected"
+# by a role= query parameter anyone could set themselves when calling the
+# API directly. Now it requires an actual login and a token issued by the
+# server - lightweight, not full JWT/OAuth, but a real check instead of a
+# spoofable one.)
+# ---------------------------------------------------------------------------
+DEMO_USERS = {
+    "admin": {"password": "admin123", "role": "admin"},
+    "operator": {"password": "operator123", "role": "operator"},
+}
+_tokens = {}  # token -> role
+
+
+@app.post("/auth/login")
+def login(username: str, password: str):
+    user = DEMO_USERS.get(username)
+    if not user or user["password"] != password:
+        raise HTTPException(status_code=401, detail="Invalid username or password.")
+    token = secrets.token_hex(16)
+    _tokens[token] = user["role"]
+    return {"token": token, "role": user["role"]}
+
+
+def require_admin(authorization: str = Header(default=None)) -> str:
+    role = _tokens.get(authorization)
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="A valid admin token is required (log in as admin first).")
+    return role
 
 
 def time_bucket(hour):
@@ -151,20 +187,42 @@ def get_broadcast():
 
 
 @app.post("/broadcast")
-def post_broadcast(message: str, role: str = "operator"):
-    """Admin-only emergency broadcast. role must be 'admin'."""
-    if role != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can post a broadcast.")
+def post_broadcast(message: str, authorization: str = Header(default=None)):
+    """Admin-only emergency broadcast. Requires a real admin token from /auth/login."""
+    require_admin(authorization)
     _broadcast["message"] = message
     return {"status": "posted", "message": message}
 
 
 @app.delete("/broadcast")
-def clear_broadcast(role: str = "operator"):
-    if role != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can clear a broadcast.")
+def clear_broadcast(authorization: str = Header(default=None)):
+    require_admin(authorization)
     _broadcast["message"] = None
     return {"status": "cleared"}
+
+
+@app.get("/alerts")
+def get_alerts(hour: int, is_weekend: int = 0, is_holiday: int = 0):
+    """
+    Dedicated alerts endpoint (matches the brief's Alert & Notification
+    Module: 'retrieves active and historical crowd and delay alerts').
+    Returns currently active alerts for the given hour, and logs them
+    to an in-memory history so past alerts remain visible too.
+    """
+    results = [full_station_result(s, hour, is_weekend, is_holiday) for s in STATION_NAMES]
+    current_alerts = [r for r in results if r["overcrowding_alert"] or r["delay_alert"]]
+
+    now = datetime.now(timezone.utc).isoformat()
+    for a in current_alerts:
+        _alert_history.append({
+            "timestamp": now,
+            "station": a["station"],
+            "type": "overcrowding" if a["overcrowding_alert"] else "delay",
+            "crowd_pct": a["crowd_pct"],
+            "delay_min": a["simulated_delay_min"],
+        })
+
+    return {"current_alerts": current_alerts, "history": _alert_history[-50:]}
 
 
 @app.get("/query")

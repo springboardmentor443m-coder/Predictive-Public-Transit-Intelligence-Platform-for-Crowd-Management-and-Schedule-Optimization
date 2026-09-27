@@ -8,6 +8,7 @@ Run (backend must already be running on port 8000):
   streamlit run app.py
 """
 
+import time
 import requests
 import pandas as pd
 import plotly.express as px
@@ -17,17 +18,16 @@ API_URL = "http://localhost:8000"
 st.set_page_config(page_title="MetroFlow", layout="wide")
 
 # ---------------------------------------------------------------------------
-# Two-role login (User Management Module - lightweight, not full RBAC)
+# Two-role login - now calls the backend's real /auth/login endpoint
+# instead of checking credentials only in the frontend. The token
+# returned is what actually authorizes admin actions (like broadcast),
+# not a self-reported role anyone could fake by editing the request.
 # ---------------------------------------------------------------------------
-DEMO_USERS = {
-    "admin": {"password": "admin123", "role": "admin"},
-    "operator": {"password": "operator123", "role": "operator"},
-}
-
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.role = None
     st.session_state.username = None
+    st.session_state.token = None
 
 if not st.session_state.logged_in:
     st.title("MetroFlow login")
@@ -35,14 +35,20 @@ if not st.session_state.logged_in:
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
     if st.button("Log in"):
-        user = DEMO_USERS.get(username)
-        if user and user["password"] == password:
-            st.session_state.logged_in = True
-            st.session_state.role = user["role"]
-            st.session_state.username = username
-            st.rerun()
-        else:
-            st.error("Invalid username or password.")
+        try:
+            resp = requests.post(f"{API_URL}/auth/login",
+                                  params={"username": username, "password": password}, timeout=5)
+            if resp.status_code == 200:
+                data = resp.json()
+                st.session_state.logged_in = True
+                st.session_state.role = data["role"]
+                st.session_state.username = username
+                st.session_state.token = data["token"]
+                st.rerun()
+            else:
+                st.error("Invalid username or password.")
+        except requests.exceptions.RequestException:
+            st.error("Couldn't reach the MetroFlow backend. Make sure it's running on port 8000.")
     st.stop()
 
 # ---------------------------------------------------------------------------
@@ -57,6 +63,12 @@ with st.sidebar:
 
 st.title("MetroFlow")
 st.caption("AI-powered crowd prediction, capacity-based alerts, and scheduling recommendations")
+
+# --- Live auto-refresh (simulated real-time monitoring) ---
+with st.sidebar:
+    auto_refresh = st.checkbox("Live auto-refresh (every 15s)")
+    if auto_refresh:
+        st.caption("Refreshing automatically...")
 
 col1, col2, col3 = st.columns([2, 1, 1])
 with col1:
@@ -84,10 +96,11 @@ if st.session_state.role == "admin":
         msg = st.text_input("Broadcast message")
         b1, b2 = st.columns(2)
         if b1.button("Post broadcast") and msg:
-            requests.post(f"{API_URL}/broadcast", params={"message": msg, "role": "admin"})
+            requests.post(f"{API_URL}/broadcast", params={"message": msg},
+                          headers={"Authorization": st.session_state.token})
             st.rerun()
         if b2.button("Clear broadcast"):
-            requests.delete(f"{API_URL}/broadcast", params={"role": "admin"})
+            requests.delete(f"{API_URL}/broadcast", headers={"Authorization": st.session_state.token})
             st.rerun()
 
 try:
@@ -179,3 +192,8 @@ if question:
         st.info(q_resp.json()["answer"])
     except requests.exceptions.RequestException:
         st.error("Couldn't reach the backend for this query.")
+
+# --- Trigger the actual refresh, at the very end so the page renders first ---
+if auto_refresh:
+    time.sleep(15)
+    st.rerun()
