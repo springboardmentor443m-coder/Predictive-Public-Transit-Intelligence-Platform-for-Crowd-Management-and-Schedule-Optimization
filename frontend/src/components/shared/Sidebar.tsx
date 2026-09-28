@@ -12,11 +12,13 @@ import {
   Train,
   Database,
   ShieldCheck,
+  Users,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Live Monitoring", href: "/live-monitoring", icon: Activity },
+  { label: "Passenger Telemetry", href: "/realtime-passengers", icon: Users },
   { label: "AI Forecasts", href: "/predictions", icon: BrainCircuit },
   { label: "Schedule Dispatch", href: "/schedules", icon: CalendarClock },
   { label: "Alerts Center", href: "/alerts", icon: Bell },

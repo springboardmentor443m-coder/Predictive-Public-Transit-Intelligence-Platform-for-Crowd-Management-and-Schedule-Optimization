@@ -128,3 +128,83 @@ export interface DatasetStats {
   last_trained_r2?: number;
   last_trained_mae?: number;
 }
+
+export interface PassengerTapEvent {
+  event_id: string;
+  station_id: number;
+  station_code: string;
+  station_name: string;
+  line_name: string;
+  gate_id: string;
+  event_type: "TAP_IN" | "TAP_OUT";
+  card_token: string;
+  fare_category: "STANDARD" | "STUDENT" | "SENIOR" | "COMMUTER_PASS";
+  timestamp: string;
+}
+
+export interface TrainCarLoad {
+  car_id: string;
+  car_number: number;
+  passenger_count: number;
+  max_capacity: number;
+  load_percentage: number;
+  crowd_level: "SEATS_AVAILABLE" | "STANDING_ROOM" | "CROWDED" | "CRUSH_LOAD";
+}
+
+export interface TrainPassengerTelemetry {
+  train_id: string;
+  train_code: string;
+  line_name: string;
+  current_station: string;
+  next_station: string;
+  eta_seconds: number;
+  total_passengers: number;
+  total_capacity: number;
+  overall_load_pct: number;
+  speed_kmh: number;
+  status: "IN_TRANSIT" | "AT_STATION" | "BOARDING";
+  cars: TrainCarLoad[];
+  last_updated: string;
+}
+
+export interface StationPassengerMetric {
+  station_id: number;
+  station_code: string;
+  station_name: string;
+  line_name: string;
+  tap_ins_last_minute: number;
+  tap_outs_last_minute: number;
+  net_flux: number;
+  current_platform_passengers: number;
+  crowd_status: "NORMAL" | "MODERATE" | "CRITICAL";
+}
+
+export interface GtfsRtConfig {
+  feed_url: string;
+  api_key?: string;
+  feed_type?: "VEHICLE_POSITIONS" | "TRIP_UPDATES" | "CUSTOM_JSON";
+  provider_name?: string;
+  is_enabled?: boolean;
+}
+
+export interface GtfsRtStatus {
+  is_active: boolean;
+  feed_url?: string;
+  provider_name: string;
+  last_polled?: string;
+  status_message: string;
+  entities_ingested: number;
+  sample_entities: any[];
+}
+
+export interface RealtimePassengerStreamResponse {
+  timestamp: string;
+  system_inflow_ppm: number;
+  system_outflow_ppm: number;
+  net_passenger_flux: number;
+  total_active_passengers_in_transit: number;
+  recent_tap_events: PassengerTapEvent[];
+  trains: TrainPassengerTelemetry[];
+  station_metrics: StationPassengerMetric[];
+  gtfs_rt_status: GtfsRtStatus;
+}

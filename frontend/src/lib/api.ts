@@ -1,6 +1,8 @@
 import {
   StationDensity, CrowdSummary, TrainSchedule, FrequencyRecommendation,
-  StationForecast, AlertItem, AnalyticsSummary, User, DatasetStats
+  StationForecast, AlertItem, AnalyticsSummary, User, DatasetStats,
+  RealtimePassengerStreamResponse, TrainPassengerTelemetry, StationPassengerMetric,
+  GtfsRtConfig, GtfsRtStatus
 } from "@/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -34,6 +36,18 @@ export const api = {
     });
   },
   getMe: async () => fetchJson<User>("/auth/me"),
+
+  // Real-Time Passenger Telemetry & GTFS-RT
+  getLivePassengerStream: async () => fetchJson<RealtimePassengerStreamResponse>("/passengers/live-stream"),
+  getTrainTelemetry: async () => fetchJson<TrainPassengerTelemetry[]>("/passengers/train-telemetry"),
+  getStationPassengerMetrics: async () => fetchJson<StationPassengerMetric[]>("/passengers/station-metrics"),
+  configureGtfsRt: async (config: GtfsRtConfig) => {
+    return fetchJson<GtfsRtStatus>("/passengers/gtfs-rt-config", {
+      method: "POST",
+      body: JSON.stringify(config),
+    });
+  },
+  getGtfsRtStatus: async () => fetchJson<GtfsRtStatus>("/passengers/gtfs-rt-status"),
 
   // Crowd
   getDensities: async () => fetchJson<StationDensity[]>("/crowd/densities"),
