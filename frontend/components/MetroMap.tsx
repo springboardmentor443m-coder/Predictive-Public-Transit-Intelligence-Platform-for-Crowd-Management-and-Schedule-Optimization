@@ -1,18 +1,21 @@
 import { useState } from "react";
 import { congestionColor } from "./StatusBadge";
+import { lineColor, lineCorridor, lineStyle, orderedLines } from "../lib/lines";
 import type { Station, LiveCrowdSnapshot } from "../lib/types";
 
-const LINE_COLORS: Record<string, string> = {
-  Red: "#ef4444",
-  Blue: "#3b82f6",
-  Green: "#10b981",
-};
-
-const LINE_ROUTES: Record<string, string> = {
-  Red: "Central Junction · Riverside Park · Tech District · South Commons",
-  Blue: "Old Town Market · Stadium Plaza · University Gate",
-  Green: "Airport Terminal · Harbor Front · North Industrial",
-};
+/**
+ * Layout is derived from the data rather than fixed. The tracks are schematic
+ * (one horizontal row per trunk, stations spaced along it), so a trunk with 12
+ * stops needs more horizontal room than one with 2, and the canvas has to grow
+ * as trunks are added instead of clipping them off the bottom.
+ */
+const TRACK_BAND = 80;
+const TRACK_TOP = 70;
+const TRACK_BOTTOM = 64;
+const LABEL_GUTTER = 84;
+const MIN_STATION_GAP = 76;
+const MIN_W = 760;
+const LABEL_CHAR_W = 5.6;
 
 interface MetroMapProps {
   stations?: Station[];
@@ -28,29 +31,40 @@ export default function MetroMap({ stations = [], live = [], selected, onSelect 
     (live || []).map((s) => [s.station_id, s])
   );
 
-  // Group stations by line preserving order
+  // Group stations by trunk route, preserving order within each trunk.
   const lines: Record<string, Station[]> = {};
   stations.forEach((s) => {
     (lines[s.line] = lines[s.line] || []).push(s);
   });
-  const lineNames = Object.keys(lines).sort();
-  const W = 760;
-  const H = 280;
+  const lineNames = orderedLines(Object.keys(lines));
 
-  // Layout: track Y coordinates
+  const activeLineNames = filterLine === "all" ? lineNames : lineNames.filter((l) => l === filterLine);
+
+  // Width is driven by the busiest trunk so station labels have room to breathe.
+  const maxStops = Math.max(1, ...activeLineNames.map((ln) => lines[ln].length));
+  const W = Math.max(MIN_W, LABEL_GUTTER * 2 + (maxStops - 1) * MIN_STATION_GAP);
+  // Height follows the number of *visible* trunks, so filtering collapses the map
+  // instead of leaving blank bands where the hidden tracks used to be.
+  const H = TRACK_TOP + Math.max(1, activeLineNames.length) * TRACK_BAND + TRACK_BOTTOM;
+
   const trackY: Record<string, number> = {};
-  lineNames.forEach((ln, i) => {
-    trackY[ln] = 70 + i * 80;
+  activeLineNames.forEach((ln, i) => {
+    trackY[ln] = TRACK_TOP + i * TRACK_BAND + TRACK_BAND / 2;
   });
 
-  function xFor(line: string, idx: number, total: number): number {
-    const pad = 80;
-    if (total <= 1) return W / 2;
-    return pad + (idx * (W - pad * 2)) / (total - 1);
+  const innerW = W - LABEL_GUTTER * 2;
+
+  function xFor(idx: number, total: number): number {
+    if (total <= 1) return LABEL_GUTTER + innerW / 2;
+    return LABEL_GUTTER + (idx * innerW) / (total - 1);
   }
 
-  const activeLineNames =
-    filterLine === "all" ? lineNames : lineNames.filter((l) => l.toLowerCase() === filterLine.toLowerCase());
+  /** Longest label that fits the gap between neighbouring stations. */
+  function fitLabel(name: string, total: number): string {
+    const gap = total <= 1 ? innerW : innerW / (total - 1);
+    const maxChars = Math.max(6, Math.floor(gap / LABEL_CHAR_W));
+    return name.length > maxChars ? name.slice(0, maxChars - 1).trimEnd() + "…" : name;
+  }
 
   return (
     <div className="space-y-3">
@@ -64,28 +78,43 @@ export default function MetroMap({ stations = [], live = [], selected, onSelect 
           >
             All Lines
           </button>
-          {lineNames.map((ln) => (
-            <button
-              key={ln}
-              onClick={() => setFilterLine(ln)}
-              title={
-                LINE_ROUTES[ln]
-                  ? `${ln} Line — a color-coded rail corridor serving: ${LINE_ROUTES[ln]}. Click to show only its stations.`
-                  : `${ln} Line corridor`
-              }
-              className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${filterLine === ln ? "bg-brand-600 text-white shadow" : "bg-slate-800 text-slate-400 hover:text-white"}`}
-            >
-              <span className="inline-block h-2 w-2 rounded-full mr-1.5" style={{ backgroundColor: LINE_COLORS[ln] }} />
-              {ln} Line
-            </button>
-          ))}
+          {lineNames.map((ln) => {
+            const style = lineStyle(ln);
+            const corridor = lineCorridor(ln);
+            return (
+              <button
+                key={ln}
+                onClick={() => setFilterLine(filterLine === ln ? "all" : ln)}
+                title={
+                  corridor
+                    ? `${style.services || ln} — ${corridor}. Showing ${lines[ln].length} station(s).`
+                    : `${ln} — ${lines[ln].length} station(s)`
+                }
+                className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${filterLine === ln ? "bg-brand-600 text-white shadow" : "bg-slate-800 text-slate-400 hover:text-white"}`}
+              >
+                <span
+                  className="inline-block h-2 w-2 rounded-full mr-1.5 align-middle"
+                  style={{ backgroundColor: style.color }}
+                />
+                {style.services || ln}
+              </button>
+            );
+          })}
         </div>
-        <span className="text-[11px] font-mono text-slate-400 hidden sm:inline">Hover a line chip to see its corridor route</span>
+        <span className="text-[11px] font-mono text-slate-400 hidden sm:inline">
+          Hover a track chip for its routes
+        </span>
       </div>
 
       {/* SVG Canvas Map */}
       <div className="relative overflow-x-auto rounded-2xl bg-slate-950 p-4 border border-slate-800/80 shadow-inner">
-        <svg viewBox={`0 0 ${W} ${H}`} className="min-w-[680px] w-full" role="img" aria-label="Interactive Metro Network Schematic">
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          className="min-w-[680px] w-full"
+          style={{ height: "auto" }}
+          role="img"
+          aria-label="Interactive Metro Network Schematic"
+        >
           <defs>
             <filter id="glow-node" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur stdDeviation="3" result="coloredBlur" />
@@ -113,14 +142,15 @@ export default function MetroMap({ stations = [], live = [], selected, onSelect 
           {activeLineNames.map((ln) => {
             const stops = lines[ln];
             const y = trackY[ln];
-            const pts = stops.map((s, i) => `${xFor(ln, i, stops.length)},${y}`).join(" ");
+            const color = lineColor(ln);
+            const pts = stops.map((_, i) => `${xFor(i, stops.length)},${y}`).join(" ");
             return (
               <g key={ln}>
                 {/* Outer Track Glow */}
                 <polyline
                   points={pts}
                   fill="none"
-                  stroke={LINE_COLORS[ln] || "#64748b"}
+                  stroke={color}
                   strokeWidth={8}
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -131,15 +161,22 @@ export default function MetroMap({ stations = [], live = [], selected, onSelect 
                 <polyline
                   points={pts}
                   fill="none"
-                  stroke={LINE_COLORS[ln] || "#64748b"}
+                  stroke={color}
                   strokeWidth={5}
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   opacity={0.9}
                 />
                 {/* Line Name Label */}
-                <text x={16} y={y + 4} fontSize={11} fontWeight={800} fill={LINE_COLORS[ln] || "#64748b"}>
-                  {ln} LINE
+                <text
+                  x={10}
+                  y={y + 4}
+                  fontSize={11}
+                  fontWeight={800}
+                  fill={color}
+                  className="map-label select-none"
+                >
+                  {(lineStyle(ln).services || ln).replace(/ /g, "")}
                 </text>
               </g>
             );
@@ -150,7 +187,7 @@ export default function MetroMap({ stations = [], live = [], selected, onSelect 
             const stops = lines[ln];
             const y = trackY[ln];
             return stops.map((s, i) => {
-              const x = xFor(ln, i, stops.length);
+              const x = xFor(i, stops.length);
               const snap = liveById[s.id];
               const pct = snap?.occupancy_pct ?? 0;
               const isSel = selected === s.id;
@@ -204,7 +241,7 @@ export default function MetroMap({ stations = [], live = [], selected, onSelect 
                     fontWeight={700}
                     className="map-label select-none"
                   >
-                    {s.name.length > 13 ? s.name.slice(0, 12) + "…" : s.name}
+                    {fitLabel(s.name, stops.length)}
                   </text>
                   {/* Occupancy Pct Below */}
                   <text
@@ -246,16 +283,34 @@ export default function MetroMap({ stations = [], live = [], selected, onSelect 
 
       {/* Metro Line Corridor Legend */}
       <div className="rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-[11px] text-slate-400">
-        <p className="font-extrabold uppercase tracking-wider text-slate-500 mb-2">What is a “Line”?</p>
+        <p className="font-extrabold uppercase tracking-wider text-slate-500 mb-2">
+          What is a “Trunk Route”?
+        </p>
         <div className="flex flex-wrap gap-x-6 gap-y-2">
-          {Object.entries(LINE_ROUTES).map(([ln, route]) => (
-            <span key={ln} className="inline-flex items-start gap-2 max-w-md" title={`${ln} Line — color-coded rail corridor`}>
-              <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: LINE_COLORS[ln] }} />
-              <span>
-                <b className="text-white">{ln} Line</b> — <span className="text-slate-400">{route}</span>
+          {lineNames.map((ln) => {
+            const style = lineStyle(ln);
+            return (
+              <span
+                key={ln}
+                className="inline-flex items-start gap-2 max-w-md"
+                title={`${style.services || ln} — ${lines[ln].length} station(s) monitored`}
+              >
+                <span
+                  className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: style.color }}
+                />
+                <span>
+                  <b className="text-white" style={{ color: style.ink }}>
+                    {style.services || ln}
+                  </b>{" "}
+                  —{" "}
+                  <span className="text-slate-400">
+                    {style.corridor || `${lines[ln].length} stations`}
+                  </span>
+                </span>
               </span>
-            </span>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

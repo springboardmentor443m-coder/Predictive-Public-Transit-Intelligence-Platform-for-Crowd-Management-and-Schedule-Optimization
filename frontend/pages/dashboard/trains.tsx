@@ -7,26 +7,9 @@ import DashboardLayout from "../../components/DashboardLayout";
 import StatusBadge, { congestionColor } from "../../components/StatusBadge";
 import { withAuth } from "../../lib/auth";
 import api from "../../lib/api";
+import { lineColor, lineCorridor, lineStyle, orderedLines } from "../../lib/lines";
 import { getSocket, joinTrainRoom } from "../../lib/socket";
 import type { TrainLive, ScheduleEntry, PredictionPoint } from "../../lib/types";
-
-const LINE_COLORS: Record<string, string> = {
-  Red: "#f43f5e",
-  Blue: "#3b82f6",
-  Green: "#10b981",
-};
-
-const LINE_TEXT: Record<string, string> = {
-  Red: "text-rose-400",
-  Blue: "text-brand-400",
-  Green: "text-emerald-400",
-};
-
-const LINE_ROUTES: Record<string, string> = {
-  Red: "Central Junction · Riverside Park · Tech District · South Commons",
-  Blue: "Old Town Market · Stadium Plaza · University Gate",
-  Green: "Airport Terminal · Harbor Front · North Industrial",
-};
 
 function Trains() {
   const [trains, setTrains] = useState<TrainLive[]>([]);
@@ -121,8 +104,10 @@ function Trains() {
   }, [trains]);
 
   const selected = trains.find((t) => t.train_id === selectedId) || detail;
-  const selLine = selected?.line || "Red";
-  const lineAccent = LINE_COLORS[selLine] || "#3b82f6";
+  // No fixed fallback line: an unrecognised trunk still renders, just neutral.
+  const selLine = selected?.line ?? "";
+  const lineAccent = lineColor(selLine);
+  const fleetLines = orderedLines(trains.map((t) => t.line));
 
   const forecastChart = forecast.map((p) => ({
     label: p.timestamp ? new Date(p.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : `${String(p.hour).padStart(2, "0")}:00`,
@@ -148,21 +133,36 @@ function Trains() {
               {trains.length} fleet units tracked · {connected ? "streaming via Socket.IO per-train rooms" : "15s polling fallback"}
             </p>
 
-            {/* Metro line legend: what the color-coded lines mean */}
+            {/* Trunk route legend: what the color-coded bullets mean */}
             <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
-              {Object.entries(LINE_ROUTES).map(([line, route]) => (
-                <span
-                  key={line}
-                  className="group inline-flex items-center gap-2 text-[11px] text-slate-300"
-                  title={`${line} Line — a color-coded rail corridor serving: ${route}. Each train on this card runs along this corridor.`}
-                >
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: LINE_COLORS[line] }} />
-                  <span className="font-extrabold uppercase tracking-wide">{line} Line</span>
-                  <span className="hidden text-slate-500 group-hover:inline lg:inline">{route}</span>
-                </span>
-              ))}
+              {fleetLines.map((line) => {
+                const style = lineStyle(line);
+                const corridor = lineCorridor(line);
+                return (
+                  <span
+                    key={line}
+                    className="group inline-flex items-center gap-2 text-[11px] text-slate-300"
+                    title={
+                      corridor
+                        ? `${style.services || line} — ${corridor}.`
+                        : `${line} trunk route.`
+                    }
+                  >
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: style.color }}
+                    />
+                    <span className="font-extrabold uppercase tracking-wide">
+                      {style.services || line}
+                    </span>
+                    <span className="hidden text-slate-500 group-hover:inline lg:inline">
+                      {corridor}
+                    </span>
+                  </span>
+                );
+              })}
               <span className="text-[10px] text-slate-500 lg:hidden">
-                Hover a dot for the corridor route
+                Hover a dot for the routes it covers
               </span>
             </div>
           </div>
@@ -186,8 +186,7 @@ function Trains() {
       <div className="mt-5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
         {trains.map((t) => {
           const isSel = selectedId === t.train_id;
-          const acc = LINE_COLORS[t.line] || "#3b82f6";
-          const lineTx = LINE_TEXT[t.line] || "text-brand-400";
+          const acc = lineColor(t.line);
           const inService = ["in_transit", "at_station", "awaiting_departure", "delayed"].includes(t.status);
           return (
             <button
@@ -202,7 +201,9 @@ function Trains() {
                   </span>
                   <div>
                     <p className="text-sm font-extrabold text-white leading-tight">{t.train_id}</p>
-                    <p className={`text-[10px] font-extrabold uppercase tracking-wider ${lineTx}`}>{t.line} Line · {t.model}</p>
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider" style={{ color: lineStyle(t.line).ink }}>
+                      {lineStyle(t.line).services || t.line} · {t.model}
+                    </p>
                   </div>
                 </div>
                 <StatusBadge value={t.status === "delayed" ? "critical" : inService ? "on_time" : t.status} />

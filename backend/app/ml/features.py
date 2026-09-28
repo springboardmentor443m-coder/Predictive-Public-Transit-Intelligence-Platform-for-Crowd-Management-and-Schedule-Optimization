@@ -18,13 +18,49 @@ PEAK_MULTIPLIER = {
 
 WEEKEND_FACTOR = 0.72
 
-# Canonical station order — must match scripts/generate_data.py STATIONS.
+# Canonical station order — the real MTA stop ids in data/stations.csv.
 # Stored inside trained artifacts so inference uses the exact same encoding.
+# test_features.py asserts this stays in sync with that file.
 STATION_LIST = [
-    "ST01", "ST02", "ST03", "ST04", "ST05",
-    "ST06", "ST07", "ST08", "ST09", "ST10",
+    "111", "128", "123", "120", "235", "137",
+    "109", "247", "106", "234", "219", "127",
+    "621", "416", "635", "626", "423", "420",
+    "418", "631", "601", "419", "712", "701",
+    "718", "A09", "A05", "A27", "A24", "G09",
+    "A55", "G08", "H03", "G14", "G05", "A41",
+    "D11", "F23", "D16", "D40", "F27", "D43",
+    "D05", "D04", "D26", "B06", "D39", "L08",
+    "R01", "S31", "S30",
 ]
-MAX_CAPACITY = 700.0
+
+# Peak-hour platform throughput ceiling across the network (~Atlantic Av-Barclays).
+# Capacity is normalised against this, so it must track the real data scale:
+# the previous 700 saturated `cap_norm` for every station once capacities grew
+# into the thousands, flattening the station-capacity signal out of the model.
+MAX_CAPACITY = 14600.0
+
+
+def line_slug(line: str) -> str:
+    """'N/Q/R/W' -> 'NQRW'. Collision-free fleet-code prefix for a trunk route."""
+    return "".join(ch for ch in line.upper() if ch.isalnum())[:4] or "X"
+
+
+def train_code(line: str, n: int) -> str:
+    """Fleet code for the n-th unit assigned to a trunk route, e.g. 'TR-ACE-02'."""
+    return f"TR-{line_slug(line)}-{n:02d}"
+
+
+# MTA rolling stock and its seated+standing capacity. Used by the seed pipeline
+# and the timetable generator so the fleet is described by real car classes
+# instead of invented "MetroCoach" units.
+ROLLING_STOCK = [
+    ("R160", 1248),
+    ("R143", 1100),
+    ("R179", 1248),
+    ("R211", 1248),
+]
+
+FLEET_PER_LINE = 4
 
 
 def hour_to_features(hour: int, weekday: int) -> np.ndarray:
@@ -98,6 +134,11 @@ __all__ = [
     "PEAK_MULTIPLIER",
     "WEEKEND_FACTOR",
     "STATION_LIST",
+    "MAX_CAPACITY",
+    "line_slug",
+    "train_code",
+    "ROLLING_STOCK",
+    "FLEET_PER_LINE",
     "hour_to_features",
     "station_to_features",
     "row_features",

@@ -24,6 +24,7 @@ import { useAuth } from "../lib/auth";
 import { useTheme } from "./ThemeContext";
 import { useToast } from "./ToastContext";
 import CommandPalette from "./CommandPalette";
+import { ALL_TRUNKS } from "../lib/lines";
 import api from "../lib/api";
 
 interface NavItem {
@@ -122,7 +123,9 @@ export default function DashboardLayout({ title, subtitle, children }: Dashboard
             </span>
             Live Operations Active
           </p>
-          <p className="mt-0.5 text-[11px] text-slate-400 font-mono">{clock} · 10 Stations</p>
+          <p className="mt-0.5 text-[11px] text-slate-400 font-mono">
+            {clock} · {ALL_TRUNKS.length} Trunk Routes
+          </p>
         </div>
 
         {/* Navigation Items */}

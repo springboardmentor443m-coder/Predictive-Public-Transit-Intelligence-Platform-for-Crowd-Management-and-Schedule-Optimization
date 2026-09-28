@@ -24,12 +24,21 @@ export default function ModelBadge({ info, compact = false }: ModelBadgeProps) {
   }
 
   const cityLabel = CITY_LABELS[info.city] || info.city;
+  // The NYC station map is empty because the app is keyed on native MTA stop ids
+  // already, so the count is omitted rather than backfilled with a stale number.
+  const mappedStations = Object.keys(info.station_map ?? {}).length;
+
+  // Never fall back to invented numbers. A metric the API did not report is shown
+  // as "n/a": a plausible-looking R² is indistinguishable from a measured one in
+  // the UI, so hardcoding a default silently misrepresents the model.
+  const fmt = (v: unknown, digits = 3) =>
+    v == null || Number.isNaN(Number(v)) ? "n/a" : Number(v).toFixed(digits);
 
   const metrics: Array<[string, string]> = [
-    ["Crowd R²", info.crowd?.metrics?.r2 != null ? Number(info.crowd.metrics.r2).toFixed(3) : "0.896"],
-    ["Demand R²", info.demand?.metrics?.r2 != null ? Number(info.demand.metrics.r2).toFixed(3) : "0.923"],
-    ["Crowd MAE", info.crowd?.metrics?.mae != null ? Number(info.crowd.metrics.mae).toFixed(3) : "2.410"],
-    ["Delay AUC", info.delay?.metrics?.auc != null ? Number(info.delay.metrics.auc).toFixed(3) : "0.733"],
+    ["Crowd R²", fmt(info.crowd?.metrics?.r2)],
+    ["Demand R²", fmt(info.demand?.metrics?.r2)],
+    ["Crowd MAE", fmt(info.crowd?.metrics?.mae)],
+    ["Delay AUC", fmt(info.delay?.metrics?.auc)],
   ];
 
   return (
@@ -65,7 +74,8 @@ export default function ModelBadge({ info, compact = false }: ModelBadgeProps) {
         <div className="mt-3.5 flex flex-wrap items-center justify-between border-t border-slate-800/80 pt-3 text-xs text-slate-400 gap-2">
           <span className="flex items-center gap-1.5">
             <Database className="h-3.5 w-3.5 text-brand-400" />
-            {info.datasets?.[info.city] || info.datasets?.hangzhou || "Smart-card ridership logs"} · {Object.keys(info.station_map || {}).length || 10} mapped stations
+            {info.datasets?.[info.city] || "Smart-card ridership logs"}
+            {mappedStations > 0 && ` · ${mappedStations} mapped stations`}
           </span>
           <span className="flex items-center gap-1 font-mono text-[11px] text-slate-400">
             <Cpu className="h-3.5 w-3.5 text-emerald-400" /> Latency &lt; 15ms inference

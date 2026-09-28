@@ -1,5 +1,24 @@
 """NYC Subway Traffic 2017-2021 — crowd + demand training (PRD dataset #2).
 
+.. warning::
+
+   SUPERSEDED — DO NOT COPY THESE ARTIFACTS INTO backend/models_store/.
+
+   The serving pipeline now uses ``backend/scripts/train_models.py``, which
+   trains on MTA-station identity from ``backend/data/stations.csv`` (the same 51
+   stops the API and frontend use) and writes ``nyc_crowd_model.joblib`` /
+   ``nyc_demand_model.joblib`` plus ``nyc_train_metrics.json`` directly.
+
+   This script is retained only as the Kaggle-side record of the observational
+   dataset. Its artifacts are *not* interchangeable with the serving ones: it
+   encodes a different station universe (top ``TOP_N`` stations) and a different
+   ``cap_norm_scale``, so copying them in re-creates the exact silent
+   degradation the current tests guard against — inference raises inside
+   ``predict``, the exception is swallowed, and the rule-based baseline is
+   served while ``/predictions/model-info`` still reports the model as loaded.
+   It also cannot run in-app, because those station codes do not exist in the
+   database.
+
 Dataset: https://www.kaggle.com/datasets/eddeng/nyc-subway-traffic-data-20172021
 Schema: 4-hour interval entry/exit counts for 469 stations (Feb 2017 - Aug 2021)
          + neighborhood census data. Pre-2021, real observational data.
@@ -10,12 +29,11 @@ Pipeline mirrors 01_seoul / 02_hangzhou:
   -> XGBRegressor crowd (occupancy = entries / p99 capacity)
   -> XGBRegressor demand (entries)
 
-Usage (Kaggle):
+Usage (Kaggle, exploratory only):
   1. Add dataset `eddeng/nyc-subway-traffic-data-20172021` as Kaggle input.
   2. Run this script (GPU recommended, CPU fallback automatic).
-  3. Copy nyc_model_outputs/*_model.joblib -> backend/models_store/
-     as nyc_crowd_model.joblib / nyc_demand_model.joblib
-     then set METROFLOW_MODEL_CITY=nyc.
+  3. Keep the output in nyc_model_outputs/ for comparison. Do NOT copy it into
+     backend/models_store/ - see the warning above.
 
 If input files are absent (local dev), a realistic proxy is generated from the
 documented schema so the pipeline stays runnable end-to-end.

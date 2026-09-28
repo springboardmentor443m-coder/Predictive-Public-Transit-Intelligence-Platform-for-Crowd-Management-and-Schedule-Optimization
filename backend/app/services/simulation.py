@@ -1,0 +1,364 @@
+"""Self-advancing hourly simulation clock.
+
+The demo database is generated from a static snapshot (data/stations.csv plus the
+ridership CSVs), so without this service every "last 24h" chart and prediction
+window walks off the end of the data within a week.
+
+Rather than rewriting rows on a per-second broadcast tick, the clock advances in
+whole hours: every :data:`TICK_SECONDS` it checks which hourly buckets the
+database is missing up to *now* and materialises exactly those. Writes are
+therefore bounded by (hours elapsed since the last run) x stations, and the
+row ids are content-addressed so a re-run over the same window is a no-op.
+"""
+
+import asyncio
+import calendar
+import csv
+import logging
+import os
+from datetime import date, datetime, timedelta
+from typing import Optional, Sequence
+
+from app.core.time import utcnow
+from app.ml import features as feat
+from app.models import ridership, schedule, station, train
+
+logger = logging.getLogger(__name__)
+
+# How often the loop wakes up to look for a rolled-over hour. Cheap: the work
+# only happens when the hour actually changes.
+TICK_SECONDS = 60.0
+
+# Retention window, matching the seed pipeline so the runtime clock and a
+# re-seed produce the same shape of data.
+HISTORY_DAYS = 7
+
+# Upper bound on a single catch-up pass. Sized to cover a full retention window
+# so a machine that was switched off for a few days rebuilds a *complete*
+# window rather than leaving a visible hole in the charts.
+MAX_BACKFILL_HOURS = HISTORY_DAYS * 24
+
+# Hours that get the short (peak) headway. Kept in sync with the seed so a
+# generated hour and a re-seeded hour agree.
+PEAK_HOURS = frozenset({7, 8, 9, 16, 17, 18})
+PEAK_HEADWAY_MIN = 4
+OFFPEAK_HEADWAY_MIN = 8
+
+_EPOCH_DATE = date(2020, 1, 1)
+_STATIONS_CSV = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "data", "stations.csv",
+)
+
+
+def hour_floor(moment: Optional[datetime] = None) -> datetime:
+    """Truncate to the hour bucket that *moment* belongs to."""
+    moment = moment or utcnow()
+    return moment.replace(minute=0, second=0, microsecond=0)
+
+
+def day_index(moment: datetime) -> int:
+    """Stable day counter used for deterministic jitter.
+
+    Absolute rather than window-relative so the value for a given calendar day
+    never changes, whether the row was written by the seed, by this service, or
+    by a backfill hours later.
+    """
+    return (moment.date() - _EPOCH_DATE).days
+
+
+def station_factor(idx: int) -> float:
+    """Stable per-station scaling so busy hubs stay busier than quiet stops."""
+    return 0.85 + 0.05 * ((idx * 37) % 7)
+
+
+def jitter(station_idx: int, day_idx: int, hour: int, salt: int) -> float:
+    """Deterministic 0..1 draw. Reproducible across re-seeds and across
+    backfills (no RNG state, no dependence on call order)."""
+    raw = ((station_idx * 73856093) ^ (day_idx * 19349663)
+           ^ (hour * 83492791) ^ (salt * 2654435761))
+    return (raw % 1000) / 1000.0
+
+
+def congestion_level(occ_pct: float) -> str:
+    if occ_pct >= 0.90:
+        return "critical"
+    if occ_pct >= 0.75:
+        return "high"
+    if occ_pct >= 0.55:
+        return "medium"
+    return "low"
+
+
+def csv_station_order() -> list[tuple[str, int]]:
+    """``(code, capacity_per_hour)`` in the order data/stations.csv lists them.
+
+    That order is the station index the deterministic jitter is keyed on, so it
+    has to match the importer and the seed.
+    """
+    try:
+        with open(_STATIONS_CSV, newline="", encoding="utf-8") as fh:
+            return [(r["code"], int(r["capacity_per_hour"])) for r in csv.DictReader(fh)]
+    except (OSError, KeyError, ValueError):
+        return []
+
+
+def ridership_rows_for_hour(
+    stations: Sequence[tuple[str, int]],
+    hour_start: datetime,
+) -> list:
+    """Build one ridership record per station for a single hourly bucket."""
+    d_idx = day_index(hour_start)
+    hour = hour_start.hour
+    base_pct = feat.station_baseline_occupancy_pct(hour)
+    if hour_start.weekday() >= 5:
+        base_pct *= feat.WEEKEND_FACTOR
+
+    rows = []
+    for idx, (code, capacity) in enumerate(stations):
+        factor = station_factor(idx)
+        pct = min(1.15, max(0.02, base_pct * factor))
+        # occupancy / capacity == pct, matching how the API derives
+        # occupancy_pct and how generate_data.py stores it. Keeping the two in
+        # step is what stops a row reading 25% while labelled "critical".
+        # Entries/exits are gate flows and vary independently around the load.
+        occupancy = int(capacity * pct)
+        entries = max(0, int(occupancy * (0.85 + 0.30 * jitter(idx, d_idx, hour, 1))))
+        exits = max(0, int(entries * (0.75 + 0.30 * jitter(idx, d_idx, hour, 2))))
+        rows.append(ridership.RidershipRecord(
+            id=f"RR-{code}-{calendar.timegm(hour_start.timetuple())}",
+            station_id=code,
+            timestamp=hour_start,
+            entries=entries,
+            exits=exits,
+            occupancy=occupancy,
+            congestion_level=congestion_level(pct),
+        ))
+    return rows
+
+
+def schedule_rows_for_hour(
+    line_stations: Sequence[str],
+    train_code: str,
+    train_idx: int,
+    hour_start: datetime,
+) -> list:
+    """Build every timetable entry one train makes during a single hour.
+
+    Headway drives service frequency — 4 min at peak (~15 tph) against 8 min
+    off-peak (~7 tph) — so the traffic series keeps a recognisable rush-hour
+    shape. One station per trunk is periodically disrupted, giving the delay
+    views something to report.
+    """
+    if not line_stations:
+        return []
+
+    hour = hour_start.hour
+    peak = hour in PEAK_HOURS
+    headway = PEAK_HEADWAY_MIN if peak else OFFPEAK_HEADWAY_MIN
+    runs_per_hour = 60 // headway
+    disrupted = line_stations[hour_start.day % len(line_stations)]
+
+    rows = []
+    for run in range(runs_per_hour):
+        ts_run = hour_start + timedelta(minutes=run * headway)
+        st_code = line_stations[(hour + train_idx + run) % len(line_stations)]
+        if not peak:
+            delay = 0
+        elif st_code == disrupted:
+            delay = 5 + ((ts_run.hour + train_idx) % 3)
+        else:
+            # Deterministic from (train, day, run). A running insert counter was
+            # used before, which made the value depend on how many rows had
+            # already been written and so was not reproducible when a single
+            # hour is generated on its own.
+            delay = int(jitter(train_idx, day_index(hour_start), run, 7) * 4)
+        rows.append(schedule.TrainSchedule(
+            id=f"SCH-{train_code}-{ts_run.strftime('%m%d%H%M')}-{st_code}",
+            train_id=train_code,
+            station_id=st_code,
+            direction="northbound" if (hour + train_idx) % 2 == 0 else "southbound",
+            arrival=ts_run,
+            departure=ts_run + timedelta(seconds=30),
+            headway_min=headway,
+            status="on_time" if delay <= 2 else "delayed",
+            delay_min=delay,
+            is_peak="yes" if peak else "no",
+        ))
+    return rows
+
+
+def _station_order(db) -> list[tuple[str, int]]:
+    """Canonical ``(code, capacity)`` pairs, in stations.csv order when known."""
+    rows = db.query(station.Station).all()
+    by_code = {s.id: s for s in rows}
+    ordered = [(c, cap) for c, cap in csv_station_order() if c in by_code]
+    # A station in the database that the CSV does not know about still needs an
+    # hour of data, so append it rather than silently skipping it.
+    ordered.extend(
+        (s.id, s.capacity_per_hour) for s in rows if s.id not in dict(ordered)
+    )
+    return ordered
+
+
+def _line_stations(db) -> dict[str, list[str]]:
+    """Trunk line -> its station codes, ordered as the CSV/imported feed does."""
+    rank = {code: i for i, (code, _) in enumerate(csv_station_order())}
+    grouped: dict[str, list[str]] = {}
+    for s in db.query(station.Station).all():
+        grouped.setdefault(s.line, []).append(s.id)
+    for codes in grouped.values():
+        codes.sort(key=lambda c: rank.get(c, len(rank)))
+    return grouped
+
+
+def _fleet_for_line(all_codes: Sequence[str], line: str, line_stations: Sequence[str]) -> list[str]:
+    """The train codes that serve a line, matching the seed's assignment."""
+    slug = feat.line_slug(line)
+    codes = sorted(c for c in all_codes if c.startswith(f"TR-{slug}-"))
+    if not codes and line_stations:
+        # Imported datasets may carry line names the seeded TR-* fleet does not
+        # cover; fall back to the first units so the timetable still populates.
+        codes = sorted(all_codes)[:3]
+    return codes[:3]
+
+
+def latest_covered_hour(db) -> Optional[datetime]:
+    """Newest hour bucket that has ridership data."""
+    row = db.query(
+        ridership.RidershipRecord.timestamp
+    ).order_by(ridership.RidershipRecord.timestamp.desc()).first()
+    return hour_floor(row[0]) if row else None
+
+
+def _hour_buckets(start: datetime, end: datetime) -> list[datetime]:
+    buckets = []
+    cursor = start
+    while cursor <= end:
+        buckets.append(cursor)
+        cursor += timedelta(hours=1)
+    return buckets
+
+
+def advance(db, now: Optional[datetime] = None) -> dict:
+    """Materialise every hourly bucket between the data and *now*.
+
+    Idempotent: row ids are derived from the station and the bucket, so running
+    this twice over the same window inserts nothing the second time. After a
+    normal tick only the single new hour is written; the existence checks are
+    done in one query per table rather than per row so a long catch-up stays
+    linear in the number of buckets, not the number of rows.
+    """
+    now = hour_floor(now)
+    stations = _station_order(db)
+    empty = {"hours": 0, "ridership": 0, "schedules": 0, "pruned": 0}
+    if not stations:
+        return empty
+
+    latest = latest_covered_hour(db)
+    if latest is None:
+        start = now
+    else:
+        # +1h: the bucket `latest` already covers is never rebuilt.
+        start = latest + timedelta(hours=1)
+    if start > now:
+        return empty
+
+    if start < now - timedelta(hours=MAX_BACKFILL_HOURS):
+        logger.info("Simulation clock catching up from %s (gap over %dh)", start, MAX_BACKFILL_HOURS)
+        start = now - timedelta(hours=MAX_BACKFILL_HOURS - 1)
+
+    buckets = _hour_buckets(start, now)
+    if not buckets:
+        return empty
+
+    all_train_codes = [t.code for t in db.query(train.Train).all() if t.code]
+    line_map = _line_stations(db)
+    fleet = {line: _fleet_for_line(all_train_codes, line, codes) for line, codes in line_map.items()}
+
+    have_ridership = {
+        r[0] for r in db.query(ridership.RidershipRecord.id).filter(
+            ridership.RidershipRecord.timestamp >= buckets[0]
+        )
+    }
+    have_schedules = {
+        r[0] for r in db.query(schedule.TrainSchedule.id).filter(
+            schedule.TrainSchedule.arrival >= buckets[0]
+        )
+    }
+
+    ridership_written = 0
+    schedule_written = 0
+    for hour_start in buckets:
+        for row in ridership_rows_for_hour(stations, hour_start):
+            if row.id not in have_ridership:
+                db.add(row)
+                ridership_written += 1
+        for line, codes in line_map.items():
+            for t_idx, code in enumerate(fleet.get(line, [])):
+                for row in schedule_rows_for_hour(codes, code, t_idx, hour_start):
+                    if row.id not in have_schedules:
+                        db.add(row)
+                        schedule_written += 1
+    db.commit()
+
+    pruned = prune(db, now)
+    if ridership_written or schedule_written or pruned:
+        logger.info(
+            "Simulation clock at %s (+%d ridership, +%d schedule, -%d pruned)",
+            now, ridership_written, schedule_written, pruned,
+        )
+    return {
+        "hours": len(buckets),
+        "ridership": ridership_written,
+        "schedules": schedule_written,
+        "pruned": pruned,
+    }
+
+
+def prune(db, now: Optional[datetime] = None) -> int:
+    """Drop rows that have fallen out of the rolling retention window."""
+    now = hour_floor(now)
+    cutoff = now - timedelta(days=HISTORY_DAYS)
+    removed = 0
+    for row in db.query(ridership.RidershipRecord).filter(
+        ridership.RidershipRecord.timestamp < cutoff
+    ).all():
+        db.delete(row)
+        removed += 1
+    for row in db.query(schedule.TrainSchedule).filter(
+        schedule.TrainSchedule.arrival < cutoff
+    ).all():
+        db.delete(row)
+        removed += 1
+    if removed:
+        db.commit()
+    return removed
+
+
+async def simulation_loop() -> None:
+    """Wake up once a minute and materialise any newly elapsed hours."""
+    from app.core.database import SessionLocal
+
+    logger.info("Simulation clock started (tick %ss, retention %dd)", TICK_SECONDS, HISTORY_DAYS)
+    failures = 0
+    while True:
+        try:
+            def tick():
+                db = SessionLocal()
+                try:
+                    return advance(db)
+                finally:
+                    db.close()
+
+            result = await asyncio.to_thread(tick)
+            if result["hours"]:
+                failures = 0
+            await asyncio.sleep(TICK_SECONDS)
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            failures += 1
+            if failures in (1, 2, 4, 8, 16, 32, 64):
+                logger.warning("simulation clock error (%d consecutive): %s", failures, e)
+            await asyncio.sleep(TICK_SECONDS)

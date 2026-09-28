@@ -1,8 +1,11 @@
 import os
 
 SUPPORTED_CITIES = ("seoul", "hangzhou", "nyc", "tfl", "beijing")
-DEFAULT_CITY = "hangzhou"
+DEFAULT_CITY = "nyc"
 
+# Legacy translation tables for the external Kaggle corpora. The app itself runs
+# on real MTA stop ids (see data/stations.csv), so "nyc" needs no translation --
+# `city_station_code` passes native ids straight through.
 CITY_STATION_MAP = {
     "seoul": {
         "ST01": "222", "ST02": "216", "ST03": "239", "ST04": "230", "ST05": "232",
@@ -12,13 +15,9 @@ CITY_STATION_MAP = {
         "ST01": "015", "ST02": "009", "ST03": "004", "ST04": "007", "ST05": "010",
         "ST06": "011", "ST07": "020", "ST08": "012", "ST09": "008", "ST10": "033",
     },
-    # NYC Subway Traffic 2017-2021 (469 stations, 4h intervals) — maps to
-    # representative complex/station ids; full 469-station artifacts trainable
-    # via kaggle/04_nyc_crowd_demand.py.
-    "nyc": {
-        "ST01": "127", "ST02": "128", "ST03": "129", "ST04": "130", "ST05": "131",
-        "ST06": "132", "ST07": "133", "ST08": "134", "ST09": "135", "ST10": "136",
-    },
+    # NYC Subway Traffic 2017-2021 (469 stations, 4h intervals) — the app is
+    # already keyed by MTA stop id, so this map is intentionally empty.
+    "nyc": {},
     # TfL Entry & Exit (435 stations, yearly 2007-2021) — maps to top
     # footfall stations; see kaggle/05_tfl_crowd_demand.py.
     "tfl": {
@@ -44,4 +43,12 @@ def model_city() -> str:
 def city_station_code(station_id: str | None) -> str | None:
     if not station_id:
         return None
-    return CITY_STATION_MAP.get(model_city(), {}).get(station_id)
+    city = model_city()
+    mapping = CITY_STATION_MAP.get(city, {})
+    if station_id in mapping:
+        return mapping[station_id]
+    # The NYC model is trained on this app's own ridership, whose station keys
+    # are already MTA stop ids, so no translation applies.
+    if city == "nyc":
+        return station_id
+    return None

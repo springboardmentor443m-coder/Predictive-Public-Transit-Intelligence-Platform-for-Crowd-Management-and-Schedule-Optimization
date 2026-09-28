@@ -1,7 +1,7 @@
 import argparse
 import os
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -9,12 +9,12 @@ import pandas as pd  # noqa: E402
 
 from app.core.database import Base, SessionLocal, engine  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
+from app.core.time import utcnow  # noqa: E402
 from app.ml import features as feat  # noqa: E402
 from app.models import alert, ridership, schedule, station, train, user  # noqa: E402,F401
+from app.services import simulation as sim  # noqa: E402
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
-
-STATION_CODES = ["ST01", "ST02", "ST03", "ST04", "ST05", "ST06", "ST07", "ST08", "ST09", "ST10"]
 
 USERS = [
     ("admin@metroflow.io", "Admin@123", "Alex Morgan", "admin"),
@@ -23,17 +23,11 @@ USERS = [
 ]
 
 
-HISTORY_DAYS = 7
+HISTORY_DAYS = sim.HISTORY_DAYS
 
 
 def _congestion_level(occ_pct: float) -> str:
-    if occ_pct >= 0.90:
-        return "critical"
-    if occ_pct >= 0.75:
-        return "high"
-    if occ_pct >= 0.55:
-        return "medium"
-    return "low"
+    return sim.congestion_level(occ_pct)
 
 
 def _rows_from_dataframe(hist: pd.DataFrame) -> list:
@@ -61,36 +55,38 @@ def _rows_from_dataframe(hist: pd.DataFrame) -> list:
 
 def _synthetic_rows(stations_df: pd.DataFrame) -> list:
     """Fallback when the CSV is missing/empty: synthesize HISTORY_DAYS of
-    hourly records from the baseline occupancy curve."""
-    now = datetime.now(timezone.utc).replace(tzinfo=None, minute=0, second=0, microsecond=0)
+    hourly records from the baseline occupancy curve.
+
+    Days are anchored to *midnight* and the current partial day is appended, so
+    every record sits on the hour it actually describes and the newest sample is
+    the current hour. Anchoring the day to `now` instead shifted the entire
+    series forward by the current hour-of-day, which transposed the morning peak
+    onto whatever wall-clock time the seed happened to run.
+
+    Generation is delegated to the simulation clock's per-hour builder so these
+    rows are byte-identical to the ones it would produce at runtime.
+    """
+    now = sim.hour_floor()
+    midnight = now.replace(hour=0)
+    stations = [(str(r["code"]), int(r["capacity_per_hour"]))
+                for _, r in stations_df.iterrows()]
+
+    day_plan: list[tuple[datetime, range]] = [
+        (midnight - timedelta(days=d), range(24)) for d in range(HISTORY_DAYS, 0, -1)
+    ]
+    day_plan.append((midnight, range(now.hour + 1)))
+
     rows = []
-    for i, row in stations_df.iterrows():
-        cap = int(row["capacity_per_hour"])
-        factor = 0.85 + 0.05 * ((i * 37) % 7)
-        for d in range(HISTORY_DAYS, 0, -1):
-            day = now - timedelta(days=d)
-            weekend = day.weekday() >= 5
-            for hour in range(24):
-                ts = day + timedelta(hours=hour)
-                pct = feat.station_baseline_occupancy_pct(hour)
-                if weekend:
-                    pct *= feat.WEEKEND_FACTOR
-                pct = min(1.15, max(0.02, pct * factor))
-                rows.append(ridership.RidershipRecord(
-                    id=f"RR-{row['code']}-{int(ts.timestamp())}",
-                    station_id=row["code"],
-                    timestamp=ts,
-                    entries=int(cap * pct / 4),
-                    exits=int(cap * pct / 4 * 0.9),
-                    occupancy=int(cap * pct / 4),
-                    congestion_level=_congestion_level(pct),
-                ))
-    print("  ridership_hourly.csv missing or empty; synthesized baseline history")
+    for day_start, hours in day_plan:
+        for hour in hours:
+            rows.extend(sim.ridership_rows_for_hour(stations, day_start + timedelta(hours=hour)))
+    print(f"  ridership_hourly.csv missing/empty; synthesized {HISTORY_DAYS}d + today "
+          f"of baseline history (now-anchored, hour-aligned)")
     return rows
 
 
 def _build_ridership_rows(stations_df: pd.DataFrame) -> list:
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = utcnow()
     ridership_path = os.path.join(DATA_DIR, "ridership_hourly.csv")
     hist = None
     if os.path.exists(ridership_path):
@@ -110,17 +106,27 @@ def _build_ridership_rows(stations_df: pd.DataFrame) -> list:
     return rows if rows else _synthetic_rows(stations_df)
 
 
+def _seeded_deletions(db) -> list:
+    """Row sets owned by the seed pipeline.
+
+    Identified by id prefix so `--refresh` can roll the demo window forward
+    without touching anything created by users: ingests use `RR-ING-*` and
+    operator-created schedules keep their own ids.
+    """
+    return [
+        db.query(schedule.TrainSchedule).filter(schedule.TrainSchedule.id.like("SCH-%")),
+        db.query(ridership.RidershipRecord).filter(
+            ridership.RidershipRecord.id.like("RR-%"),
+            ridership.RidershipRecord.id.notlike("RR-ING-%"),
+        ),
+        db.query(alert.Alert).filter(alert.Alert.id.like("AL-SEED-%")),
+    ]
+
+
 def _clear_seeded_db(db) -> int:
-    """Remove only prefix-identifiable seeded rows so `--refresh` can roll the
-    demo window forward without touching anything created by users (ingests
-    use RR-ING-*, operator-created schedules keep their own ids)."""
     removed = 0
-    for model, prefix in (
-        (schedule.TrainSchedule, "SCH-"),
-        (ridership.RidershipRecord, "RR-ST"),
-        (alert.Alert, "AL-SEED-"),
-    ):
-        targets = db.query(model).filter(model.id.like(f"{prefix}%")).all()
+    for query in _seeded_deletions(db):
+        targets = query.all()
         removed += len(targets)
         for row in targets:
             db.delete(row)
@@ -128,22 +134,164 @@ def _clear_seeded_db(db) -> int:
     return removed
 
 
+def _fleet_for_lines(lines: list[str]) -> list[dict]:
+    """One fleet per trunk route, from real MTA rolling-stock classes."""
+    fleet = []
+    for line in lines:
+        for n in range(1, feat.FLEET_PER_LINE + 1):
+            model, capacity = feat.ROLLING_STOCK[(n - 1) % len(feat.ROLLING_STOCK)]
+            fleet.append({
+                "id": feat.train_code(line, n),
+                "model": model,
+                "capacity": capacity,
+                # One unit per route is held in the depot so the fleet monitor
+                # always shows an out-of-service state to dispatch against.
+                "status": "active" if n < feat.FLEET_PER_LINE else "maintenance",
+            })
+    return fleet
+
+
+def _station_row(index: int, row: pd.Series) -> station.Station:
+    return station.Station(
+        id=str(row["code"]),
+        code=str(row["code"]),
+        name=str(row["name"]),
+        line=str(row["line"]),
+        # The subway has no fare zones, so zone is a synthetic grouping derived
+        # from the station's position in the network ordering. Real geography
+        # (lat/lng) comes straight from the GTFS feed.
+        zone="Zone-" + str(1 + index % 3),
+        lat=float(row["lat"]),
+        lng=float(row["lng"]),
+        capacity_per_hour=int(row["capacity_per_hour"]),
+    )
+
+
+def _network_drift(db, stations_df: pd.DataFrame, fleet: list[dict]) -> dict:
+    """Compare data/stations.csv against the database.
+
+    Re-seeding a database whose stations predate the current CSV would leave
+    orphaned ridership/schedules pointing at removed stations, so the seed
+    detects drift and rebuilds the derived rows.
+    """
+    wanted_codes = [str(c) for c in stations_df["code"]]
+    db_stations = {s.id: s for s in db.query(station.Station).all()}
+    db_trains = {t.id for t in db.query(train.Train).all()}
+
+    stale_stations = sorted(set(db_stations) - set(wanted_codes))
+    missing_stations = sorted(set(wanted_codes) - set(db_stations))
+    changed = []
+    for code in wanted_codes:
+        if code not in db_stations:
+            continue
+        row = stations_df[stations_df["code"].astype(str) == code].iloc[0]
+        current = db_stations[code]
+        if (current.name != str(row["name"]) or current.line != str(row["line"])
+                or current.capacity_per_hour != int(row["capacity_per_hour"])):
+            changed.append(code)
+
+    return {
+        "stale_stations": stale_stations,
+        "missing_stations": missing_stations,
+        "changed_stations": changed,
+        "stale_trains": sorted(db_trains - {t["id"] for t in fleet}),
+        "missing_trains": sorted({t["id"] for t in fleet} - db_trains),
+    }
+
+
+def _sync_network(db, stations_df: pd.DataFrame, fleet: list[dict]) -> None:
+    """Make the stations/trains tables match data/stations.csv.
+
+    Existing rows are updated in place so their ridership and schedule history
+    survives; rows whose code is gone from the CSV are removed together with
+    everything that referenced them.
+    """
+    wanted_codes = [str(c) for c in stations_df["code"]]
+    db_stations = {s.id: s for s in db.query(station.Station).all()}
+
+    stale = set(db_stations) - set(wanted_codes)
+    if stale:
+        print(f"  Removing {len(stale)} station(s) no longer in stations.csv ...")
+        for model, column in (
+            (ridership.RidershipRecord, ridership.RidershipRecord.station_id),
+            (schedule.TrainSchedule, schedule.TrainSchedule.station_id),
+            (alert.Alert, alert.Alert.station_id),
+        ):
+            for row in db.query(model).filter(column.in_(sorted(stale))).all():
+                db.delete(row)
+        for code in sorted(stale):
+            db.delete(db_stations[code])
+
+    added = 0
+    for i, (_, row) in enumerate(stations_df.iterrows()):
+        code = str(row["code"])
+        if code in db_stations:
+            continue
+        db.add(_station_row(i, row))
+        added += 1
+    if added:
+        print(f"  Added {added} station(s) from stations.csv")
+
+    for spec in fleet:
+        existing = db.query(train.Train).filter(train.Train.id == spec["id"]).first()
+        if existing:
+            existing.model = spec["model"]
+            existing.capacity = spec["capacity"]
+            existing.status = spec["status"]
+        else:
+            db.add(train.Train(
+                id=spec["id"],
+                code=spec["id"],
+                model=spec["model"],
+                capacity=spec["capacity"],
+                status=spec["status"],
+            ))
+
+    db_trains = {t.id for t in db.query(train.Train).all()}
+    orphan_trains = db_trains - {spec["id"] for spec in fleet}
+    if orphan_trains:
+        print(f"  Removing {len(orphan_trains)} train(s) outside the current fleet ...")
+        for row in db.query(schedule.TrainSchedule).filter(
+            schedule.TrainSchedule.train_id.in_(sorted(orphan_trains))
+        ).all():
+            db.delete(row)
+        for row in db.query(alert.Alert).filter(alert.Alert.train_id.in_(sorted(orphan_trains))).all():
+            db.delete(row)
+        for code in sorted(orphan_trains):
+            db.delete(db.query(train.Train).filter(train.Train.id == code).first())
+    db.commit()
+
+
 def seed(refresh: bool = False) -> None:
     print("Creating tables ...")
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
 
-    users_exist = db.query(user.User).count() > 0
-    stations_exist = db.query(station.Station).count() > 0
+    stations_df = pd.read_csv(os.path.join(DATA_DIR, "stations.csv"), dtype={"code": str})
+    lines = sorted(stations_df["line"].unique())
+    fleet = _fleet_for_lines(lines)
 
-    if users_exist and not refresh:
-        print("Database already seeded; skipping. Use `--refresh` to roll the demo window forward.")
+    users_exist = db.query(user.User).count() > 0
+    drift = _network_drift(db, stations_df, fleet)
+    has_drift = any(drift[k] for k in (
+        "stale_stations", "missing_stations", "changed_stations",
+        "stale_trains", "missing_trains",
+    ))
+
+    if users_exist and not refresh and not has_drift:
+        print("Database already seeded and up to date; skipping. "
+              "Use `--refresh` to roll the demo window forward.")
         db.close()
         return
 
     if refresh:
         removed = _clear_seeded_db(db)
         print(f"Refresh mode: cleared {removed} seeded rows (schedules/history/alerts).")
+    elif has_drift:
+        # Station or fleet identity changed underneath us, so every derived row
+        # is rebuilt: schedules/history/alerts reference station and train ids.
+        removed = _clear_seeded_db(db)
+        print(f"stations.csv differs from the database; rebuilt {removed} dependent rows.")
 
     if not users_exist:
         print("Seeding users ...")
@@ -157,96 +305,26 @@ def seed(refresh: bool = False) -> None:
                 is_active=True,
             ))
 
-    if not stations_exist:
-        print("Seeding stations ...")
-        stations_path = os.path.join(DATA_DIR, "stations.csv")
-        stations_df = pd.read_csv(stations_path)
-        station_map = {}
-        for i, row in stations_df.iterrows():
-            sid = row["code"]
-            station_map[row["code"]] = sid
-            db.add(station.Station(
-                id=sid,
-                code=row["code"],
-                name=row["name"],
-                line=row["line"],
-                zone="Zone-" + str(1 + i % 3),
-                lat=12.90 + i * 0.021,
-                lng=77.50 + (i % 5) * 0.031,
-                capacity_per_hour=int(row["capacity_per_hour"]),
-            ))
-
-    stations_df = pd.read_csv(os.path.join(DATA_DIR, "stations.csv"))
-    if not stations_exist:
-        print("Seeding trains ...")
-        train_map = {}
-        lines = sorted(stations_df["line"].unique())
-        tid = 1
-        for line in lines:
-            for n in range(4):
-                code = f"TR-{line[0]}{tid:02d}"
-                train_map[code] = code
-                db.add(train.Train(
-                    id=code,
-                    code=code,
-                    model="MetroCoach-M8" if n % 2 == 0 else "MetroCoach-M6",
-                    capacity=1200 if n % 2 == 0 else 900,
-                    status="active" if n < 3 else "maintenance",
-                ))
-                tid += 1
-        db.commit()
-    else:
-        lines = sorted(stations_df["line"].unique())
+    print(f"Syncing {len(stations_df)} stations and {len(fleet)} trains from stations.csv ...")
+    _sync_network(db, stations_df, fleet)
 
     print("Seeding schedules (7-day history + next 24h rolling window) ...")
-    now = datetime.now(timezone.utc).replace(tzinfo=None).replace(minute=0, second=0, microsecond=0)
-    peak_hours = {7, 8, 9, 16, 17, 18}
-    _train_map = {t.code: t.id for t in db.query(train.Train).all()}
+    now = sim.hour_floor()
+    _train_map = [t.code for t in db.query(train.Train).all() if t.code]
     gen_start = now - timedelta(days=HISTORY_DAYS)
     gen_hours = HISTORY_DAYS * 24 + 24
     sched_count = 0
     for line in lines:
         line_stations = [c for c, r in zip(stations_df["code"], stations_df["line"]) if r == line]
-        line_trains = [t for t in _train_map if t.startswith(f"TR-{line[0]}")][:3]
-        if not line_trains and line_stations:
-            # Imported datasets may carry line names that don't match the
-            # seeded TR-* fleet; fall back to any train so the timetable,
-            # live train map and traffic series still populate.
-            line_trains = list(_train_map)[:3]
+        # Same headway/disruption model the runtime simulation clock uses, so a
+        # seeded hour and a clock-generated hour are identical.
+        line_trains = sim._fleet_for_line(_train_map, line, line_stations)
         for t_idx, tcode in enumerate(line_trains):
             for i in range(gen_hours):
-                ts = gen_start + timedelta(hours=i)
-                hour = ts.hour
-                # Headway sets service frequency: 4 min during peak (~15 tph,
-                # 60//4) vs 8 min off-peak (7 tph). Spacing arrivals at the
-                # headway interval gives the traffic series a recognizable
-                # morning/evening rush-hour shape instead of a flat line.
-                headway = 4 if hour in peak_hours else 8
-                runs_per_hour = 60 // headway
-                for run in range(runs_per_hour):
-                    ts_run = ts + timedelta(minutes=run * headway)
-                    st_code = line_stations[(hour + t_idx + run) % len(line_stations)]
-                    if hour in peak_hours:
-                        disrupted = line_stations[ts_run.day % len(line_stations)]
-                        if st_code == disrupted:
-                            delay = 5 + ((ts_run.hour + t_idx) % 3)
-                        else:
-                            delay = int((sched_count * 7) % 4)
-                    else:
-                        delay = 0
-                    status = "on_time" if delay <= 2 else "delayed"
-                    db.add(schedule.TrainSchedule(
-                        id=f"SCH-{tcode}-{ts_run.strftime('%m%d%H%M')}-{st_code}",
-                        train_id=tcode,
-                        station_id=st_code,
-                        direction=("northbound" if (hour + t_idx) % 2 == 0 else "southbound"),
-                        arrival=ts_run,
-                        departure=ts_run + timedelta(seconds=30),
-                        headway_min=headway,
-                        status=status,
-                        delay_min=delay,
-                        is_peak="yes" if hour in peak_hours else "no",
-                    ))
+                for row in sim.schedule_rows_for_hour(
+                    line_stations, tcode, t_idx, gen_start + timedelta(hours=i)
+                ):
+                    db.add(row)
                     sched_count += 1
     db.commit()
     print(f"  {sched_count} schedules created")
@@ -258,15 +336,22 @@ def seed(refresh: bool = False) -> None:
     print(f"  {len(rows)} ridership records inserted")
 
     print("Seeding sample alerts ...")
+    # Anchor the samples on the busiest real stations so the alert feed reads
+    # like something an operator would actually see on this network.
+    busiest = stations_df.sort_values("capacity_per_hour", ascending=False)
+    hub = str(busiest.iloc[0]["code"])
+    hub_name = str(busiest.iloc[0]["name"])
+    second = str(busiest.iloc[1]["code"])
+    second_name = str(busiest.iloc[1]["name"])
     db.add(alert.Alert(
-        id="AL-SEED-001", type="overcrowding", severity="high", station_id="ST01",
-        title="High congestion at Central Junction",
+        id="AL-SEED-001", type="overcrowding", severity="high", station_id=hub,
+        title=f"High congestion at {hub_name}",
         message="Platform occupancy exceeded 90% during morning peak. Consider additional services.",
     ))
     db.add(alert.Alert(
-        id="AL-SEED-002", type="delay", severity="medium", station_id="ST05",
-        title="Train TR-B07 running 6 min late",
-        message="Signal regeneration at Stadium Plaza caused a minor delay on the Blue Line.",
+        id="AL-SEED-002", type="delay", severity="medium", station_id=second,
+        title=f"Signalling delay approaching {second_name}",
+        message="A train is running several minutes late approaching the stop; passengers are advised to allow extra time.",
     ))
     db.commit()
 

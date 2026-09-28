@@ -298,7 +298,7 @@ function Alerts() {
                 <input
                   required
                   className="input"
-                  placeholder="e.g. Platform Evacuation Drill - Red Line"
+                  placeholder="e.g. Platform Evacuation Drill - 1/2/3"
                   value={bcForm.title}
                   onChange={(e) => setBcForm({ ...bcForm, title: e.target.value })}
                 />

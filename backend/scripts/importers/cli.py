@@ -12,19 +12,28 @@ import sys
 _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, _BACKEND_DIR)
 
-from scripts.importers import base, mta, seoul, tfl  # noqa: E402
+from scripts.importers import base, mta, mta_gtfs, seoul, tfl  # noqa: E402
 
 IMPORTERS = {
     "mta": mta,
+    "mta-gtfs": mta_gtfs,
     "seoul": seoul,
     "tfl": tfl,
 }
+
+# Station-identity-only importers: they rewrite stations.csv from a transit
+# authority's own network file and carry no ridership counts.
+STATION_ONLY = {"mta-gtfs"}
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--city", choices=sorted(IMPORTERS), required=True)
-    parser.add_argument("--input", required=True, help="Path to the real dataset CSV")
+    parser.add_argument(
+        "--input",
+        required=True,
+        help="Path to the real dataset CSV (or, for mta-gtfs, the unzipped GTFS directory)",
+    )
     parser.add_argument(
         "--output-dir",
         default=os.path.join(_BACKEND_DIR, "data"),
@@ -33,6 +42,10 @@ def main() -> None:
     parser.add_argument("--prefix", default="", help="Optional filename prefix (for testing, e.g. 'test_')")
     parser.add_argument("--limit", type=int, default=10, help="Max stations to keep (top N by volume)")
     args = parser.parse_args()
+
+    if args.city in STATION_ONLY:
+        _run_station_only(args)
+        return
 
     importer = IMPORTERS[args.city]
     print(f"[import] {args.city} <- {args.input}")
@@ -73,6 +86,21 @@ def main() -> None:
           f"(seed freshness requires <= 3 days from now)")
     print(f"[ok] {ridership['station_code'].nunique()} stations "
           f"({len(ridership)} station-hours)")
+
+
+def _run_station_only(args: argparse.Namespace) -> None:
+    """Station-only importers rewrite stations.csv from the agency network file."""
+    os.makedirs(args.output_dir, exist_ok=True)
+    out_path = os.path.join(args.output_dir, f"{args.prefix}stations.csv")
+    print(f"[import] {args.city} <- {args.input}")
+    stations = mta_gtfs.write_stations(args.input, out_path)
+    print(f"[out] {out_path}  ({len(stations)} stations)")
+    for line in sorted({s["line"] for s in stations}):
+        count = sum(1 for s in stations if s["line"] == line)
+        print(f"  {line:>8}  {count:>2} stations")
+    caps = [s["capacity_per_hour"] for s in stations]
+    print(f"[ok] capacity range {min(caps)}-{max(caps)} riders/hour")
+    print("[ok] next: python scripts/seed_db.py --refresh")
 
 
 if __name__ == "__main__":

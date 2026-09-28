@@ -32,7 +32,17 @@ function CrowdTooltip({ active, payload, label }: { active?: boolean; payload?: 
   );
 }
 
-const NJ_LINES = [
+/**
+ * Line vocabulary for the *delay* model only.
+ *
+ * That artifact is a separate NJ Transit & Amtrak classifier/regressor trained
+ * on `pranavbadami/nj-transit-amtrak-nec-performance`, and it encodes these
+ * corridor names categorically. Substituting the subway's trunk routes here
+ * would send values the model has never seen and silently degrade the
+ * predictions, so this list must stay in step with the artifact rather than
+ * with `lib/lines.ts`.
+ */
+const DELAY_MODEL_LINES = [
   "Northeast Corrdr",
   "North Jersey Coast",
   "Morristown Line",
@@ -166,6 +176,15 @@ function Predictions() {
       setDelayBusy(false);
     }
   }
+
+  // Delay metrics come from the served artifact, never from a hardcoded literal:
+  // a stale "AUC 0.733" in the copy is indistinguishable from a measured value.
+  const delayMetrics = useMemo(() => {
+    const auc = modelInfo?.delay?.metrics?.auc;
+    const mae = modelInfo?.delay?.metrics?.mae;
+    if (auc == null || mae == null) return null;
+    return { auc: Number(auc).toFixed(3), mae: Number(mae).toFixed(2) };
+  }, [modelInfo]);
 
   return (
     <DashboardLayout title="AI Predictions & Delay Predictor" subtitle="Crowd forecasting · passenger demand inference · XGBoost delay models">
@@ -319,7 +338,8 @@ function Predictions() {
           <div>
             <h3 className="font-extrabold tracking-tight text-white">Live Delay Inference Machine — NJ Transit & Amtrak</h3>
             <p className="text-xs text-slate-400">
-              Dual-stage XGBoost Classifier & Regressor · AUC 0.733 · MAE 3.15 min
+              Dual-stage XGBoost Classifier &amp; Regressor
+              {delayMetrics ? ` · AUC ${delayMetrics.auc} · MAE ${delayMetrics.mae} min` : ""}
             </p>
           </div>
         </div>
@@ -334,7 +354,7 @@ function Predictions() {
                 value={delayForm.line}
                 onChange={(e) => setDelayForm({ ...delayForm, line: e.target.value })}
               >
-                {NJ_LINES.map((l) => (
+                {DELAY_MODEL_LINES.map((l) => (
                   <option key={l} value={l}>{l}</option>
                 ))}
               </select>

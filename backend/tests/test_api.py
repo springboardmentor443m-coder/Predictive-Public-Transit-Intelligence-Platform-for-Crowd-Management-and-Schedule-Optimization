@@ -17,6 +17,14 @@ from app.core.time import utcnow  # noqa: E402
 from app.models import alert, ridership, schedule, station, train, user  # noqa: E402,F401
 from app.main import app  # noqa: E402
 
+# Station ids created by `seed_database`. Tests assert against this set rather
+# than repeating literals, so adding a fixture station does not silently break
+# the count/identity assertions below.
+SEEDED_STATION_IDS = {"ST01", "ST02", "128", "235"}
+# `/predictions/patterns` returns one entry per line, so it tracks the distinct
+# lines in `seed_database` rather than the station count.
+SEEDED_LINES = {"Red", "1/2/3", "B/D/F/M"}
+
 
 @pytest.fixture(scope="session", autouse=True)
 def seed_database():
@@ -30,6 +38,12 @@ def seed_database():
     ])
     db.add(station.Station(id="ST01", code="ST01", name="Central", line="Red", zone="Z1", capacity_per_hour=500))
     db.add(station.Station(id="ST02", code="ST02", name="Riverside", line="Red", zone="Z1", capacity_per_hour=430))
+    # Real MTA ids. The ML artifacts were trained on these codes, so per-station
+    # predictions only differ for stations the model has actually seen; an unknown
+    # code one-hot encodes to all-zeros and every unknown station returns the same
+    # population-average curve.
+    db.add(station.Station(id="128", code="128", name="34 St-Penn Station", line="1/2/3", zone="Z1", capacity_per_hour=11000))
+    db.add(station.Station(id="235", code="235", name="Atlantic Av-Barclays Ctr", line="B/D/F/M", zone="Z1", capacity_per_hour=14600))
     db.add(train.Train(id="TR-R01", code="TR-R01", model="M8", capacity=1000, status="active"))
     from datetime import datetime, timedelta
 
@@ -204,13 +218,13 @@ def test_non_admin_cannot_update_other_users(client, viewer_headers):
 
 def test_live_crowd(client, viewer_headers):
     live = client.get("/api/v1/crowd/live", headers=viewer_headers).json()
-    assert {s["station_id"] for s in live} == {"ST01", "ST02"}
+    assert {s["station_id"] for s in live} == SEEDED_STATION_IDS
     assert all(0 <= s["occupancy_pct"] <= 100 for s in live)
 
 
 def test_heatmap(client, viewer_headers):
     hm = client.get("/api/v1/crowd/heatmap", headers=viewer_headers).json()
-    assert {p["station_id"] for p in hm} == {"ST01", "ST02"}
+    assert {p["station_id"] for p in hm} == SEEDED_STATION_IDS
     assert all("occupancy_pct" in p for p in hm)
 
 
@@ -297,19 +311,25 @@ def test_recommendations(client, viewer_headers):
 
 def test_traffic_patterns(client, viewer_headers):
     pat = client.get("/api/v1/predictions/patterns", headers=viewer_headers).json()
-    assert len(pat) == 2
+    # One entry per station (prediction_service._compute_patterns iterates
+    # Station rows), carrying that station's line.
+    assert len(pat) == len(SEEDED_STATION_IDS)
+    assert {p.get("line") for p in pat} <= SEEDED_LINES
     p = pat[0]
     assert 0 <= p["peak_hour"] <= 23
     assert len(p["profile_24h"]) == 24
 
 
 def test_predictions_differ_per_station(client, viewer_headers):
-    a = client.get("/api/v1/predictions/crowd?station_id=ST01&hours=6", headers=viewer_headers).json()
-    b = client.get("/api/v1/predictions/crowd?station_id=ST02&hours=6", headers=viewer_headers).json()
+    # Must use codes the artifact actually knows: an unknown code one-hot encodes
+    # to all-zeros (population average), so two unknown stations return identical
+    # numbers and the assertion is vacuous rather than meaningful.
+    a = client.get("/api/v1/predictions/crowd?station_id=128&hours=6", headers=viewer_headers).json()
+    b = client.get("/api/v1/predictions/crowd?station_id=235&hours=6", headers=viewer_headers).json()
     assert [p["predicted_occupancy_pct"] for p in a] != [p["predicted_occupancy_pct"] for p in b]
 
-    da = client.get("/api/v1/predictions/demand?station_id=ST01&hours=6", headers=viewer_headers).json()
-    db_ = client.get("/api/v1/predictions/demand?station_id=ST02&hours=6", headers=viewer_headers).json()
+    da = client.get("/api/v1/predictions/demand?station_id=128&hours=6", headers=viewer_headers).json()
+    db_ = client.get("/api/v1/predictions/demand?station_id=235&hours=6", headers=viewer_headers).json()
     assert [p["predicted_entries"] for p in da] != [p["predicted_entries"] for p in db_]
 
 
@@ -431,14 +451,14 @@ def test_broadcast_admin_only(client, viewer_headers, admin_headers):
 
 def test_analytics_overview(client, viewer_headers):
     ov = client.get("/api/v1/analytics/overview", headers=viewer_headers).json()
-    assert ov["total_stations"] == 2
+    assert ov["total_stations"] == len(SEEDED_STATION_IDS)
     assert ov["total_trains"] == 1
     assert 0 <= ov["on_time_pct"] <= 100
 
 
 def test_station_performance(client, viewer_headers):
     perf = client.get("/api/v1/analytics/station-performance", headers=viewer_headers).json()
-    assert {row["station_id"] for row in perf} == {"ST01", "ST02"}
+    assert {row["station_id"] for row in perf} == SEEDED_STATION_IDS
     assert all(0 <= row["punctuality_pct"] <= 100 for row in perf)
 
 
@@ -451,7 +471,7 @@ def test_station_performance_windowed(client, viewer_headers):
         f"/api/v1/analytics/station-performance?limit=10&hours=24&start_time={quote(start.isoformat())}",
         headers=viewer_headers,
     ).json()
-    assert {row["station_id"] for row in perf} == {"ST01", "ST02"}
+    assert {row["station_id"] for row in perf} == SEEDED_STATION_IDS
     assert all(0 <= row["punctuality_pct"] <= 100 for row in perf)
 
 

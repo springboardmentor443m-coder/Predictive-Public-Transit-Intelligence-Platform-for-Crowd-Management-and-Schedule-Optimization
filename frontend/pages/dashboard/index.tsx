@@ -11,6 +11,7 @@ import StatusBadge, { congestionColor } from "../../components/StatusBadge";
 import { withAuth, useAuth } from "../../lib/auth";
 import { useToast } from "../../components/ToastContext";
 import api from "../../lib/api";
+import { lineColor, lineStyle, orderedLines } from "../../lib/lines";
 import { getSocket } from "../../lib/socket";
 import type { AnalyticsOverview, TrafficSeriesPoint, TrainLive, LiveCrowdSnapshot, AlertItem, AiInsights, ModelInfo } from "../../lib/types";
 
@@ -95,10 +96,19 @@ function Overview() {
     };
   }, [loadAll, showToast]);
 
+  // Trunk routes come from the data, so a newly imported feed filters correctly
+  // without touching this component.
+  const activeLines = useMemo(() => orderedLines(live.map((s) => s.line)), [live]);
+
+  // Reset the filter if the selected trunk disappears from the live feed.
+  useEffect(() => {
+    if (lineFilter !== "all" && !activeLines.includes(lineFilter)) setLineFilter("all");
+  }, [activeLines, lineFilter]);
+
   const filteredLive = useMemo(() => {
     return live.filter((s) => {
       const matchesSearch = s.station_name.toLowerCase().includes(search.toLowerCase()) || s.station_id.toLowerCase().includes(search.toLowerCase());
-      const matchesLine = lineFilter === "all" || s.line.toLowerCase() === lineFilter.toLowerCase();
+      const matchesLine = lineFilter === "all" || s.line === lineFilter;
       return matchesSearch && matchesLine;
     });
   }, [live, search, lineFilter]);
@@ -138,11 +148,13 @@ function Overview() {
             </h2>
 
             <p className="text-sm text-slate-300 leading-relaxed">
-              Monitoring <span className="font-bold text-white">{overview?.total_stations ?? 10} stations</span> across Red, Blue & Green lines ·{" "}
+              Monitoring{" "}
+              <span className="font-bold text-white">{overview?.total_stations ?? live.length} stations</span>{" "}
+              across {activeLines.length} trunk routes ·{" "}
               <span className="font-bold text-emerald-400">{overview?.on_time_pct ?? 96}% on-time performance</span> ·{" "}
               <span className="font-bold text-white">{inServiceTrains.length} trains in service</span>
               {delayedTrains.length > 0 && <span className="text-amber-300"> ({delayedTrains.length} delayed)</span>} · AI Model{" "}
-              <span className="font-mono text-brand-300 font-bold">{modelInfo?.city || "hangzhou"} ({modelInfo?.crowd?.algorithm || "XGBoost"})</span> serving live predictions.
+              <span className="font-mono text-brand-300 font-bold">{modelInfo?.city || "nyc"} ({modelInfo?.crowd?.algorithm || "XGBoost"})</span> serving live predictions.
             </p>
           </div>
 
@@ -181,7 +193,11 @@ function Overview() {
           value={overview?.total_stations ?? "—"}
           icon={Building2}
           accent="sky"
-          sub="Red · Blue · Green lines active"
+          sub={
+            activeLines.length
+              ? `${activeLines.map((l) => lineStyle(l).services || l).join(" · ")} active`
+              : "Awaiting live feed"
+          }
         />
         <KpiCard
           label="Fleet Trains Active"
@@ -219,10 +235,8 @@ function Overview() {
         <div className="flex gap-3 overflow-x-auto pb-2 scroll-thin">
           {trains.map((t) => {
             const inService = ["in_transit", "at_station", "awaiting_departure", "delayed"].includes(t.status);
-            const barColor = t.status === "delayed" ? "#f59e0b"
-              : t.line === "Red" ? "#f43f5e"
-              : t.line === "Blue" ? "#3b82f6"
-              : "#10b981";
+            // Delay state wins; otherwise the train wears its trunk's bullet colour.
+            const barColor = t.status === "delayed" ? "#f59e0b" : lineColor(t.line);
             return (
               <Link
                 key={t.train_id}
@@ -233,7 +247,9 @@ function Overview() {
                   <p className="text-xs font-extrabold text-white">{t.train_id}</p>
                   <StatusBadge value={!inService ? (t.status === "in_depot" ? "on_time" : "low") : t.status === "delayed" ? "critical" : "on_time"} />
                 </div>
-                <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">{t.line} Line</p>
+                <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  {lineStyle(t.line).services || t.line} Line
+                </p>
                 {inService ? (
                   <>
                     <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-800">
@@ -285,12 +301,15 @@ function Overview() {
               <select
                 value={lineFilter}
                 onChange={(e) => setLineFilter(e.target.value)}
+                aria-label="Filter by trunk route"
                 className="input py-1.5 text-xs w-auto"
               >
-                <option value="all">All Lines</option>
-                <option value="red">Red Line</option>
-                <option value="blue">Blue Line</option>
-                <option value="green">Green Line</option>
+                <option value="all">All Trunk Routes</option>
+                {activeLines.map((ln) => (
+                  <option key={ln} value={ln}>
+                    {lineStyle(ln).services || ln} Line
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -428,7 +447,15 @@ function Overview() {
         </div>
 
         <p className="max-w-xs text-right text-[11px] text-slate-400 leading-relaxed">
-          Trained on real-world Kaggle datasets (Hangzhou/Seoul/NJ Transit). <span className="font-bold text-white">Zero CCTV / privacy risks.</span>
+          {modelInfo ? (
+            <>
+              Trained on {modelInfo.crowd?.trained_on === "nyc" ? "NYC MTA" : modelInfo.crowd?.trained_on ?? "transit"}
+              {" "}hourly ridership (R&sup2; {modelInfo.crowd?.metrics?.r2?.toFixed(3) ?? "—"}).{" "}
+              <span className="font-bold text-white">Zero CCTV / privacy risks.</span>
+            </>
+          ) : (
+            <>Loading model provenance&hellip;</>
+          )}
         </p>
       </div>
     </DashboardLayout>

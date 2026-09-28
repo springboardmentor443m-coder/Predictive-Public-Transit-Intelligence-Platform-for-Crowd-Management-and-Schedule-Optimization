@@ -15,6 +15,7 @@ from app.core.database import Base, engine
 from app.models import alert, ridership, schedule, station, train, user
 from app.services import socketio_state
 from app.services.realtime import broadcast_loop
+from app.services.simulation import simulation_loop
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("metroflow")
@@ -113,19 +114,27 @@ async def lifespan(app: FastAPI):
 
     load_models()
     broadcast_task = None
+    clock_task = None
     if os.environ.get("METROFLOW_ENABLE_REALTIME", "1") not in ("0", "", "false", "False"):
         broadcast_task = asyncio.create_task(broadcast_loop())
+        # Keeps ridership/schedules rolling forward so the "last 24h" views and
+        # prediction windows never run off the end of the generated data.
+        if os.environ.get("METROFLOW_ENABLE_SIMULATION", "1") not in ("0", "", "false", "False"):
+            clock_task = asyncio.create_task(simulation_loop())
         logger.info("MetroFlow startup complete; realtime broadcast started")
     else:
         logger.info("MetroFlow startup complete; realtime broadcast disabled")
     yield
     logger.info("MetroFlow shutting down")
-    if broadcast_task is not None:
-        broadcast_task.cancel()
-        try:
-            await broadcast_task
-        except asyncio.CancelledError:
-            pass
+    for task in (broadcast_task, clock_task):
+        if task is not None:
+            task.cancel()
+    for task in (broadcast_task, clock_task):
+        if task is not None:
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
 
 
 app = FastAPI(

@@ -96,26 +96,37 @@ async def model_info(db: Session = Depends(get_db), _=Depends(require_roles())):
     def _metrics(kind: str, c: str):
         import json
 
-        # Metrics live at repo-root kaggle/{city}_model_outputs/metrics.json with
-        # top-level "crowd"/"demand" keys (e.g. kaggle/hangzhou_model_outputs/metrics.json).
         # predictions.py is backend/app/api/v1/... -> 5 dirnames reaches repo root.
         repo = os.path.dirname(
             os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
                 os.path.abspath(__file__)))))
         )
+        # scripts/train_models.py writes backend/models_store/{city}_train_metrics.json
+        # with top-level "crowd"/"demand" keys. That is the authoritative source for
+        # the committed artifacts, so it is checked before the Kaggle exports.
+        store = os.path.join(
+            repo, "backend", "models_store", f"{c}_train_metrics.json"
+        )
         names = (f"{c}_model_outputs/metrics.json", f"{c}_{kind}_model_outputs/metrics.json", f"{kind}_model_outputs/metrics.json")
-        for name in names:
-            for base in (os.path.join(repo, "kaggle", name), os.path.join(os.getcwd(), "kaggle", name)):
-                if os.path.exists(base):
-                    try:
-                        with open(base) as f:
-                            data = json.load(f)
-                        # metrics.json nests under "crowd"/"demand" key
-                        if isinstance(data, dict) and kind in data and isinstance(data[kind], dict):
-                            return data[kind]
-                        return data
-                    except Exception:
-                        continue
+        # `base` below is already the full path to the candidate file; do not join
+        # `name` onto it again or every Kaggle path is doubled and never matches.
+        candidates = [store] + [
+            candidate
+            for name in names
+            for candidate in (os.path.join(repo, "kaggle", name), os.path.join(os.getcwd(), "kaggle", name))
+        ]
+        for path in candidates:
+            if not os.path.exists(path):
+                continue
+            try:
+                with open(path) as f:
+                    data = json.load(f)
+                # metrics.json nests under "crowd"/"demand" key
+                if isinstance(data, dict) and kind in data and isinstance(data[kind], dict):
+                    return data[kind]
+                return data
+            except Exception:
+                continue
         return {}
 
     crowd_m = _metrics("crowd", city)

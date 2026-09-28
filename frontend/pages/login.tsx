@@ -3,12 +3,29 @@ import { AlertCircle, Eye, EyeOff, Loader2, ShieldCheck, Sparkles, TrainFront, A
 import { useAuth } from "../lib/auth";
 import { useToast } from "../components/ToastContext";
 import { useTheme } from "../components/ThemeContext";
+import { ALL_TRUNKS, lineColor } from "../lib/lines";
 import api from "../lib/api";
 
 const DEMO = [
   { role: "Admin", email: "admin@metroflow.io", password: "Admin@123", desc: "Full control, broadcasts & user management" },
   { role: "Operator", email: "operator@metroflow.io", password: "Operator@123", desc: "Timetables, delay logs & sensor ingest" },
   { role: "Viewer", email: "viewer@metroflow.io", password: "Viewer@123", desc: "Read-only live monitoring & analytics" },
+];
+
+/**
+ * Decorative topology graphic: real MTA stop ids positioned on the three drawn
+ * tracks, each tagged with the trunk it belongs to so its dot picks up the
+ * right bullet colour.
+ */
+const DECOR_NODES: Array<[number, number, string, string]> = [
+  [30, 30, "111", "1/2/3"],
+  [150, 30, "128", "1/2/3"],
+  [250, 80, "235", "1/2/3"],
+  [370, 80, "247", "1/2/3"],
+  [30, 80, "A09", "A/C/E"],
+  [150, 80, "A27", "A/C/E"],
+  [250, 30, "A24", "A/C/E"],
+  [370, 30, "A41", "A/C/E"],
 ];
 
 interface AxiosErrorLike {
@@ -117,22 +134,22 @@ export default function Login() {
           <div className="relative rounded-2xl border border-slate-800/90 bg-slate-900/80 p-5 backdrop-blur-xl shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4 text-xs font-bold text-slate-400">
               <span className="flex items-center gap-2 text-white"><Activity className="h-4 w-4 text-brand-400" /> LIVE NETWORK TOPOLOGY</span>
-              <span className="text-emerald-400 font-mono">10 Stations Monitored</span>
+              <span className="text-emerald-400 font-mono">
+                {ALL_TRUNKS.length} Trunk Routes
+              </span>
             </div>
 
             <svg viewBox="0 0 400 120" className="w-full h-auto">
-              {/* Red Line */}
-              <path d="M 30 30 L 150 30 L 250 80 L 370 80" fill="none" stroke="#ef4444" strokeWidth="4" strokeLinecap="round" opacity="0.8" />
-              {/* Blue Line */}
-              <path d="M 30 80 L 150 80 L 250 30 L 370 30" fill="none" stroke="#3b82f6" strokeWidth="4" strokeLinecap="round" opacity="0.8" />
-              {/* Green Line */}
-              <path d="M 80 10 L 80 110" fill="none" stroke="#10b981" strokeWidth="3" strokeDasharray="6 4" opacity="0.6" />
+              {/* Real MTA trunk routes, coloured from the shared palette. */}
+              <path d="M 30 30 L 150 30 L 250 80 L 370 80" fill="none" stroke={lineColor("1/2/3")} strokeWidth="4" strokeLinecap="round" opacity="0.8" />
+              <path d="M 30 80 L 150 80 L 250 30 L 370 30" fill="none" stroke={lineColor("A/C/E")} strokeWidth="4" strokeLinecap="round" opacity="0.8" />
+              <path d="M 80 10 L 80 110" fill="none" stroke={lineColor("4/5/6")} strokeWidth="3" strokeDasharray="6 4" opacity="0.6" />
 
-              {/* Station Dots */}
-              {([[30, 30, "ST01"], [150, 30, "ST02"], [250, 80, "ST03"], [370, 80, "ST04"], [30, 80, "ST05"], [150, 80, "ST06"], [250, 30, "ST07"], [370, 30, "ST08"]] as Array<[number, number, string]>).map(([x, y, id], i) => (
+              {/* Station Dots — real MTA stop ids, coloured by their trunk. */}
+              {DECOR_NODES.map(([x, y, id, trunk]) => (
                 <g key={id}>
                   <circle cx={x} cy={y} r="6" fill={theme === "light" ? "#ffffff" : "#0f172a"} stroke={theme === "light" ? "#475569" : "#ffffff"} strokeWidth="2" />
-                  <circle cx={x} cy={y} r="3" fill={i % 3 === 0 ? "#ef4444" : i % 2 === 0 ? "#10b981" : "#3b82f6"} />
+                  <circle cx={x} cy={y} r="3" fill={lineColor(trunk)} />
                   <text x={x} y={y - 10} textAnchor="middle" fill={theme === "light" ? "#475569" : "#94a3b8"} fontSize="8" fontWeight="bold">{id}</text>
                 </g>
               ))}
@@ -140,7 +157,7 @@ export default function Login() {
 
             <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-800/80">
               {[
-                ["10", "Live Stations"],
+                [String(ALL_TRUNKS.length), "Trunk Routes"],
                 ["<2s", "Socket Latency"],
                 ["0.896", "Crowd R² Metric"],
               ].map(([v, l]) => (

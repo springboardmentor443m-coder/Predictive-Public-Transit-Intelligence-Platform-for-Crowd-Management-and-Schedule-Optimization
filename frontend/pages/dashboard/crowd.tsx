@@ -17,6 +17,7 @@ import StatusBadge, { congestionColor } from "../../components/StatusBadge";
 import { withAuth, useAuth } from "../../lib/auth";
 import { useToast } from "../../components/ToastContext";
 import api from "../../lib/api";
+import { lineColor, lineStyle } from "../../lib/lines";
 import { getSocket, joinStationRoom } from "../../lib/socket";
 import { downloadCsv } from "../../lib/csv";
 import type { Station, LiveCrowdSnapshot, StationHeatmapPoint, StationHistoryPoint, ModelInfo } from "../../lib/types";
@@ -38,7 +39,10 @@ function CrowdMonitoring() {
   const [live, setLive] = useState<LiveCrowdSnapshot[]>([]);
   const [heatmap, setHeatmap] = useState<StationHeatmapPoint[]>([]);
   const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
-  const [selected, setSelected] = useState("ST01");
+  // Starts empty and picks the busiest station once /stations resolves. A
+  // hardcoded id here would never match a real MTA stop, so every detail panel
+  // would render "—" until the user clicked something.
+  const [selected, setSelected] = useState("");
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [loadingHist, setLoadingHist] = useState(false);
   const [histDate, setHistDate] = useState("");
@@ -60,6 +64,13 @@ function CrowdMonitoring() {
       setLive(lv.data);
       setHeatmap(hm.data);
       if (mi) setModelInfo(mi.data);
+      // Default to the busiest station, falling back to the first available, so
+      // the detail panels are populated on load.
+      setSelected((cur) => {
+        if (cur && st.data.some((s) => s.id === cur)) return cur;
+        const busiest = [...lv.data].sort((a, b) => b.occupancy_pct - a.occupancy_pct)[0];
+        return busiest?.station_id || st.data[0]?.id || "";
+      });
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -179,7 +190,7 @@ function CrowdMonitoring() {
               {strained === 0 ? "Passenger Flow Smooth Across All Lines" : `${strained} Station${strained > 1 ? "s" : ""} Experiencing Congestion`}
             </h2>
             <p className="mt-1 text-xs sm:text-sm text-slate-300">
-              {live.length} stations active · {connected ? "streaming via Socket.IO room subscriptions" : "25s polling fallback"} · Model: {modelInfo?.city || "hangzhou"}
+              {live.length} stations active · {connected ? "streaming via Socket.IO room subscriptions" : "25s polling fallback"} · Model: {modelInfo?.city || "nyc"}
             </p>
           </div>
 
@@ -290,7 +301,13 @@ function CrowdMonitoring() {
               </div>
               <p className="mt-1 text-2xl font-extrabold font-mono tracking-tight text-white">{s.occupancy_pct}%</p>
               <div className="mt-2 flex items-center justify-between">
-                <span className="text-[10px] font-extrabold uppercase text-slate-400">{s.line} line</span>
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase" style={{ color: lineStyle(s.line).ink }}>
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: lineColor(s.line) }}
+                  />
+                  {lineStyle(s.line).services || s.line} line
+                </span>
                 <StatusBadge value={s.congestion_level} />
               </div>
             </button>

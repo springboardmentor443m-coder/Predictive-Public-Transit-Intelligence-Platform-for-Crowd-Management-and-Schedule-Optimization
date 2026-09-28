@@ -6,7 +6,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ["MODELS_STORE_DIR"] = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models_store"
 )
-os.environ["METROFLOW_MODEL_CITY"] = "hangzhou"
 
 import pytest  # noqa: E402
 
@@ -14,6 +13,19 @@ pytest.importorskip("xgboost")
 
 from app.ml import features as feat  # noqa: E402
 from app.ml.model_wrappers import CrowdModel, DelayForecaster, DemandForecaster  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def legacy_city_artifacts(monkeypatch):
+    """Pin the model city for this module only.
+
+    Setting METROFLOW_MODEL_CITY at import time leaked into the whole pytest
+    process: pytest imports every test module during collection, so every other
+    module (and the app's own startup) then resolved `hangzhou` and loaded the
+    legacy 10-station artifact instead of the NYC one. Scoping it to a fixture
+    keeps the rest of the suite on the configured city.
+    """
+    monkeypatch.setenv("METROFLOW_MODEL_CITY", "hangzhou")
 
 
 def test_crowd_model_serves_city_artifact():

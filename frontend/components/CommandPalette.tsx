@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Search, Activity, CalendarClock, BrainCircuit, TrainFront, Bell, Settings, ArrowRight, X, type LucideIcon } from "lucide-react";
 import api from "../lib/api";
+import { lineColor, lineStyle } from "../lib/lines";
 import type { Station } from "../lib/types";
 
 interface NavCommand {
@@ -119,11 +120,19 @@ export default function CommandPalette({ isOpen, onClose, onOpen }: CommandPalet
                   className="w-full flex items-center justify-between rounded-xl px-3 py-2 text-sm text-slate-300 hover:bg-brand-600/20 hover:text-white transition group"
                 >
                   <div className="flex items-center gap-2.5">
-                    <span className="h-2 w-2 rounded-full bg-brand-400" />
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: lineColor(s.line) }}
+                    />
                     <span className="font-semibold text-white">{s.name}</span>
                     <span className="text-xs text-slate-400">({s.id})</span>
                   </div>
-                  <span className="text-xs uppercase font-extrabold px-2 py-0.5 rounded bg-slate-800 text-slate-300">{s.line} line</span>
+                  <span
+                    className="text-xs uppercase font-extrabold px-2 py-0.5 rounded bg-slate-800"
+                    style={{ color: lineStyle(s.line).ink }}
+                  >
+                    {lineStyle(s.line).services || s.line} line
+                  </span>
                 </button>
               ))}
             </div>

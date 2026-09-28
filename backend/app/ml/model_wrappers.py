@@ -57,13 +57,13 @@ class CrowdModel:
     def __init__(self):
         self.artifact = _load_artifact(_city_file("crowd"))
         self.stations = []
-        self.cap_norm_scale = 700.0
+        self.cap_norm_scale = feat.MAX_CAPACITY
         self.trained_on = None
         self.low_model = None
         self.high_model = None
         if isinstance(self.artifact, dict):
             self.stations = list(self.artifact.get("stations") or [])
-            self.cap_norm_scale = float(self.artifact.get("cap_norm_scale", 700.0))
+            self.cap_norm_scale = float(self.artifact.get("cap_norm_scale", feat.MAX_CAPACITY))
             self.trained_on = self.artifact.get("trained_on")
             if self.artifact.get("kind") == "quantile":
                 self.low_model = self.artifact.get("low")
@@ -109,7 +109,7 @@ class CrowdModel:
                 return np.asarray(model.predict(X), dtype=float)
             except Exception as e:
                 logger.warning(f"crowd model predict failed ({e}); using baseline")
-        cap_ratio = (capacity_per_hour or 520.0) / 520.0
+        cap_ratio = (capacity_per_hour or feat.MAX_CAPACITY) / feat.MAX_CAPACITY
         if isinstance(weekday, (list, tuple, np.ndarray)):
             return np.array([
                 feat.station_baseline_occupancy_pct(h) * (feat.WEEKEND_FACTOR if wd >= 5 else 1.0)
@@ -211,11 +211,11 @@ class DemandForecaster:
     def __init__(self):
         self.artifact = _load_artifact(_city_file("demand"))
         self.stations = []
-        self.cap_norm_scale = 700.0
+        self.cap_norm_scale = feat.MAX_CAPACITY
         self.trained_on = None
         if isinstance(self.artifact, dict):
             self.stations = list(self.artifact.get("stations") or [])
-            self.cap_norm_scale = float(self.artifact.get("cap_norm_scale", 700.0))
+            self.cap_norm_scale = float(self.artifact.get("cap_norm_scale", feat.MAX_CAPACITY))
             self.trained_on = self.artifact.get("trained_on")
 
     @property
@@ -251,7 +251,7 @@ class DemandForecaster:
                 return np.asarray(model.predict(X), dtype=float)
             except Exception as e:
                 logger.warning(f"demand model predict failed ({e}); using baseline")
-        cap_ratio = (capacity_per_hour or 520.0) / 520.0
+        cap_ratio = (capacity_per_hour or feat.MAX_CAPACITY) / feat.MAX_CAPACITY
         return np.array([
             feat.demand_base_entries(h) * cap_ratio
             for h in hours

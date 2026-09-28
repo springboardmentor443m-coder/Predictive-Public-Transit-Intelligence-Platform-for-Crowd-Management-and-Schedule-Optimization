@@ -53,6 +53,10 @@
   --mf-input-line: 30 41 59;
   --mf-input-fg: 241 245 249;
   --mf-input-shadow: 0 0 #0000;
+  --mf-input-opt-bg: rgb(15 23 42);
+  --mf-input-opt-fg: 226 232 240;
+  --mf-input-opt-hover-bg: rgb(51 65 85);
+  --mf-input-opt-hover-fg: 248 250 252;
 
   --mf-label-fg: 148 163 184;
   --mf-ink: 203 213 225;
@@ -140,6 +144,10 @@ html.light {
   --mf-input-line: 203 213 225;
   --mf-input-fg: 15 23 42;
   --mf-input-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --mf-input-opt-bg: #ffffff;
+  --mf-input-opt-fg: 15 23 42;
+  --mf-input-opt-hover-bg: #e2e8f0;
+  --mf-input-opt-hover-fg: #0f172a;
 
   --mf-label-fg: 91 107 128;
   --mf-ink: 51 65 85;
@@ -305,8 +313,27 @@ html.light .btn-ghost:hover {
 html.light .input:focus {
   --tw-ring-color: rgb(191 219 254 / 0.7);
 }
-html.light select.input option {
-  @apply bg-white text-slate-900;
+
+/* Native popup list. Driven by dedicated tokens so both themes stay in sync
+   without a light-only patch. Do NOT reach for `text-slate-900`/`bg-white`
+   here: the slate ramp is inverted in light mode (slate-900 is *white* there),
+   which renders the open list as white-on-white. Tokens are theme-correct by
+   construction and also cover `optgroup`, which the earlier rule missed. */
+select.input option,
+select.input optgroup {
+  background-color: var(--mf-input-opt-bg);
+  color: var(--mf-input-opt-fg);
+}
+select.input option:hover,
+select.input option:focus {
+  background-color: var(--mf-input-opt-hover-bg);
+  color: var(--mf-input-opt-hover-fg);
+}
+/* A disabled control must not paint its value as if it were live. */
+.input:disabled,
+.input[readonly] {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* ---- Tables ---- */

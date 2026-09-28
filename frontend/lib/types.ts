@@ -198,6 +198,10 @@ export interface ModelMetricInfo {
 
 export interface ModelSubInfo {
   algorithm?: string;
+  /** Provenance from the artifact, e.g. "nyc" or "nj_transit_delay". */
+  trained_on?: string;
+  loaded?: boolean;
+  is_kaggle?: boolean;
   metrics?: ModelMetricInfo;
 }
 
