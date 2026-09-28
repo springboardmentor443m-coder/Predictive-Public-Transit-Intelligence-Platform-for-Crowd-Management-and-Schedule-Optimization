@@ -31,15 +31,19 @@ Trained with `kaggle/01_seoul_crowd_demand.py`, `kaggle/02_hangzhou_crowd_demand
 | Seoul | Demand | 0.689 | 331 pax/hour | 483 |
 | Hangzhou | Crowd | 0.896 | 0.053 (occupancy) | 0.102 |
 | Hangzhou | Demand | 0.923 | 149 pax/hour | — |
+| **NYC (default)** | Crowd | **0.981** | 0.029 (occupancy) | — |
+| **NYC (default)** | Demand | **0.969** | 367 pax/hour | — |
 
 Served by the API through `model_wrappers`: the `METROFLOW_MODEL_CITY` env var selects
 `{city}_crowd_model.joblib` / `{city}_demand_model.joblib` from `models_store/` (default
-`hangzhou`; supported: seoul/hangzhou/nyc/tfl/beijing). The feature schema is read from each artifact's own metadata
+`nyc`; supported: seoul/hangzhou/nyc/tfl/beijing). The feature schema is read from each artifact's own metadata
 (`stations`, `cap_norm_scale`), so inference builds the exact trained vector width
-(Seoul 108, Hangzhou 88). Backend stations ST01–ST10 map to real station codes in
-`app/ml/registry.py`. Live provenance is exposed at `GET /predictions/model-info`
-(rendered as the ModelBadge on the dedicated **AI Predictions** page). To refresh, rerun the Kaggle scripts
-and drop the zipped outputs into `models_store/`.
+(Seoul 108, Hangzhou 88, NYC 67 for the **59 real MTA stations**). Backend stations are the real MTA stop
+ids listed in `data/stations.csv` (order pinned by `features.STATION_LIST`); legacy ST01–ST10 codes
+map to real station codes in `app/ml/registry.py`. NYC metrics are saved by the trainer in
+`models_store/nyc_train_metrics.json` (hold-out: 7 days, `cap_norm_scale=14600`). Live provenance is
+exposed at `GET /predictions/model-info` (rendered as the ModelBadge on the dedicated **AI Predictions**
+page). To refresh, rerun the Kaggle scripts and drop the zipped outputs into `models_store/`.
 
 > NYC / TfL / Beijing scripts ship with realistic proxies when Kaggle inputs are
 > absent, so `python kaggle/04_nyc_crowd_demand.py` etc. always produce
@@ -93,8 +97,10 @@ line/schedule level delay target.
 | `GET /api/v1/health` | < 10 ms |
 | `POST /api/v1/auth/login` | ~2.5 s (pbkdf2 hashing; first request) |
 | `GET /api/v1/crowd/live` | ~50 ms |
+| `GET /api/v1/crowd/connections` | < 5 ms (cached GTFS junction graph, 25 edges) |
+| `GET /api/v1/crowd/network` | < 10 ms (cached 496-station / 578-segment snapshot) |
 | `POST /api/v1/crowd/ingest` | ~60 ms (persist + cache refresh) |
-| `GET /api/v1/crowd/heatmap` | ~60 ms (10 stations × 24 h = 240 cells) |
+| `GET /api/v1/crowd/heatmap` | ~70 ms (59 stations × 24 h = 1,416 cells) |
 | `GET /api/v1/predictions/crowd?hours=12` | ~80 ms (12 model inferences) |
 | `GET /api/v1/predictions/crowd?start_time=...&hours=72` | ~320 ms (72 inferences, multi-day weekday resolution) |
 | `GET /api/v1/predictions/train/{id}?hours=12` | ~120 ms (per-stop forecast across a train's route) |
@@ -112,7 +118,7 @@ line/schedule level delay target.
 |---|---|
 | Broadcast interval | 5 s (`crowd_update`) |
 | Train telemetry interval | 5 s (`train_update`, global + `train:{id}` rooms) |
-| Snapshot payload | 10 stations × {occupancy_pct, congestion_level, inflow, outflow} |
+| Snapshot payload | 59 stations × {occupancy_pct, congestion_level, inflow, outflow} |
 | Fleet payload | per train × {status, position_pct, current/next station, ETA, headway, delay, load_pct} |
 | Alert dedup window | 15 min per (station, type) |
 | Alert push latency | same cycle as detection (≤ 5 s) |
@@ -122,10 +128,12 @@ line/schedule level delay target.
 
 | Dataset | Size |
 |---|---|
-| Ridership records | 14,400 rows (10 stations × 24 h × 60 days) |
+| Ridership records | 84,960 rows (59 stations × 24 h × 60 days) |
 | Ticketing events (Mongo) | 50,000 generated / 5,000 seeded per run |
 | Schedules | ~170 active timetable entries |
-| Heatmap grid | 240 points per render |
+| Heatmap grid | 1,416 points per render (59 × 24) |
+| Connection graph | 25 edges (21 along-line + 4 walking interchanges) across 59 NYC stations |
+| Full-network map | 496 stations / 578 rail segments (`data/nyc_network.json`) |
 | Kaggle coverage | 7/7 scripts (Seoul, Hangzhou, NJ + NYC, TfL, Beijing, Railway2015) |
 
 ## 5. Scalability Notes

@@ -23,9 +23,17 @@ logger = logging.getLogger("metroflow")
 
 sio = socketio.AsyncServer(
     async_mode="asgi",
-    cors_allowed_origins="*",
+    # Was hardcoded to "*". The realtime feed carries occupancy for every station
+    # in the network, so a wildcard origin plus anonymous connections meant any
+    # page on the internet could subscribe to it. In production the origin list is
+    # the same one the HTTP API is restricted to, and `*` is rejected at startup.
+    cors_allowed_origins=(
+        settings.cors_origin_list
+        if settings.is_production
+        else (settings.cors_origin_list or "*")
+    ),
     logger=True,
-    engineio_logger=True,
+    engineio_logger=False,
 )
 
 
@@ -111,6 +119,20 @@ socketio_state.set_sio(sio)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.ml.model_wrappers import load_models
+
+    # Re-checked here so the guard also covers a config object constructed
+    # directly (tests, scripts) rather than only through get_settings().
+    settings.assert_production_safe()
+    if settings.is_production and os.environ.get("METROFLOW_ENABLE_SIMULATION", "1") not in (
+        "0", "", "false", "False",
+    ):
+        # The simulator writes synthetic rows into the same tables a real feed
+        # would populate, so leaving it on in production would quietly overwrite
+        # real observations with generated ones.
+        raise RuntimeError(
+            "METROFLOW_ENABLE_SIMULATION must be disabled in production: the simulator writes "
+            "synthetic ridership into the live tables and would overwrite real observations."
+        )
 
     load_models()
     broadcast_task = None

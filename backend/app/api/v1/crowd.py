@@ -4,7 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_db, require_roles
+from app.schemas.connection import StationConnection
 from app.schemas.crowd import CrowdIngestRequest
+from app.schemas.network import NetworkPayload
+from app.services.connection_service import load_connections
 from app.services.crowd_service import (
     get_all_live_snapshots,
     get_heatmap,
@@ -12,8 +15,21 @@ from app.services.crowd_service import (
     get_station_history,
     ingest_crowd_record,
 )
+from app.services.network_service import load_network
 
 router = APIRouter(prefix="/crowd", tags=["crowd"])
+
+
+@router.get("/connections", response_model=list[StationConnection])
+async def connections(_=Depends(require_roles())):
+    """Real ridership graph edges between monitored stations (GTFS-derived)."""
+    return load_connections()
+
+
+@router.get("/network", response_model=NetworkPayload)
+async def network(_=Depends(require_roles())):
+    """The complete NYC rail network (every GTFS station + rail segment)."""
+    return load_network()
 
 
 @router.get("/live", response_model=list[dict])

@@ -1,0 +1,84 @@
+# MetroFlow local stack: Postgres, Redis, Mongo and the API.
+#
+# `docker compose up` gives a database-backed deployment locally. Redis and
+# Mongo are real dependencies here on purpose: the in-process cache fallback
+# works, but running against real Redis is what proves the TTL and eviction
+# behaviour that production depends on.
+#
+# The API service runs with the simulation ON (this is a demo stack). A real
+# deployment must set ENVIRONMENT=production, SEED_DEMO_DATA=false,
+# METROFLOW_ENABLE_SIMULATION=0 and a real JWT_SECRET_KEY - the app refuses to
+# start in production otherwise.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: metroflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-metroflow}
+      POSTGRES_DB: metroflow
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U metroflow -d metroflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    # Bounded memory with LRU eviction, mirroring the in-process fallback: an
+    # unbounded cache is an outage waiting for a long-lived process.
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongodata:/data/db
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://metroflow:${POSTGRES_PASSWORD:-metroflow}@postgres:5432/metroflow
+      REDIS_URL: redis://redis:6379/0
+      MONGODB_URL: mongodb://mongo:27017
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-metroflow-dev-secret-change-in-production}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+      METROFLOW_ENABLE_SIMULATION: ${METROFLOW_ENABLE_SIMULATION:-1}
+      METROFLOW_ENABLE_REALTIME: "1"
+    ports:
+      - "8000:8000"
+    # Registered under the API prefix; there is no unprefixed alias.
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
+
+volumes:
+  pgdata:
+  mongodata:

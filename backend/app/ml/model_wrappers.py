@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 
-from app.core.time import utcnow
+from app.core.time import city_hour, city_weekday, utcnow
 from app.ml import features as feat
 from app.ml import registry
 
@@ -53,6 +53,49 @@ def _city_file(kind: str) -> str:
     return f"{kind}_model.joblib"
 
 
+class _ServingState:
+    """Tracks whether this wrapper is actually answering from a trained model.
+
+    A logged warning is not enough. When an estimator raises mid-flight the
+    wrapper silently returns the rule-based curve, so `/model-info` kept reporting
+    ``loaded: true`` and the dashboard showed a green "Live Serving" badge while
+    serving hardcoded values. The dashboard now renders a degraded state from
+    this flag, which is why a runtime fallback has to be recorded rather than
+    only written to the log.
+    """
+
+    def __init__(self, name: str, artifact_loaded: bool):
+        self.name = name
+        self.reason: str | None = None if artifact_loaded else "artifact not loaded"
+        self.runtime_fallbacks = 0
+
+    @property
+    def degraded(self) -> bool:
+        return self.reason is not None
+
+    def mark_runtime_fallback(self, detail: str, public_reason: str) -> None:
+        """Record a fallback without leaking internals.
+
+        ``detail`` is the full exception text and goes to the application log,
+        which the operator owns. ``public_reason`` is what `/model-info` and the
+        dashboard show; it must be stable and contain no exception contents
+        (stack traces, file paths or dependency versions) because it is served
+        to logged-in dashboard clients unauthenticated-adjacent and is visible
+        in the UI.
+        """
+        self.runtime_fallbacks += 1
+        if self.reason is None:
+            self.reason = f"runtime fallback: {public_reason}"
+            logger.warning("%s is degraded (%s). detail: %s", self.name, self.reason, detail)
+
+    def snapshot(self) -> dict:
+        return {
+            "degraded": self.degraded,
+            "degraded_reason": self.reason,
+            "runtime_fallbacks": self.runtime_fallbacks,
+        }
+
+
 class CrowdModel:
     def __init__(self):
         self.artifact = _load_artifact(_city_file("crowd"))
@@ -61,6 +104,7 @@ class CrowdModel:
         self.trained_on = None
         self.low_model = None
         self.high_model = None
+        self._state = _ServingState("crowd model", self.artifact is not None)
         if isinstance(self.artifact, dict):
             self.stations = list(self.artifact.get("stations") or [])
             self.cap_norm_scale = float(self.artifact.get("cap_norm_scale", feat.MAX_CAPACITY))
@@ -73,6 +117,17 @@ class CrowdModel:
     @property
     def is_loaded(self) -> bool:
         return self.artifact is not None
+
+    @property
+    def degraded(self) -> bool:
+        return self._state.degraded
+
+    @property
+    def degraded_reason(self) -> str | None:
+        return self._state.reason
+
+    def serving_state(self) -> dict:
+        return self._state.snapshot()
 
     @property
     def is_quantile(self) -> bool:
@@ -108,6 +163,10 @@ class CrowdModel:
                 model = self.artifact["model"] if isinstance(self.artifact, dict) else self.artifact
                 return np.asarray(model.predict(X), dtype=float)
             except Exception as e:
+                self._state.mark_runtime_fallback(
+                    f"predict raised {type(e).__name__}: {e}",
+                    "model raised an error during prediction",
+                )
                 logger.warning(f"crowd model predict failed ({e}); using baseline")
         cap_ratio = (capacity_per_hour or feat.MAX_CAPACITY) / feat.MAX_CAPACITY
         if isinstance(weekday, (list, tuple, np.ndarray)):
@@ -150,7 +209,7 @@ class CrowdModel:
     ) -> list[dict]:
         now = utcnow()
         if weekday is None:
-            weekday = now.weekday()
+            weekday = city_weekday(now)
         hours = [(base_hour + h) % 24 for h in range(hours_ahead)]
         cap = (station or {}).get("capacity_per_hour")
         X = self._feature_rows(hours, weekday, station)
@@ -184,8 +243,11 @@ class CrowdModel:
         correctly by the trained models)."""
         start_dt = start_dt.replace(minute=0, second=0, microsecond=0)
         dts = [start_dt + timedelta(hours=i) for i in range(hours_ahead)]
-        hours = [d.hour for d in dts]
-        weekdays = [d.weekday() for d in dts]
+        # Local hour/weekday per step: the artifact was trained on local hours, so
+        # resolving them off the UTC value here would reintroduce train/serve skew
+        # and mislabel every forecast row.
+        hours = [city_hour(d) for d in dts]
+        weekdays = [city_weekday(d) for d in dts]
         cap = (station or {}).get("capacity_per_hour")
         X = self._feature_rows(hours, weekdays, station)
         center, low, high = self._predict_bounds(X, hours, weekdays, cap)
@@ -217,10 +279,22 @@ class DemandForecaster:
             self.stations = list(self.artifact.get("stations") or [])
             self.cap_norm_scale = float(self.artifact.get("cap_norm_scale", feat.MAX_CAPACITY))
             self.trained_on = self.artifact.get("trained_on")
+        self._state = _ServingState("demand model", self.artifact is not None)
 
     @property
     def is_loaded(self) -> bool:
         return self.artifact is not None
+
+    @property
+    def degraded(self) -> bool:
+        return self._state.degraded
+
+    @property
+    def degraded_reason(self) -> str | None:
+        return self._state.reason
+
+    def serving_state(self) -> dict:
+        return self._state.snapshot()
 
     @property
     def is_kaggle(self) -> bool:
@@ -250,6 +324,10 @@ class DemandForecaster:
                 model = self.artifact["model"] if isinstance(self.artifact, dict) else self.artifact
                 return np.asarray(model.predict(X), dtype=float)
             except Exception as e:
+                self._state.mark_runtime_fallback(
+                    f"predict raised {type(e).__name__}: {e}",
+                    "model raised an error during prediction",
+                )
                 logger.warning(f"demand model predict failed ({e}); using baseline")
         cap_ratio = (capacity_per_hour or feat.MAX_CAPACITY) / feat.MAX_CAPACITY
         return np.array([
@@ -266,7 +344,7 @@ class DemandForecaster:
     ) -> list[dict]:
         now = utcnow()
         if weekday is None:
-            weekday = now.weekday()
+            weekday = city_weekday(now)
         hours = [(base_hour + h) % 24 for h in range(hours_ahead)]
         cap = (station or {}).get("capacity_per_hour")
         X = self._feature_rows(hours, weekday, station)
@@ -301,8 +379,11 @@ class DemandForecaster:
         weekend correctly)."""
         start_dt = start_dt.replace(minute=0, second=0, microsecond=0)
         dts = [start_dt + timedelta(hours=i) for i in range(hours_ahead)]
-        hours = [d.hour for d in dts]
-        weekdays = [d.weekday() for d in dts]
+        # Local hour/weekday per step: the artifact was trained on local hours, so
+        # resolving them off the UTC value here would reintroduce train/serve skew
+        # and mislabel every forecast row.
+        hours = [city_hour(d) for d in dts]
+        weekdays = [city_weekday(d) for d in dts]
         cap = (station or {}).get("capacity_per_hour")
         X = self._feature_rows(hours, weekdays, station)
         entries_pred = self._predict(X, hours, cap)
@@ -357,7 +438,7 @@ class DelayForecaster:
 
     @property
     def is_loaded(self) -> bool:
-        return isinstance(self.artifact, dict) and isinstance(self.regressor, dict)
+        return self.artifact is not None
 
     def _row(
         self,

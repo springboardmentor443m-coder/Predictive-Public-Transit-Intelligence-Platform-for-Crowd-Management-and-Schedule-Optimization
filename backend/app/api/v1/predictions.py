@@ -143,20 +143,30 @@ async def model_info(db: Session = Depends(get_db), _=Depends(require_roles())):
         "station_map": registry.CITY_STATION_MAP.get(city, {}),
         "crowd": {
             "loaded": crowd.is_loaded,
+            # `degraded` is true whenever the values being served are NOT coming
+            # from a trained model - either the artifact never loaded, or an
+            # estimator raised at runtime. `loaded` alone would report healthy
+            # while the rule-based curve answered the request.
+            "degraded": crowd.degraded,
+            "degraded_reason": crowd.degraded_reason,
             "is_kaggle": crowd.is_kaggle,
             "trained_on": crowd.trained_on,
-            "algorithm": "XGBoost" if crowd.is_kaggle else "GradientBoostingRegressor",
+            "algorithm": "Rule-based baseline" if crowd.degraded else ("XGBoost" if crowd.is_kaggle else "GradientBoostingRegressor"),
             "metrics": {k: crowd_m.get(k) for k in ("r2", "mae", "rmse", "peak_hour_mae") if k in crowd_m},
         },
         "demand": {
             "loaded": demand.is_loaded,
+            "degraded": demand.degraded,
+            "degraded_reason": demand.degraded_reason,
             "is_kaggle": demand.is_kaggle,
             "trained_on": demand.trained_on,
-            "algorithm": "XGBoost" if demand.is_kaggle else "GradientBoostingRegressor",
+            "algorithm": "Rule-based baseline" if demand.degraded else ("XGBoost" if demand.is_kaggle else "GradientBoostingRegressor"),
             "metrics": {k: demand_m.get(k) for k in ("r2", "mae", "rmse") if k in demand_m},
         },
         "delay": {
             "loaded": delay.is_loaded,
+            "degraded": not delay.is_loaded,
+            "degraded_reason": None if delay.is_loaded else "delay artifact not loaded",
             "trained_on": delay.trained_on,
             "algorithm": "XGBoost classifier + regressor",
             "classes": delay.classes,

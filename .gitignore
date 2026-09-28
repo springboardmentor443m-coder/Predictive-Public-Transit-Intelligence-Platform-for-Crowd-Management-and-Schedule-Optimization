@@ -17,8 +17,17 @@ out/
 .env.local
 .env*.local
 
-# Data
+# Data (generated/scratch CSVs stay local; backend/data assets are versioned)
 data/*.csv
+!backend/data/*.csv
+
+# Test/coverage output
+coverage/
+htmlcov/
+.coverage
+frontend/coverage/
+test-results/
+playwright-report/
 
 # Large transient Kaggle/notebook/scratch outputs (keep source scripts tracked)
 kaggle/**/checkpoint_*.pkl

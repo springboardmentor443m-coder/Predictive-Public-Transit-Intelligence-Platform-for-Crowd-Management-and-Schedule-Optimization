@@ -1,9 +1,13 @@
 import os
+import sys
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from app.core.time import city_hour, city_weekday, hour_floor, local_instant, to_city, utcnow  # noqa: E402
 
 _STARTED = time.time()
 
@@ -54,8 +58,19 @@ def station_factor(idx: int) -> float:
 
 
 def generate_ridership() -> pd.DataFrame:
+    """Emit one row per UTC hour, labelled with the hour-of-day *as New York sees it*.
+
+    The row is keyed on the UTC instant (so buckets are always exactly one hour
+    apart and never collide across a DST shift), but `hour`, `weekday`,
+    `is_weekend` and `is_peak` all describe the **local** time. Those are the
+    columns the trainer feeds to the model, so labelling them locally is what
+    makes "the 08:00 peak" mean 08:00 in New York rather than 08:00 UTC, which is
+    04:00 local. Iterating UTC and *converting* (rather than iterating local
+    hours) also means the spring-forward gap and the fall-back repeat are handled
+    by the zone database instead of being papered over.
+    """
     rows = []
-    now = datetime.now(timezone.utc).replace(tzinfo=None, minute=0, second=0, microsecond=0)
+    now = hour_floor(utcnow())
     # `start` MUST be midnight-aligned. Subtracting whole days from `now` keeps the
     # current hour-of-day on every row, so a row generated for the 07:00 peak got a
     # timestamp 17 hours later - the `hour` column then disagreed with
@@ -67,12 +82,13 @@ def generate_ridership() -> pd.DataFrame:
         f = station_factor(si)
         for d in range(DAYS):
             day = start + timedelta(days=d)
-            weekday = day.weekday()
-            weekend = weekday >= 5
             # The final day is partial so no row is dated in the future.
             hours = range(24) if d < DAYS - 1 else range(now.hour + 1)
-            for hour in hours:
-                ts = day + timedelta(hours=hour)
+            for utc_hour in hours:
+                ts = day + timedelta(hours=utc_hour)
+                hour = city_hour(ts)
+                weekday = city_weekday(ts)
+                weekend = weekday >= 5
                 base = BASELINE[hour]
                 if weekend:
                     base *= WEEKEND_FACTOR
@@ -132,7 +148,11 @@ def generate_ticketing_events(ridership: pd.DataFrame, n: int = 50000) -> pd.Dat
 def generate_train_status(ridership: pd.DataFrame) -> pd.DataFrame:
     rows = []
     trains_per_station = 3
-    start = datetime.now(timezone.utc).replace(tzinfo=None).replace(hour=5, minute=0, second=0, microsecond=0) - timedelta(days=14)
+    # A departure timetable is a local-wall-clock artefact. Building the series
+    # from `local_instant` (not `datetime(..., 5)`) is what keeps 05:00 meaning
+    # 05:00 in New York, and keeps the delay-increase-at-peak test keyed on the
+    # same local hours the rest of the app uses.
+    start = local_instant((to_city(utcnow()) - timedelta(days=14)).date(), 5)
     for si, (code, name, line, cap) in enumerate(STATIONS):
         for t in range(trains_per_station):
             train_code = f"TR-{line_slug(line)}{si * trains_per_station + t + 1:02d}"
@@ -140,7 +160,7 @@ def generate_train_status(ridership: pd.DataFrame) -> pd.DataFrame:
                 day = start + timedelta(days=d)
                 dep = day + timedelta(minutes=int(rng.integers(0, 18) * 15))
                 delay = max(0, int(rng.normal(2.5, 4.0)))
-                if dep.hour in PEAK_HOURS:
+                if city_hour(dep) in PEAK_HOURS:
                     delay += int(rng.integers(0, 4))
                 status = "on_time" if delay <= 2 else "minor_delay" if delay <= 6 else "delayed"
                 rows.append({

@@ -68,8 +68,11 @@ async def broadcast_loop() -> None:
                 await sio.emit("crowd_update", snap, room=None)
                 try:
                     await sio.emit("crowd_update", snap, room=f"station:{snap.get('station_id')}")
-                except Exception:
-                    pass
+                except Exception as e:
+                    # Must not kill the loop, but must not be silent either: a
+                    # client subscribed to this room would freeze while the UI
+                    # still claimed it was streaming.
+                    logger.debug(f"station-room crowd emit failed for {snap.get('station_id')}: {e}")
 
             for alert in fresh_alerts:
                 alert_id = alert["id"]
@@ -86,8 +89,8 @@ async def broadcast_loop() -> None:
                 await sio.emit("train_update", tr, room=None)
                 try:
                     await sio.emit("train_update", tr, room=f"train:{tr.get('train_id')}")
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"train-room emit failed for {tr.get('train_id')}: {e}")
         except Exception as e:
             consecutive_failures += 1
             if _should_log_failure(consecutive_failures):

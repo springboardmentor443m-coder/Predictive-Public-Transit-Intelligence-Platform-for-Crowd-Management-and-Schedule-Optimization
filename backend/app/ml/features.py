@@ -29,8 +29,10 @@ STATION_LIST = [
     "718", "A09", "A05", "A27", "A24", "G09",
     "A55", "G08", "H03", "G14", "G05", "A41",
     "D11", "F23", "D16", "D40", "F27", "D43",
-    "D05", "D04", "D26", "B06", "D39", "L08",
-    "R01", "S31", "S30",
+    "D05", "D04", "D26", "B06", "D39",
+    "L01", "L02", "L03", "L05", "L08",
+    "R01", "R03", "R05", "R09", "R14",
+    "S31", "S30",
 ]
 
 # Peak-hour platform throughput ceiling across the network (~Atlantic Av-Barclays).

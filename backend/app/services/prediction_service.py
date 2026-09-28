@@ -1,16 +1,22 @@
 from datetime import datetime, timedelta
 
-from app.core.time import utcnow
+from app.core.time import city_hour, city_weekday, utcnow
 from app.ml.model_wrappers import get_crowd_model, get_delay_model, get_demand_model
 from app.services import scheduling_service
 
 
 def _resolve_time(hour: int | None, weekday: int | None, scheduled_time: str | None) -> tuple[int, int, float]:
+    """Resolve a prediction request onto the model's (hour, weekday) grid.
+
+    Defaults are the **local** hour and weekday, matching the columns the models
+    were trained on. A caller that passes ``hour=8`` means 08:00 local, so the
+    default must not silently be 08:00 UTC.
+    """
     now = utcnow()
     if hour is None:
-        hour = now.hour
+        hour = city_hour(now)
     if weekday is None:
-        weekday = now.weekday()
+        weekday = city_weekday(now)
     minutes = hour * 60 + 30
     if scheduled_time:
         hh_mm = scheduled_time.split(":")
@@ -53,7 +59,7 @@ def _station_ctx(db, station_id: str | None) -> dict | None:
 
 def predict_crowd(station_id: str | None = None, hours: int = 12, db=None) -> list[dict]:
     model = get_crowd_model()
-    base_hour = utcnow().hour
+    base_hour = city_hour(utcnow())
     if db is None:
         from app.core.database import SessionLocal
 
@@ -89,7 +95,7 @@ def predict_crowd_at(
 
 def forecast_demand(station_id: str | None = None, hours: int = 12, db=None) -> list[dict]:
     model = get_demand_model()
-    base_hour = utcnow().hour
+    base_hour = city_hour(utcnow())
     if db is None:
         from app.core.database import SessionLocal
 
@@ -237,8 +243,8 @@ def _compute_patterns(db, feat) -> list[dict]:
         weekend_vals: list[float] = []
         for r in recs:
             occ_pct = r.occupancy / max(1, s.capacity_per_hour)
-            hourly[r.timestamp.hour].append(occ_pct)
-            if r.timestamp.weekday() >= 5:
+            hourly[city_hour(r.timestamp)].append(occ_pct)
+            if city_weekday(r.timestamp) >= 5:
                 weekend_vals.append(occ_pct)
             else:
                 weekday_vals.append(occ_pct)

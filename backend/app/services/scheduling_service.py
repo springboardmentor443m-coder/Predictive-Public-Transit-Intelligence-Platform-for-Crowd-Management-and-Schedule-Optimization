@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from app.core.time import utcnow
+from app.core.time import city_hour, city_weekday, utcnow
 
 from app.models.schedule import TrainSchedule
 from app.models.station import Station
@@ -30,12 +30,49 @@ def compute_recommended_headway(demand_entries: int, train_capacity: int = TRAIN
     return headway_min
 
 
+def classify_headway_action(current: int, recommended: int, peak: bool) -> tuple[str, str, bool]:
+    """Describe the *actual* change in service, not just the time of day.
+
+    The reason string used to be chosen only by peak/off-peak, so an operator
+    could be told "current headway 6 min, recommended 15 min" next to the words
+    "steady demand; standard headway sufficient" — a recommendation to halve
+    service that read like a bug. The direction and size of the change are what
+    an operator acts on, so they drive the wording.
+
+    Returns ``(severity, reason, needs_action)`` where ``needs_action`` is true
+    only when the recommendation is to run *more* service, which is the change
+    worth escalating. A longer headway is reported as spare capacity rather than
+    as a recommendation to cut trains.
+    """
+    if recommended < current:
+        saved = current - recommended
+        return (
+            "high",
+            f"Current {current} min headway is too long for this demand - tighten to {recommended} min "
+            f"({saved} min more frequent)",
+            True,
+        )
+    if recommended > current:
+        return (
+            "low",
+            f"Running {current} min headway against {recommended} min this demand needs - "
+            "spare capacity, no action required",
+            False,
+        )
+    return (
+        "info",
+        f"Current {current} min headway already matches the {recommended} min this demand level needs"
+        + ("; peak-hour service is correctly set" if peak else ""),
+        False,
+    )
+
+
 def get_optimization_recommendations(db: Session) -> list[dict]:
     now = utcnow()
-    weekday = now.weekday()
+    weekday = city_weekday(now)
     recommendations = []
     stations = db.query(Station).all()
-    base_hour = now.hour
+    base_hour = city_hour(now)
     for station in stations:
         schedule_row = (
             db.query(TrainSchedule)
@@ -51,10 +88,9 @@ def get_optimization_recommendations(db: Session) -> list[dict]:
         recommended_headway = compute_recommended_headway(baseline_entries, TRAIN_CAPACITY_DEFAULT)
 
         utilization = round(baseline_entries / max(1, station.capacity_per_hour) * 100, 1)
-        reason = (
-            "Peak-hour demand elevated; reduced headway recommended"
-            if base_hour in feat.PEAK_MULTIPLIER
-            else "Steady demand; standard headway sufficient"
+        is_peak = base_hour in feat.PEAK_MULTIPLIER
+        severity, reason, needs_action = classify_headway_action(
+            current_headway, recommended_headway, is_peak
         )
         recommendations.append({
             "station_id": station.id,
@@ -62,6 +98,8 @@ def get_optimization_recommendations(db: Session) -> list[dict]:
             "current_headway_min": current_headway,
             "recommended_headway_min": recommended_headway,
             "reason": reason,
+            "severity": severity,
+            "needs_action": needs_action,
             "capacity_utilization_pct": utilization,
         })
     return recommendations

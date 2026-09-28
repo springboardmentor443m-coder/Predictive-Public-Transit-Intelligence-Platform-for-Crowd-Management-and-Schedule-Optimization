@@ -9,6 +9,41 @@ export interface Station {
   capacity_per_hour: number;
 }
 
+/**
+ * One edge in the real ridership graph served by /crowd/connections (GTFS-derived).
+ * `along_line` means the two stations are consecutive stops on the routes in
+ * `vias`; `transfer` is a pedestrian / shuttle interchange within a complex.
+ */
+export interface StationConnection {
+  from_code: string;
+  to_code: string;
+  kind: "along_line" | "transfer";
+  vias: string;
+}
+
+/** One station in the full NYC rail network snapshot (every GTFS stop). */
+export interface NetworkStation {
+  c: string;
+  n: string;
+  lat: number;
+  lng: number;
+}
+
+/** A rail segment between two consecutive stops on the real network. */
+export interface NetworkSegment {
+  a: string;
+  b: string;
+  /** Semicolon-joined route short names that run the segment, e.g. "1;2;3". */
+  r: string;
+}
+
+export interface NetworkPayload {
+  stations: NetworkStation[];
+  segments: NetworkSegment[];
+  /** The 59 monitored station codes, in stations.csv order. */
+  monitored: string[];
+}
+
 export interface LiveCrowdSnapshot {
   station_id: string;
   station_name: string;
@@ -20,6 +55,14 @@ export interface LiveCrowdSnapshot {
   inflow_rate: number;
   outflow_rate: number;
   last_updated: string;
+  /** Start of the hourly bucket the value comes from. */
+  bucket_start?: string;
+  /** Percent of the way through the current hourly bucket (0-100). */
+  hour_elapsed_pct?: number;
+  /** True when the value is an interpolated estimate, not a live reading. */
+  is_estimate?: boolean;
+  /** "hourly_bucket_interpolated" when is_estimate is true. */
+  granularity?: string;
 }
 
 export interface StationHeatmapPoint {
@@ -89,6 +132,10 @@ export interface Recommendation {
   current_headway_min: number;
   recommended_headway_min: number;
   reason: string;
+  /** "high" when the change is to run more service, "low"/"info" otherwise. */
+  severity?: "high" | "medium" | "low" | "info";
+  /** True only when the recommendation is to tighten the headway. */
+  needs_action?: boolean;
   capacity_utilization_pct: number;
 }
 
@@ -201,6 +248,14 @@ export interface ModelSubInfo {
   /** Provenance from the artifact, e.g. "nyc" or "nj_transit_delay". */
   trained_on?: string;
   loaded?: boolean;
+  /**
+   * True when the values being served are NOT coming from a trained model —
+   * either the artifact never loaded, or an estimator raised at runtime and the
+   * rule-based baseline answered instead. `loaded` alone is not enough: a model
+   * can load successfully and still fail on every request.
+   */
+  degraded?: boolean;
+  degraded_reason?: string | null;
   is_kaggle?: boolean;
   metrics?: ModelMetricInfo;
 }

@@ -2,7 +2,7 @@ import logging
 import random
 from datetime import datetime, timedelta
 
-from app.core.time import utcnow
+from app.core.time import city_hour, city_weekday, hour_floor, utcnow
 
 from sqlalchemy.orm import Session
 
@@ -56,6 +56,35 @@ def compute_congestion_level(pct_float: float) -> str:
     return "low"
 
 
+def intra_hour_estimate(
+    prev_occupancy: int | None,
+    curr_occupancy: int,
+    now: datetime,
+    bucket_start: datetime,
+) -> tuple[int, float, bool]:
+    """Estimate the platform load *right now* from the two adjacent hourly buckets.
+
+    Storage is hourly because that is the granularity the models and the source
+    data work at, and an hourly figure is a *summary of the hour* — not a
+    snapshot of the current second. Serving that summary unchanged on every poll
+    is what made the "live" dashboard sit frozen: nothing about it ever moved.
+
+    A stored bucket is treated as the mean load across its hour, so the value at
+    fraction ``t`` through the hour is linearly approached from the previous hour's
+    level. The result is bounded by two real measurements, never extrapolates past
+    them, and is returned alongside the elapsed fraction so callers can label it as
+    an estimate instead of passing it off as measured.
+
+    Returns ``(occupancy, elapsed_fraction, is_estimate)``.
+    """
+    if prev_occupancy is None:
+        return curr_occupancy, 0.0, False
+    elapsed = (now - bucket_start).total_seconds() / 3600.0
+    elapsed = min(max(elapsed, 0.0), 0.999)
+    estimate = prev_occupancy + (curr_occupancy - prev_occupancy) * elapsed
+    return int(round(estimate)), elapsed, True
+
+
 def get_live_snapshot(db: Session, station_id: str) -> dict:
     now = utcnow()
     key = f"crowd:latest:{station_id}"
@@ -67,22 +96,36 @@ def get_live_snapshot(db: Session, station_id: str) -> dict:
     if not station:
         return None
 
-    rec = (
+    bucket_start = hour_floor(now)
+    bucket = (
         db.query(RidershipRecord)
         .filter(RidershipRecord.station_id == station_id)
         .filter(RidershipRecord.timestamp <= now)
         .order_by(RidershipRecord.timestamp.desc())
         .first()
     )
+    prev = (
+        db.query(RidershipRecord)
+        .filter(RidershipRecord.station_id == station_id)
+        .filter(RidershipRecord.timestamp == bucket_start - timedelta(hours=1))
+        .first()
+    )
 
-    if rec:
-        entries = rec.entries
-        exits = rec.exits
-        occupancy = rec.occupancy
-        congestion = rec.congestion_level
+    if bucket:
+        entries = bucket.entries
+        exits = bucket.exits
+        # Only interpolate when the stored row really is the bucket in progress;
+        # a row older than the current hour is a measurement, not an estimate.
+        in_progress = bucket.timestamp == bucket_start
+        occupancy, elapsed, is_estimate = intra_hour_estimate(
+            prev.occupancy if prev else None, bucket.occupancy, now, bucket_start
+        ) if in_progress else (bucket.occupancy, 1.0, False)
+        congestion = compute_congestion_level(
+            occupancy / max(1, station.capacity_per_hour)
+        )
     else:
-        hour = now.hour
-        weekday = now.weekday()
+        hour = city_hour(now)
+        weekday = city_weekday(now)
         baseline_pct = feat.station_baseline_occupancy_pct(hour)
         if weekday >= 5:
             baseline_pct *= feat.WEEKEND_FACTOR
@@ -93,6 +136,7 @@ def get_live_snapshot(db: Session, station_id: str) -> dict:
         per_min = int(baseline_pct * station.capacity_per_hour / 60)
         entries, exits = per_min, per_min
         congestion = compute_congestion_level(baseline_pct)
+        elapsed, is_estimate = 0.0, True
 
     occupancy_pct = round(min(1.0, occupancy / max(1, station.capacity_per_hour)) * 100, 1)
     inflow_rate = round(entries / 15.0, 1)
@@ -109,6 +153,12 @@ def get_live_snapshot(db: Session, station_id: str) -> dict:
         "inflow_rate": inflow_rate,
         "outflow_rate": outflow_rate,
         "last_updated": now.isoformat() + "Z",
+        # Provenance, so the dashboard can be explicit about what it is showing
+        # instead of implying a live sensor feed.
+        "bucket_start": bucket_start.isoformat() + "Z",
+        "hour_elapsed_pct": round(elapsed * 100, 1),
+        "is_estimate": is_estimate,
+        "granularity": "hourly_bucket_interpolated",
     }
     cache_set(key, snapshot, ttl=30)
     return snapshot
@@ -121,11 +171,13 @@ def get_all_live_snapshots(db: Session) -> list[dict]:
 
 def get_heatmap(db: Session) -> list[dict]:
     stations = db.query(Station).all()
-    weekday = utcnow().weekday()
+    weekday = city_weekday(utcnow())
 
-    # Load recent records once and bucket by (station, hour) in Python —
+    # Load recent records once and bucket by (station, local hour) in Python —
     # portable across SQLite/PostgreSQL (no dialect-specific datetime matching)
-    # and avoids 240+ per-cell queries.
+    # and avoids 240+ per-cell queries. The bucket key is the *local* hour because
+    # the frontend renders each cell on a clock labelled for New York; keying on the
+    # UTC hour rotated the entire heatmap by four hours.
     cutoff = utcnow() - timedelta(days=45)
     recs = (
         db.query(RidershipRecord.station_id, RidershipRecord.timestamp, RidershipRecord.occupancy)
@@ -135,7 +187,7 @@ def get_heatmap(db: Session) -> list[dict]:
     )
     occupancy_by_cell: dict[tuple[str, int], list[int]] = {}
     for station_id, ts, occ in recs:
-        cell = occupancy_by_cell.setdefault((station_id, ts.hour), [])
+        cell = occupancy_by_cell.setdefault((station_id, city_hour(ts)), [])
         if len(cell) < _HEATMAP_SAMPLE_WINDOW:
             cell.append(occ)
 
@@ -177,11 +229,11 @@ def get_station_history(
     if start_at is not None:
         window_start = start_at
         window_end = start_at + timedelta(hours=hours)
-        anchor_hour = start_at.hour
+        anchor_hour = city_hour(start_at)
     else:
         window_start = now - timedelta(hours=hours)
         window_end = now
-        anchor_hour = now.hour
+        anchor_hour = city_hour(now)
     records = (
         db.query(RidershipRecord)
         .filter(

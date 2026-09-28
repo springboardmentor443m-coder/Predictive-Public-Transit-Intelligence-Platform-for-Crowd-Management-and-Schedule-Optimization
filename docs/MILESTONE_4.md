@@ -89,11 +89,10 @@ platform.
 
 ## Addendum -- Post-Milestone-4 Engineering Hardening
 
-Delivered on branch `KOKKIRIGADDA-MANOJ-BABU` after M4 wrap-up (see `CHANGELOG.md`):
+Delivered on branch `KOKKIRIGADDA-MANOJ-BABU` after M4 wrap-up:
 
 - **Frontend fully TypeScript** -- every page/component/lib converted .js/.jsx -> .ts/.tsx;
-  	sc --noEmit and 
-pm run build green.
+   tsc --noEmit and npm run build green.
 - **Public health endpoint** -- GET /api/v1/health (login page + k8s probes); login no longer
   probes an auth-protected route (fixes false *Backend Offline*).
 - **Chart resilience** -- analytics/crowd-history charts gained loading + empty states.
@@ -105,3 +104,19 @@ pm run build green.
   (docs/IMPORTERS.md).
 - **Python hygiene** -- `datetime.utcnow()` fully replaced by `app.core.time.utcnow()`;
   modern | None type hints.
+- **Real NYC subway (59 stations)** -- stations.csv swapped ST01–ST10 demo codes for 59 genuine
+  MTA stop ids (L/N/Q/R/W + S shuttles); crowd/demand models retrained on them
+  (`nyc_train_metrics.json`: crowd R² 0.981, demand R² 0.969) and made the default
+  (`METROFLOW_MODEL_CITY=nyc`); capacity ceiling aligned to a real station
+  (`MAX_CAPACITY=14600`) and rolling stock modelled on real MTA car classes (R160/R143/R179/R211).
+- **GTFS connection graph** -- scripts/build_connections.py derives the real junction graph
+  (25 edges: 21 along-line + 4 walking interchanges) from the official MTA feed via the
+  parent_station normalisation (platform `120N` → station `120`), served at
+  `GET /api/v1/crowd/connections` (tested: 8 tests).
+- **Full-network geographic map** -- scripts/build_network.py snapshots the entire real network
+  (496 stations / 578 rail segments) into data/nyc_network.json, served at
+  `GET /api/v1/crowd/network` (tested: 8 tests). The Crowd dashboard's *geographic* toggle now
+  draws the complete rail network as a faint base layer with the 59 monitored stations and their
+  live congestion overlaid, while the original schematic view is untouched.
+- **Testing** -- backend suite grown from 59 to **171 tests** (API, models, ML artifacts,
+  connections, network, timezone, cache/live, scheduling advice); frontend Vitest suite **41 tests**.

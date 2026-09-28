@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 
-from app.core.time import utcnow
+from app.core.time import city_hour, city_weekday, utcnow
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -50,7 +50,7 @@ def overview(db: Session) -> dict:
     on_time_pct = round((on_time / max(1, total_sched)) * 100, 1)
 
     delayed_count = db.query(TrainSchedule).filter(TrainSchedule.status == "delayed").count()
-    peak_hour = _predicted_peak_hour(now.weekday())
+    peak_hour = _predicted_peak_hour(city_weekday(now))
 
     return {
         "total_stations": total_stations,
@@ -79,8 +79,11 @@ def traffic_series(db: Session, hours: int = 24, start_time: datetime | None = N
     # One lookup for all train capacities instead of a lazy load per row.
     capacities = dict(db.query(Train.id, Train.capacity).all())
 
+    # `clock_hour` is what the chart's x-axis prints, so it must be the local
+    # hour. Taking it off the UTC arrival time shifted the whole peak-hour
+    # profile four hours to the left.
     buckets = [
-        {"clock_hour": (window_start + timedelta(hours=i)).hour, "passenger_k": 0.0, "count": 0}
+        {"clock_hour": city_hour(window_start + timedelta(hours=i)), "passenger_k": 0.0, "count": 0}
         for i in range(hours)
     ]
     for train_id, arrival in rows:
@@ -234,7 +237,7 @@ def ai_insights(db: Session) -> dict:
         model = get_demand_model()
         for s in critical[:3]:
             fc = model.forecast_hourly(
-                utcnow().hour,
+                city_hour(utcnow()),
                 hours_ahead=3,
                 station={"id": s["station_id"], "capacity_per_hour": s.get("capacity")},
             )

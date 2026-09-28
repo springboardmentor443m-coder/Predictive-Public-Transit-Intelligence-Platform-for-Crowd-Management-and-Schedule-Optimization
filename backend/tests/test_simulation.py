@@ -4,7 +4,7 @@ ever writes whole hours, it is idempotent, and it never rewinds."""
 
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 os.environ["DATABASE_URL"] = "sqlite:///./test_simulation.db"
 os.environ["MONGODB_URL"] = ""
@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import pytest  # noqa: E402
 
 from app.core.database import Base, SessionLocal, engine  # noqa: E402
+from app.core.time import CITY_TZ, city_hour, city_weekday  # noqa: E402
 from app.ml import features as feat  # noqa: E402
 from app.models import ridership, schedule, station, train  # noqa: E402
 from app.services import simulation as sim  # noqa: E402
@@ -26,6 +27,22 @@ STATIONS = [
     ("A09", 7300),
 ]
 NOW = datetime(2026, 9, 28, 14, 0, 0)
+
+
+def at_local(y, m, d, hour, minute=0):
+    """Naive-UTC timestamp for a given *New York local* wall-clock time.
+
+    Tests care about the local hour (that is what the occupancy curve and the
+    peak/off-peak headway are defined against), but the simulation API is keyed on
+    naive UTC. Building the instant explicitly keeps those two concerns separate:
+    writing `datetime(2026, 9, 28, 8)` here would mean 08:00 *UTC* = 04:00 local,
+    which is the exact bug this suite now guards against.
+    """
+    return (
+        datetime(y, m, d, hour, minute, tzinfo=CITY_TZ)
+        .astimezone(timezone.utc)
+        .replace(tzinfo=None)
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -91,25 +108,41 @@ def test_ridership_row_ids_are_content_addressed():
 
 def test_ridership_peaks_morning_and_evening():
     """The regression the clock must not reintroduce: a flat, or hour-shifted,
-    profile. 08:00 and 17:00 are the two curve peaks."""
+    profile. 08:00 and 17:00 **local** are the two curve peaks."""
     occupancies = []
     for hour in range(24):
-        rows = sim.ridership_rows_for_hour(STATIONS, datetime(2026, 9, 28, hour, 0, 0))
+        rows = sim.ridership_rows_for_hour(STATIONS, at_local(2026, 9, 28, hour))
         occupancies.append(sum(r.occupancy for r in rows))
     assert occupancies.index(max(occupancies)) in (8, 17)
     assert occupancies[3] < occupancies[8]
     assert occupancies[12] < occupancies[17]
 
 
+def test_ridership_peak_is_local_not_utc():
+    """The UTC-hour bug this suite exists to catch.
+
+    A row stamped 12:00Z is 08:00 local in EDT and must carry the morning peak.
+    Reading the naive hour off the timestamp instead moved the peak to 04:00.
+    """
+    noon_z = datetime(2026, 9, 28, 12, 0, 0)          # = 08:00 local
+    midnight_z = datetime(2026, 9, 28, 0, 0, 0)        # = 20:00 local (prev day)
+    assert city_hour(noon_z) == 8
+    assert city_hour(midnight_z) == 20
+    at_peak = sum(r.occupancy for r in sim.ridership_rows_for_hour(STATIONS, noon_z))
+    at_evening = sum(r.occupancy for r in sim.ridership_rows_for_hour(STATIONS, midnight_z))
+    assert at_peak > at_evening
+
+
 def test_weekend_is_quieter_than_weekday():
-    monday = sim.ridership_rows_for_hour(STATIONS, datetime(2026, 9, 28, 8, 0, 0))
-    sunday = sim.ridership_rows_for_hour(STATIONS, datetime(2026, 10, 4, 8, 0, 0))
+    monday = sim.ridership_rows_for_hour(STATIONS, at_local(2026, 9, 28, 8))
+    sunday = sim.ridership_rows_for_hour(STATIONS, at_local(2026, 10, 4, 8))
     assert sum(r.occupancy for r in sunday) < sum(r.occupancy for r in monday)
+    assert city_weekday(at_local(2026, 10, 4, 8)) == 6
 
 
 def test_schedule_headway_is_tighter_at_peak():
-    peak = sim.schedule_rows_for_hour(["128", "235"], "TR-123-01", 0, datetime(2026, 9, 28, 8))
-    off = sim.schedule_rows_for_hour(["128", "235"], "TR-123-01", 0, datetime(2026, 9, 28, 3))
+    peak = sim.schedule_rows_for_hour(["128", "235"], "TR-123-01", 0, at_local(2026, 9, 28, 8))
+    off = sim.schedule_rows_for_hour(["128", "235"], "TR-123-01", 0, at_local(2026, 9, 28, 3))
     assert len(peak) == 15 and peak[0].headway_min == 4
     assert len(off) == 7 and off[0].headway_min == 8
     assert all(r.delay_min == 0 for r in off)

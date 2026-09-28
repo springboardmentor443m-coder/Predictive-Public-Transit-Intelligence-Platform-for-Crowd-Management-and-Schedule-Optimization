@@ -75,7 +75,74 @@ const STYLES: Record<string, LineStyle> = {
     services: "SIR",
     corridor: "Staten Island Railway",
   },
+  S: {
+    color: "#808183",
+    ink: "#5A5B5E",
+    services: "S",
+    corridor: "Franklin Ave, 42 St & Rockaway Park shuttles",
+  },
 };
+
+/**
+ * Route short names (the `vias` used by /crowd/connections) mapped to the trunk
+ * bullet colour the route belongs to. An edge whose `vias` is "2;3" inherits the
+ * 1/2/3 colour so the map reads like the real network.
+ */
+const ROUTE_TO_TRUNK: Record<string, string> = {
+  "1": "1/2/3",
+  "2": "1/2/3",
+  "3": "1/2/3",
+  "4": "4/5/6",
+  "5": "4/5/6",
+  "6": "4/5/6",
+  "7": "7",
+  "7X": "7",
+  A: "A/C/E",
+  C: "A/C/E",
+  E: "A/C/E",
+  B: "B/D/F/M",
+  D: "B/D/F/M",
+  F: "B/D/F/M",
+  M: "B/D/F/M",
+  FX: "B/D/F/M",
+  L: "L",
+  N: "N/Q/R/W",
+  Q: "N/Q/R/W",
+  R: "N/Q/R/W",
+  W: "N/Q/R/W",
+  SIR: "SIR",
+  S: "S",
+  H: "S",
+};
+
+/**
+ * The trunk bullet colour for an edge's `vias` list ("2;3;4;5"), or null when
+ * none of the listed routes is known.
+ */
+export function trunkForServices(vias: string | null | undefined): string | null {
+  if (!vias) return null;
+  const trunks = vias.split(";").map((r) => ROUTE_TO_TRUNK[r.trim().toUpperCase()]).filter(Boolean);
+  const unique = Array.from(new Set(trunks));
+  return unique[0] ?? null;
+}
+
+/**
+ * Colour an edge between two stations. Prefers the trunk of the station you
+ * arrive from when it is also painted on the edge (so a 4/5/6 stop's along-line
+ * segment always draws green even when the vias also mention the 2/3), falling
+ * back to the first known route listed in `vias`.
+ */
+export function edgeTrunk(vias: string | null | undefined, fromStationLine?: string | null): string | null {
+  const direct =
+    fromStationLine && Object.prototype.hasOwnProperty.call(STYLES, fromStationLine) ? fromStationLine : null;
+  if (direct) {
+    const routes = new Set(
+      (vias ?? "").split(";").map((r) => ROUTE_TO_TRUNK[r.trim().toUpperCase()]).filter(Boolean)
+    );
+    if (routes.has(direct)) return direct;
+  }
+  return trunkForServices(vias) ?? direct;
+}
 
 /** Shown for any line the palette doesn't know, e.g. a newly imported feed. */
 const FALLBACK: LineStyle = {

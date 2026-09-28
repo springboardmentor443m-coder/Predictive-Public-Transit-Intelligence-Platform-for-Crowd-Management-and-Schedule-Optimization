@@ -71,6 +71,11 @@ def _synthetic_rows(stations_df: pd.DataFrame) -> list:
     stations = [(str(r["code"]), int(r["capacity_per_hour"]))
                 for _, r in stations_df.iterrows()]
 
+    # The plan buckets on **UTC** hours deliberately. A local day is 23 or 25 hours
+    # long across a DST change, so `range(24)` over a local day would either skip or
+    # duplicate an hour. Walking UTC hours and letting `ridership_rows_for_hour`
+    # localise each one gives gap-free, overlap-free coverage on both transition
+    # days, and the local hour is still what labels the occupancy curve.
     day_plan: list[tuple[datetime, range]] = [
         (midnight - timedelta(days=d), range(24)) for d in range(HISTORY_DAYS, 0, -1)
     ]

@@ -14,13 +14,15 @@ import DashboardLayout from "../../components/DashboardLayout";
 import HeatmapGrid from "../../components/HeatmapGrid";
 import MetroMap from "../../components/MetroMap";
 import StatusBadge, { congestionColor } from "../../components/StatusBadge";
+import CrowdEstimateNote from "../../components/CrowdEstimateNote";
+import ConnectionList from "../../components/ConnectionList";
 import { withAuth, useAuth } from "../../lib/auth";
 import { useToast } from "../../components/ToastContext";
 import api from "../../lib/api";
 import { lineColor, lineStyle } from "../../lib/lines";
 import { getSocket, joinStationRoom } from "../../lib/socket";
 import { downloadCsv } from "../../lib/csv";
-import type { Station, LiveCrowdSnapshot, StationHeatmapPoint, StationHistoryPoint, ModelInfo } from "../../lib/types";
+import type { Station, LiveCrowdSnapshot, StationHeatmapPoint, StationHistoryPoint, StationConnection, NetworkPayload, ModelInfo } from "../../lib/types";
 
 interface HistoryRow {
   time: string;
@@ -38,6 +40,8 @@ function CrowdMonitoring() {
   const [stations, setStations] = useState<Station[]>([]);
   const [live, setLive] = useState<LiveCrowdSnapshot[]>([]);
   const [heatmap, setHeatmap] = useState<StationHeatmapPoint[]>([]);
+  const [connections, setConnections] = useState<StationConnection[]>([]);
+  const [network, setNetwork] = useState<NetworkPayload | null>(null);
   const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
   // Starts empty and picks the busiest station once /stations resolves. A
   // hardcoded id here would never match a real MTA stop, so every detail panel
@@ -54,15 +58,19 @@ function CrowdMonitoring() {
 
   const loadStatic = useCallback(async () => {
     try {
-      const [st, lv, hm, mi] = await Promise.all([
+const [st, lv, hm, mi, conn, net] = await Promise.all([
         api.get<Station[]>("/stations"),
         api.get<LiveCrowdSnapshot[]>("/crowd/live"),
         api.get<StationHeatmapPoint[]>("/crowd/heatmap"),
         api.get<ModelInfo>("/predictions/model-info").catch(() => null),
+        api.get<StationConnection[]>("/crowd/connections").catch(() => null),
+        api.get<NetworkPayload>("/crowd/network").catch(() => null),
       ]);
       setStations(st.data);
       setLive(lv.data);
       setHeatmap(hm.data);
+      if (conn) setConnections(conn.data);
+      if (net) setNetwork(net.data);
       if (mi) setModelInfo(mi.data);
       // Default to the busiest station, falling back to the first available, so
       // the detail panels are populated on load.
@@ -280,7 +288,7 @@ function CrowdMonitoring() {
           <h3 className="font-extrabold tracking-tight text-white">Interactive Schematic Metro Network</h3>
           <p className="text-xs text-slate-400">Click any station node to drill down into historical inflow/outflow curves</p>
         </div>
-        <MetroMap stations={stations} live={live} selected={selected} onSelect={setSelected} />
+        <MetroMap stations={stations} live={live} connections={connections} network={network} selected={selected} onSelect={setSelected} />
       </div>
 
       {/* Station Cards Grid */}
@@ -440,6 +448,7 @@ function CrowdMonitoring() {
               <p className="mt-1.5 text-xs font-mono text-slate-400">
                 {selectedLive ? `${Number(selectedLive.occupancy).toLocaleString()} / ${Number(selectedLive.capacity).toLocaleString()} capacity` : "—"}
               </p>
+              <CrowdEstimateNote snapshot={selectedLive} />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -476,6 +485,14 @@ function CrowdMonitoring() {
                 <dd className="font-bold font-mono text-white">{selectedStation?.capacity_per_hour?.toLocaleString() || "—"}</dd>
               </div>
             </dl>
+
+            <ConnectionList
+              code={selectedStation?.code ?? null}
+              connections={connections}
+              stations={stations}
+              onSelect={setSelected}
+              className="border-t border-slate-800/60 pt-3"
+            />
           </div>
         </div>
       </div>

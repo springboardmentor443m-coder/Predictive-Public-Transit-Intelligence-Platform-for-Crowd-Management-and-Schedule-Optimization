@@ -16,12 +16,17 @@ inference reproduces the exact trained feature schema.
 | `demand_model.joblib` | GradientBoostingRegressor (synthetic) | legacy demand fallback |
 | `{seoul,hangzhou}_crowd_model.joblib` | XGBoost (Kaggle) | per-city crowd |
 | `{seoul,hangzhou}_demand_model.joblib` | XGBoost (Kaggle) | per-city demand |
+| `nyc_crowd_model.joblib` + `nyc_demand_model.joblib` | GradientBoosting re-trained on **59 real MTA stations** (`nyc_train_metrics.json`: crowd R² 0.981 / MAE 0.029, demand R² 0.969 / MAE 367) | **default** NYC crowd/demand |
 | `hangzhou_crowd_quantile_model.joblib` | **3 × GradientBoostingRegressor (quantile loss: α = 0.05, 0.50, 0.95)** | advanced crowd with native lower/upper intervals |
 | `delay_classifier.joblib` + `delay_regressor.joblib` | XGBoost (NJ Transit NEC) | per-train delay inference (`POST /predictions/delay`) |
 
 City selection is controlled by `METROFLOW_MODEL_CITY` (`seoul | hangzhou | nyc | tfl | beijing`,
-default `hangzhou`); the station mapping (ST01–ST10 → real city codes) lives in
-`app/ml/registry.py`.
+default **`nyc`**). Backend stations are the **59 genuine MTA stop ids** from `data/stations.csv`
+(e.g. `127` Times Sq, `R14` Canal St; lines L/N/Q/R/W plus the S shuttles). Their canonical order
+is `features.STATION_LIST`, stored inside every artifact so inference uses the exact trained
+one-hot width (59 stations → 67 features); `test_features.py` asserts it stays in sync with the CSV.
+`nyc` needs no station translation (`registry.CITY_STATION_MAP["nyc"]` is empty); legacy cities
+mapped from ST01–ST10 still translate through `app/ml/registry.py`.
 
 ## 2. The Advanced Crowd Model (quantile ensemble)
 

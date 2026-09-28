@@ -4,7 +4,9 @@ MetroFlow is an AI-powered metro crowd management and scheduling platform that h
 authorities monitor passenger flow, predict crowd density, and optimize train scheduling in
 real time. It integrates AI analytics, scheduling automation, crowd prediction with **native
 prediction intervals**, operational monitoring, and **real-world dataset ingestion** into one
-centralized application for smart transportation systems.
+centralized application for smart transportation systems. The live demo runs on the **real New
+York City subway network** — 59 genuine MTA stations (lines L/N/Q/R/W) — with a GTFS-derived
+connection graph and a full-network geographic map (496 stations / 578 rail segments).
 
 ## Key Capabilities
 
@@ -12,6 +14,7 @@ centralized application for smart transportation systems.
 |---|---|
 | User Management | Admin/operator login, role-based access control (RBAC), profile management |
 | Crowd Monitoring | Passenger density tracking (ticketing + sensor data), heatmaps, congestion monitoring, station-wise analytics, inflow/outflow analysis |
+| Connection Mapping | **Real stations, real junctions**: a connection graph built from the official MTA GTFS feed (`/crowd/connections`, 25 edges across 59 NYC stations) plus a full-network geographic map — every one of the 496 real stations and 578 rail segments (`/crowd/network`) with monitored congestion overlaid |
 | Train Monitoring | Live fleet position & status per train (in-transit / at-station / delayed...), position %, next stop, ETA, headway, projected load — streamed via Socket.IO with per-train rooms |
 | Scheduling Management | Train schedule CRUD, peak-hour optimization, frequency adjustment, delay handling |
 | AI Prediction | Crowd prediction & demand forecasting for any chosen date/time, **with lower/upper confidence intervals from an ensemble of quantile models**; per-train per-stop forecasts, traffic pattern analysis, smart recommendations |
@@ -30,6 +33,7 @@ centralized application for smart transportation systems.
 * **Databases:** PostgreSQL (core relational), MongoDB (raw ticketing/sensor events), Redis (live cache)
 * **AI/Analytics:** scikit-learn (GradientBoosting, incl. **quantile regression**), pandas, NumPy, joblib model store
 * **DevOps:** Docker + Docker Compose (PostgreSQL/MongoDB/Redis/backend/frontend), AWS/Azure ready
+* **Real-world topology:** official MTA GTFS feed → `connections.csv` (junction graph) and `nyc_network.json` (full 496-station / 578-segment network for the geographic map)
 
 ## Repository Layout
 
@@ -40,24 +44,26 @@ MetroFlow/
 │   │   ├── main.py               # FastAPI app + Socket.IO mount + public GET /api/v1/health
 │   │   ├── core/                 # config, security (JWT), database sessions, time helpers
 │   │   ├── models/               # SQLAlchemy models (users, stations, trains, schedules, alerts, ridership)
-│   │   ├── schemas/              # Pydantic request/response schemas (modern | None typing)
-│   │   ├── api/v1/               # REST endpoints per module (incl. trains, predictions)
-│   │   ├── services/             # business logic: crowd, scheduling, prediction, alerts, analytics, realtime, train_monitor
-│   │   └── ml/                   # feature engineering + model wrappers (crowd/demand/delay, quantile intervals)
+│   │   ├── schemas/              # Pydantic schemas (stations, connections, network, ...)
+│   │   ├── api/v1/               # REST endpoints per module (incl. trains, predictions, crowd connections/network)
+│   │   ├── services/             # business logic: crowd, scheduling, prediction, alerts, analytics, realtime, connection, network
+│   │   └── ml/                   # feature engineering + model wrappers (59 real MTA stations, quantile intervals)
 │   ├── scripts/
 │   │   ├── generate_data.py      # synthetic transportation datasets (CSV) -> data/
 │   │   ├── train_models.py       # trains legacy crowd + demand models -> models_store/
 │   │   ├── train_quantile_crowd.py   # trains the advanced quantile crowd model (3 models: q05/q50/q95)
+│   │   ├── build_connections.py  # MTA GTFS -> data/connections.csv (real junction graph: 25 edges)
+│   │   ├── build_network.py      # MTA GTFS -> data/nyc_network.json (full network: 496 stations / 578 segments)
 │   │   ├── seed_db.py            # seeds stations/trains/users/schedules/history (headway-driven) + --refresh
 │   │   └── importers/            # MTA / Seoul / TfL real-dataset importers -> data/ (cli.py entrypoint)
-│   ├── data/                     # generated or imported datasets (CSV)
-│   ├── models_store/             # trained .joblib artifacts (legacy, {seoul,hangzhou}, nj delay, quantile crowd)
+│   ├── data/                     # versioned datasets: stations.csv (59 NYC stops), connections.csv, nyc_network.json
+│   ├── models_store/             # trained .joblib artifacts (legacy, {seoul,hangzhou,nyc}, nj delay, quantile crowd)
 │   ├── requirements.txt
 │   └── Dockerfile
 ├── frontend/
 │   ├── pages/                    # login + professional dashboard suite (TypeScript + Tailwind)
-│   ├── components/               # layout, KPI cards, charts, heatmap, tables, modals
-│   ├── lib/                      # API client, auth context, socket client
+│   ├── components/               # layout, KPI cards, charts, heatmap, tables, modals, ConnectionList, MetroMap (schematic + geographic)
+│   ├── lib/                      # API client, auth context, socket client, lines/connections helpers
 │   └── ...
 ├── docs/
 │   ├── PROJECT_PLAN.md           # master plan + API surface
@@ -96,12 +102,14 @@ copy .env.example .env                      # adjust if needed
 python scripts/generate_data.py             # create synthetic datasets in data/
 python scripts/train_models.py              # train legacy AI models (optional)
 python scripts/train_quantile_crowd.py      # train the advanced quantile crowd model (optional, recommended)
+python scripts/build_connections.py --gtfs-dir <extracted mta gtfs>   # optional: rebuild data/connections.csv from the MTA GTFS feed
+python scripts/build_network.py --gtfs-dir <extracted mta gtfs>       # optional: rebuild data/nyc_network.json (full 496-station network)
 python scripts/seed_db.py                   # seed stations, trains, users, schedules
 python scripts/seed_db.py --refresh         # anytime: roll the demo forward (7-day schedule+ridership history & next-24h window; keeps user data)
 
-# Real-world (Kaggle-trained) models are served per city. Default is hangzhou
-# (best validation: crowd R² 0.896, demand R² 0.923).
-set METROFLOW_MODEL_CITY=hangzhou           # or seoul | nyc | tfl | beijing
+# Model city. Default is nyc — the retrained models serve the 59 real MTA stations
+# (crowd R² 0.981, demand R² 0.969; see models_store/nyc_train_metrics.json).
+set METROFLOW_MODEL_CITY=nyc               # or seoul | hangzhou | tfl | beijing
 
 uvicorn app.main:socket_app --reload --port 8000   # serves API + Socket.IO
 ```
@@ -154,6 +162,26 @@ python scripts/seed_db.py --refresh   # load the imported data into the database
 Station lines and fleet fallbacks are handled automatically on refresh. Full documentation of
 formats, column aliases, the normalization pipeline, and how to add a new city live in
 [`docs/IMPORTERS.md`](docs/IMPORTERS.md).
+
+## Real Connections & Full-Network Map
+
+The connection map is built from the **official MTA GTFS feed**, not hand-drawn art. Two derived
+assets are versioned in `backend/data/`:
+
+| Asset | Content | Endpoint |
+|---|---|---|
+| `connections.csv` | **Junction graph** between the 59 monitored stations — 25 real edges (21 consecutive-stop along-line links + 4 walking interchanges like the 42 St Shuttle and Queensboro Plaza same-concourse) | `GET /api/v1/crowd/connections` |
+| `nyc_network.json` | **Complete rail network** for the geographic base map — all 496 real stations (lat/lng) and 578 rail segments, tagged with the 59 monitored codes | `GET /api/v1/crowd/network` |
+
+`scripts/build_connections.py` matches GTFS `stop_times` through the `parent_station` map (platform
+ids like `120N` → station `120`) and hard-codes two genuine-feed corrections: the phantom
+`718↔R09` artifact is dropped and the same-complex transfers `718↔R05` / `127↔631` are added.
+`scripts/build_network.py` snapshots the full station/segment geometry (monitored: 59/59 codes match).
+
+On the Crowd dashboard the **schematic** view (one trunk per track) is untouched; the
+**geographic** toggle draws the complete 496-station real network as a faint base layer, overlays
+the 59 monitored stations with live congestion dots, and clicking a station brightens exactly its
+one-hop real connections (with dashed walking interchanges).
 
 ## ML Models & Confidence Intervals
 
@@ -210,10 +238,13 @@ for measured model/API benchmarks, and `docs/DEPLOYMENT.md` for AWS/Azure/K8s de
 ```bash
 cd backend
 pip install -r requirements-dev.txt
-pytest tests -v        # API suite (52 tests) + model wrapper suite (7 tests) = 59 tests
+pytest tests -v        # 171 tests (API, models, ML artifacts, connections, network, timezone, cache, scheduling advice)
 ```
 
-CI runs the same suite inside the built Docker image (Linux, pinned deps) plus
+Frontend: `cd frontend && npm test` runs the Vitest suite (**41 tests** — lines, connections,
+`CrowdEstimateNote`, `ModelBadge`).
+
+CI runs the same suites inside the built Docker image (Linux, pinned deps) plus
 `npm run lint`/`npm run build` for the frontend (see `.github/workflows/ci.yml`).
 
 ## Contributing Guidelines

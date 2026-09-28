@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest  # noqa: E402
 
+from app.core.time import city_hour, city_weekday  # noqa: E402
 from app.ml import features as feat  # noqa: E402
 from app.ml.model_wrappers import CrowdModel, DemandForecaster  # noqa: E402
 
@@ -84,10 +85,16 @@ def test_happy_path_matches_a_direct_estimator_call(crowd, station):
     longer equal what the artifact produces. It still *looks* healthy."""
     from datetime import datetime
 
-    anchor = datetime(2026, 9, 28, 8)
+    anchor = datetime(2026, 9, 28, 12)  # 12:00Z == 08:00 local
     out = crowd.predict_period(anchor, 3, station)
+    # Resolved through the city helpers, exactly as predict_period does. Using
+    # `anchor.hour` here would compare the model against a *different* feature
+    # vector and this guard would fail for the wrong reason.
     direct = crowd.artifact["model"].predict(
-        np.array([feat.row_features(anchor.hour, anchor.weekday(), station["id"], station["capacity_per_hour"])])
+        np.array([feat.row_features(
+            city_hour(anchor), city_weekday(anchor),
+            station["id"], station["capacity_per_hour"],
+        )])
     )
     # The artifact is trained on occupancy/capacity as a 0-1 fraction
     # (train_models.py) and predict_period scales it to 0-100 for the API, then
@@ -106,10 +113,102 @@ def test_a_failing_estimator_degrades_to_baseline_instead_of_500ing(crowd, stati
 
     monkeypatch.setattr(crowd.artifact["model"], "predict", boom)
     with caplog.at_level("WARNING", logger="app.ml.model_wrappers"):
-        out = crowd.predict_period(datetime(2026, 9, 28, 8), 3, station)
+        out = crowd.predict_period(datetime(2026, 9, 28, 12), 3, station)
     assert len(out) == 3
     assert all(0 <= p["predicted_occupancy_pct"] <= 120 for p in out)
     assert any("falling back" in r.message or "baseline" in r.message for r in caplog.records)
+
+
+class TestDegradationIsReported:
+    """A degraded pipeline has to be visible, not merely logged.
+
+    Previously the wrapper returned the baseline curve and the dashboard still
+    rendered a green "Live Serving" badge, because `is_loaded` only described
+    load-time success. The UI now renders from `degraded`, so these assertions
+    guard the contract the UI depends on.
+
+    The shared `crowd` fixture is module-scoped, which is right for read-only
+    prediction tests but wrong here: the degradation flag is sticky by design
+    (a transient blip must not flap the dashboard back to green), so a fresh
+    instance is required per test.
+    """
+
+    @pytest.fixture
+    def fresh_crowd(self):
+        return CrowdModel()
+
+    def test_a_healthy_artifact_is_not_degraded(self, fresh_crowd):
+        assert fresh_crowd.is_loaded is True
+        assert fresh_crowd.degraded is False
+        assert fresh_crowd.degraded_reason is None
+        assert fresh_crowd.serving_state()["runtime_fallbacks"] == 0
+
+    def test_degradation_is_sticky_across_calls(self, fresh_crowd, station, monkeypatch):
+        """Once serving from the baseline, it must not quietly return to green."""
+        from datetime import datetime
+
+        def boom(_X):
+            raise RuntimeError("transient")
+
+        monkeypatch.setattr(fresh_crowd.artifact["model"], "predict", boom)
+        fresh_crowd.predict_period(datetime(2026, 9, 28, 12), 2, station)
+        assert fresh_crowd.degraded is True
+        # Even if the estimator starts working again, the operator should still
+        # see the incident until it is investigated or the process restarts.
+        monkeypatch.undo()
+        fresh_crowd.predict_period(datetime(2026, 9, 28, 12), 2, station)
+        assert fresh_crowd.degraded is True
+
+    def test_runtime_failure_marks_the_model_degraded(self, fresh_crowd, station, monkeypatch):
+        from datetime import datetime
+
+        def boom(_X):
+            raise RuntimeError("estimator exploded")
+
+        monkeypatch.setattr(fresh_crowd.artifact["model"], "predict", boom)
+        fresh_crowd.predict_period(datetime(2026, 9, 28, 12), 3, station)
+
+        # `is_loaded` still True - the artifact is present - but it is not serving.
+        assert fresh_crowd.is_loaded is True
+        assert fresh_crowd.degraded is True
+        # The public reason is sanitized: the dashboard shows the model fell back,
+        # but the operator's exception text stays in the logs, not in the API.
+        assert fresh_crowd.degraded_reason == "runtime fallback: model raised an error during prediction"
+        assert "estimator exploded" not in (fresh_crowd.degraded_reason or "")
+        state = fresh_crowd.serving_state()
+        assert state["degraded"] is True
+        assert state["runtime_fallbacks"] == 1
+
+    def test_repeated_failures_are_counted(self, fresh_crowd, station, monkeypatch):
+        from datetime import datetime
+
+        def boom(_X):
+            raise RuntimeError("still broken")
+
+        monkeypatch.setattr(fresh_crowd.artifact["model"], "predict", boom)
+        for _ in range(3):
+            fresh_crowd.predict_period(datetime(2026, 9, 28, 12), 2, station)
+        assert fresh_crowd.serving_state()["runtime_fallbacks"] == 3
+
+    def test_a_missing_artifact_is_degraded_from_the_start(self, monkeypatch, station):
+        from app.ml.model_wrappers import CrowdModel
+
+        monkeypatch.setattr("app.ml.model_wrappers._load_artifact", lambda _f: None)
+        model = CrowdModel()
+        assert model.is_loaded is False
+        assert model.degraded is True
+        # Still answers with a usable, bounded curve.
+        out = model.predict_hourly(8, 3, 0, station)
+        assert len(out) == 3
+        assert all(0 <= p["predicted_occupancy_pct"] <= 120 for p in out)
+
+    def test_demand_model_reports_degradation_too(self, monkeypatch, station):
+        from app.ml.model_wrappers import DemandForecaster
+
+        monkeypatch.setattr("app.ml.model_wrappers._load_artifact", lambda _f: None)
+        model = DemandForecaster()
+        assert model.degraded is True
+        assert model.degraded_reason
 
 
 def test_predictions_span_the_congestion_bands(crowd, station):
