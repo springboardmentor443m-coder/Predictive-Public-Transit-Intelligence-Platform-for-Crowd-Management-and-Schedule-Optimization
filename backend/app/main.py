@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+
 from app.models import (
     CrowdEvacuation,
     MTAHourlyRidership,
@@ -17,6 +18,11 @@ from app.routes.schedule import router as schedule_router
 from app.routes.delay import router as delay_router
 from app.routes.traffic import router as traffic_router
 from app.routes.recommendations import router as recommendations_router
+from app.routes.alerts import router as alerts_router
+from app.routes.announcements import router as announcements_router
+from app.routes.realtime import router as realtime_router
+from app.routes.analytics import router as analytics_router
+from app.routes.heatmap import router as heatmap_router
 
 
 app = FastAPI(
@@ -50,6 +56,11 @@ app.include_router(schedule_router)
 app.include_router(delay_router)
 app.include_router(traffic_router)
 app.include_router(recommendations_router)
+app.include_router(alerts_router)
+app.include_router(announcements_router)
+app.include_router(realtime_router)
+app.include_router(analytics_router)
+app.include_router(heatmap_router)
 
 
 @app.get("/")
