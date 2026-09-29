@@ -22,7 +22,8 @@ inference reproduces the exact trained feature schema.
 
 City selection is controlled by `METROFLOW_MODEL_CITY` (`seoul | hangzhou | nyc | tfl | beijing`,
 default **`nyc`**). Backend stations are the **59 genuine MTA stop ids** from `data/stations.csv`
-(e.g. `127` Times Sq, `R14` Canal St; lines L/N/Q/R/W plus the S shuttles). Their canonical order
+(e.g. `127` Times Sq, `R14` Canal St; eight trunk corridors: 1/2/3, 4/5/6, 7, A/C/E, B/D/F/M, L,
+N/Q/R/W and the Staten Island Railway). Their canonical order
 is `features.STATION_LIST`, stored inside every artifact so inference uses the exact trained
 one-hot width (59 stations → 67 features); `test_features.py` asserts it stays in sync with the CSV.
 `nyc` needs no station translation (`registry.CITY_STATION_MAP["nyc"]` is empty); legacy cities

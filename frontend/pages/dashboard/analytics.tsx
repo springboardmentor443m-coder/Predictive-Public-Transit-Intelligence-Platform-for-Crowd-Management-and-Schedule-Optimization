@@ -210,7 +210,11 @@ function Analytics() {
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
               <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#94a3b8" }} interval={Math.max(0, Math.round(trafficHours / 12) - 1)} stroke="#334155" />
               <YAxis unit="k" tick={{ fontSize: 11, fill: "#94a3b8" }} stroke="#334155" />
-              <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }} />
+              <Tooltip
+                contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }}
+                itemStyle={{ color: "#e2e8f0" }}
+                labelStyle={{ color: "#f8fafc" }}
+              />
               <Line type="monotone" dataKey="passenger_k" name="Passengers (k)" stroke="#3b82f6" strokeWidth={3} dot={false} />
             </LineChart>
           </ResponsiveContainer>
@@ -237,7 +241,11 @@ function Analytics() {
             <RadarChart data={radarData} outerRadius="70%">
               <PolarGrid stroke="#1e293b" />
               <PolarAngleAxis dataKey="station" tick={{ fontSize: 10, fill: "#94a3b8" }} />
-              <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }} />
+              <Tooltip
+                contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }}
+                itemStyle={{ color: "#e2e8f0" }}
+                labelStyle={{ color: "#f8fafc" }}
+              />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Radar name="Congestion Score" dataKey="congestion" stroke="#f97316" fill="#f97316" fillOpacity={0.3} />
               <Radar name="Punctuality %" dataKey="punctuality" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.3} />
@@ -339,7 +347,11 @@ function Analytics() {
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
             <XAxis dataKey="station_name" tick={{ fontSize: 9, fill: "#94a3b8" }} interval={0} angle={-20} textAnchor="end" height={50} stroke="#334155" />
             <YAxis unit="%" tick={{ fontSize: 11, fill: "#94a3b8" }} stroke="#334155" domain={[0, 100]} />
-            <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }} />
+            <Tooltip
+                contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }}
+                itemStyle={{ color: "#e2e8f0" }}
+                labelStyle={{ color: "#f8fafc" }}
+              />
             <Bar dataKey="avg_occupancy_pct" name="Avg Occupancy %" radius={[8, 8, 0, 0]} barSize={24}>
               {perf.slice().reverse().map((p) => (
                 <Cell key={p.station_id} fill={congestionColor(p.avg_occupancy_pct)} />

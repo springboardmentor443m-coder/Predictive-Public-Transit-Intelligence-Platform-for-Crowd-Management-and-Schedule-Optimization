@@ -347,7 +347,11 @@ function Trains() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                   <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#94a3b8" }} interval="preserveStartEnd" stroke="#334155" />
                   <YAxis unit="%" domain={[0, 100]} tick={{ fontSize: 10, fill: "#94a3b8" }} stroke="#334155" />
-                  <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }}
+                    itemStyle={{ color: "#e2e8f0" }}
+                    labelStyle={{ color: "#f8fafc" }}
+                  />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                   <Area type="monotone" name="Predicted Occupancy" dataKey="occupancy" stroke={lineAccent} strokeWidth={2.5} fill="url(#trainForecastGrad)" />
                 </AreaChart>

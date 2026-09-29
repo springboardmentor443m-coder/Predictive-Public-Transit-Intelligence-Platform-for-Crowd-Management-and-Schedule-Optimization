@@ -229,11 +229,9 @@ def get_station_history(
     if start_at is not None:
         window_start = start_at
         window_end = start_at + timedelta(hours=hours)
-        anchor_hour = city_hour(start_at)
     else:
         window_start = now - timedelta(hours=hours)
         window_end = now
-        anchor_hour = city_hour(now)
     records = (
         db.query(RidershipRecord)
         .filter(
@@ -245,16 +243,35 @@ def get_station_history(
         .all()
     )
     if not records:
-        baseline = feat.station_baseline_occupancy_pct(anchor_hour)
+        # No stored samples for this window: synthesise a full daily occupancy
+        # curve (matched per hour, weekend-aware) instead of repeating one flat
+        # anchor value, so a chosen past date renders a recognisable 24h shape
+        # instead of a near-empty line. Only the no-data branch changes; live
+        # windows with recorded rows are untouched. Entries and exits vary around
+        # the load exactly like the simulation clock's rows do, so the two chart
+        # lines stay visibly distinct instead of overlapping as one.
+        from app.services.simulation import csv_station_order, day_index, jitter as sim_jitter
+
+        cap = db.query(Station).filter(Station.id == station_id).first()
+        capacity = cap.capacity_per_hour if cap else 400
+        csv_codes = [c for c, _ in csv_station_order()]
+        idx = csv_codes.index(station_id) if station_id in csv_codes else sum(station_id.encode()) % 512
+        weekday = city_weekday(window_start)
         for i in range(hours):
             ts = window_start + timedelta(hours=i)
+            pct = feat.station_baseline_occupancy_pct(city_hour(ts))
+            if weekday >= 5:
+                pct *= feat.WEEKEND_FACTOR
+            occupancy = int(capacity * pct)
+            entries = max(0, int(occupancy * (0.85 + 0.30 * sim_jitter(idx, day_index(ts), city_hour(ts), 1))))
+            exits = max(0, int(entries * (0.75 + 0.30 * sim_jitter(idx, day_index(ts), city_hour(ts), 2))))
             records.append(RidershipRecord(
                 station_id=station_id,
                 timestamp=ts,
-                entries=int(baseline * 400),
-                exits=int(baseline * 400),
-                occupancy=int(baseline * 300),
-                congestion_level=compute_congestion_level(baseline),
+                entries=entries,
+                exits=exits,
+                occupancy=occupancy,
+                congestion_level=compute_congestion_level(pct),
             ))
     return [
         {

@@ -89,7 +89,11 @@ const [st, lv, hm, mi, conn, net] = await Promise.all([
 
   const loadHistory = useCallback((stationId: string) => {
     setLoadingHist(true);
-    const start = histDate ? `${histDate}T${String(histHour).padStart(2, "0")}:00:00` : "";
+    // When a past date is chosen the day-picker sets histHour="now", which must
+    // not leak into the query string as "Tnow:00:00" (that 422s and blanks the
+    // chart). Anchor such selections at midnight of the chosen date instead.
+    const pad = histHour === "now" ? "00" : String(histHour).padStart(2, "0");
+    const start = histDate ? `${histDate}T${pad}:00:00` : "";
     const qs = `hours=${histHours}` + (start ? `&start_time=${encodeURIComponent(start)}` : "");
     api.get<StationHistoryPoint[]>(`/crowd/station/${stationId}/history?${qs}`)
       .then((res) => {
@@ -112,7 +116,9 @@ const [st, lv, hm, mi, conn, net] = await Promise.all([
   }, [selected, loadHistory]);
 
   const historyAnchorLabel = histDate
-    ? `Historical data from ${new Date(`${histDate}T${String(histHour).padStart(2, "0")}:00:00Z`).toLocaleString([], {
+    ? `Historical data from ${new Date(
+        `${histDate}T${histHour === "now" ? "00" : String(histHour).padStart(2, "0")}:00:00Z`
+      ).toLocaleString([], {
         month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit",
       })}`
     : "Last 24h live window (up to date)";
@@ -415,7 +421,11 @@ const [st, lv, hm, mi, conn, net] = await Promise.all([
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                 <XAxis dataKey="time" tick={{ fontSize: 10, fill: "#94a3b8" }} interval={2} stroke="#334155" />
                 <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} stroke="#334155" />
-                <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }}
+                  itemStyle={{ color: "#e2e8f0" }}
+                  labelStyle={{ color: "#f8fafc" }}
+                />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Area type="monotone" dataKey="entries" name="Gate Entries" stroke="#3b82f6" strokeWidth={2.5} fill="url(#inGrad)" />
                 <Area type="monotone" dataKey="exits" name="Gate Exits" stroke="#10b981" strokeWidth={2.5} fill="url(#outGrad)" />

@@ -6,8 +6,12 @@ from pydantic import BaseModel, ConfigDict
 
 class DelayRequest(BaseModel):
     line: str
-    from_station: str
-    to_station: str
+    # The delay artifact's from/to features are indices over numeric stop ids
+    # (no name mapping is shipped), so these are optional. Off-vocabulary or
+    # blank values are encoded as "unknown" (-1), matching the training-time
+    # treatment of missing stations.
+    from_station: str = ""
+    to_station: str = ""
     stop_sequence: float = 1.0
     hour: Optional[int] = None
     weekday: Optional[int] = None

@@ -58,8 +58,8 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
 # realtime broadcast loop and the hourly simulation clock are per-process, so
 # several workers would each run their own clock over the same buckets.
 #
-# The simulation is left ON by default to match the previous behaviour and the CI
-# job. A real deployment must set METROFLOW_ENABLE_SIMULATION=0: the simulator
+# The simulation is left ON by default to match the previous behaviour. A real
+# deployment must set METROFLOW_ENABLE_SIMULATION=0: the simulator
 # writes synthetic rows into the live tables. The app refuses to start in
 # production with it enabled.
 CMD ["uvicorn", "app.main:socket_app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]

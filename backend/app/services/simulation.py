@@ -175,9 +175,16 @@ def schedule_rows_for_hour(
     runs_per_hour = 60 // headway
     disrupted = line_stations[city_day(hour_start).toordinal() % len(line_stations)]
 
+    # Stagger each line's within-hour departure grid so the timetable does not
+    # collapse every train onto the same :00/:08/:16... minutes. The offset is a
+    # pure function of the train code, so the seed and a later backfill still
+    # generate byte-identical rows (idempotency and stability tests hold) while
+    # the scheduling view stops looking like a single flat wave of trains.
+    offset = sum(b for b in train_code.encode()) % headway
+
     rows = []
     for run in range(runs_per_hour):
-        ts_run = hour_start + timedelta(minutes=run * headway)
+        ts_run = hour_start + timedelta(minutes=offset + run * headway)
         st_code = line_stations[(hour + train_idx + run) % len(line_stations)]
         if not peak:
             delay = 0

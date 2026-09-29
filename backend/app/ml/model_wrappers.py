@@ -410,6 +410,15 @@ class DemandForecaster:
         return results
 
 
+# The upstream dataset spells this corridor "No Jersey Coast" (a typo that the
+# trained artifact preserves in its categorical vocabulary). Map the correct
+# human spelling onto the artifact name so callers are not forced to reproduce
+# the dataset's typo.
+_LINE_ALIASES = {
+    "north jersey coast": "no jersey coast",
+}
+
+
 class DelayForecaster:
     """NJ Transit delay model (line/schedule aware). No synthetic fallback:
     if the classifier/regressor artifacts are missing, predict() raises."""
@@ -440,6 +449,46 @@ class DelayForecaster:
     def is_loaded(self) -> bool:
         return self.artifact is not None
 
+    @staticmethod
+    def _normalize_key(value) -> str:
+        """Collapse the dataset's categorical spellings onto one canonical key.
+
+        Whitespace is folded and numeric station ids are rendered without a
+        trailing ``.0`` so ``"105"`` and ``"105.0"`` address the same column.
+        ``"Bergen Co. Line"`` (no trailing space) and the artifact's
+        ``"Bergen Co. Line "`` therefore collide as intended.
+        """
+        if isinstance(value, str):
+            key = " ".join(value.split()).strip().lower()
+            if key:
+                try:
+                    return f"{float(key):g}"
+                except ValueError:
+                    return key
+            return key
+        try:
+            return f"{float(value):g}"
+        except (TypeError, ValueError):
+            return ""
+
+    def _canonical_line(self, line: str) -> str:
+        """Resolve a caller-supplied line name onto the artifact vocabulary.
+
+        Returns the exact artifact spelling (so ``line_names.index()`` works)
+        or the original value unchanged when it matches nothing."""
+        if not isinstance(line, str):
+            return line
+        key = self._normalize_key(line)
+        for name in self.line_names:
+            if self._normalize_key(name) == key:
+                return name
+        resolved = _LINE_ALIASES.get(key)
+        if resolved:
+            for name in self.line_names:
+                if self._normalize_key(name) == self._normalize_key(resolved):
+                    return name
+        return line
+
     def _row(
         self,
         hour: int,
@@ -451,9 +500,10 @@ class DelayForecaster:
         to_station: str,
         train_type: str,
     ) -> np.ndarray:
-        from_map = {v: i for i, v in enumerate(self.from_ids)}
-        to_map = {v: i for i, v in enumerate(self.to_ids)}
+        from_map = {self._normalize_key(v): i for i, v in enumerate(self.from_ids)}
+        to_map = {self._normalize_key(v): i for i, v in enumerate(self.to_ids)}
         mins = float(sched_minutes)
+        line = self._canonical_line(line)
         line_oh = np.zeros(len(self.line_names), dtype=np.float32)
         if line in self.line_names:
             line_oh[self.line_names.index(line)] = 1.0
@@ -466,8 +516,8 @@ class DelayForecaster:
                 np.sin(2 * np.pi * mins / 1440),
                 np.cos(2 * np.pi * mins / 1440),
                 min(max(float(stop_sequence) / 50.0, 0.0), 2.0),
-                float(from_map.get(str(from_station), -1)),
-                float(to_map.get(str(to_station), -1)),
+                float(from_map.get(self._normalize_key(from_station), -1)),
+                float(to_map.get(self._normalize_key(to_station), -1)),
             ], dtype=np.float32),
             line_oh,
             type_oh,

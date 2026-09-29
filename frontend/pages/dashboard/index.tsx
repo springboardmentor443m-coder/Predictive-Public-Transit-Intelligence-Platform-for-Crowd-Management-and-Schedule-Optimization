@@ -398,6 +398,8 @@ function Overview() {
               <Tooltip
                 formatter={(v) => [`${v}%`, "Occupancy"]}
                 contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }}
+                itemStyle={{ color: "#e2e8f0" }}
+                labelStyle={{ color: "#f8fafc" }}
               />
               <Bar dataKey="occupancy" radius={[0, 8, 8, 0]} barSize={16}>
                 {chartData.map((d) => (
@@ -417,7 +419,11 @@ function Overview() {
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
               <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#94a3b8" }} interval={2} stroke="#334155" />
               <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} stroke="#334155" unit="k" />
-              <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }} />
+              <Tooltip
+                contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }}
+                itemStyle={{ color: "#e2e8f0" }}
+                labelStyle={{ color: "#f8fafc" }}
+              />
               <Area type="monotone" dataKey="passenger_k" name="Passengers (k)" stroke="#3b82f6" strokeWidth={3} fill="rgba(37, 99, 235, 0.2)" />
             </AreaChart>
           </ResponsiveContainer>

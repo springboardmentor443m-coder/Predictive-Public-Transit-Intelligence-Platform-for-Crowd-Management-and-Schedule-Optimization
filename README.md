@@ -2,10 +2,11 @@
 
 MetroFlow is an AI-powered metro crowd management and scheduling platform that helps metro
 authorities monitor passenger flow, predict crowd density, and optimize train scheduling in
-real time. It integrates AI analytics, scheduling automation, crowd prediction with **native
-prediction intervals**, operational monitoring, and **real-world dataset ingestion** into one
+real time. It integrates AI analytics, scheduling automation, crowd prediction with **prediction
+intervals**, operational monitoring, and **real-world dataset ingestion** into one
 centralized application for smart transportation systems. The live demo runs on the **real New
-York City subway network** — 59 genuine MTA stations (lines L/N/Q/R/W) — with a GTFS-derived
+York City subway network** — 59 genuine MTA stations spanning the 1/2/3, 4/5/6, 7, A/C/E,
+B/D/F/M, L, N/Q/R/W trunk corridors and the Staten Island Railway — with a GTFS-derived
 connection graph and a full-network geographic map (496 stations / 578 rail segments).
 
 ## Key Capabilities
@@ -13,11 +14,11 @@ connection graph and a full-network geographic map (496 stations / 578 rail segm
 | Module | Features |
 |---|---|
 | User Management | Admin/operator login, role-based access control (RBAC), profile management |
-| Crowd Monitoring | Passenger density tracking (ticketing + sensor data), heatmaps, congestion monitoring, station-wise analytics, inflow/outflow analysis |
+| Crowd Monitoring | Passenger density tracking (ticketing + sensor data), heatmaps, congestion monitoring, station-wise analytics, inflow/outflow analysis — the station history chart accepts any past date/start-time (windows older than the stored history get a synthesised daily curve, so it never renders empty) |
 | Connection Mapping | **Real stations, real junctions**: a connection graph built from the official MTA GTFS feed (`/crowd/connections`, 25 edges across 59 NYC stations) plus a full-network geographic map — every one of the 496 real stations and 578 rail segments (`/crowd/network`) with monitored congestion overlaid |
 | Train Monitoring | Live fleet position & status per train (in-transit / at-station / delayed...), position %, next stop, ETA, headway, projected load — streamed via Socket.IO with per-train rooms |
-| Scheduling Management | Train schedule CRUD, peak-hour optimization, frequency adjustment, delay handling |
-| AI Prediction | Crowd prediction & demand forecasting for any chosen date/time, **with lower/upper confidence intervals from an ensemble of quantile models**; per-train per-stop forecasts, traffic pattern analysis, smart recommendations |
+| Scheduling Management | Train schedule CRUD, peak-hour optimization, frequency adjustment, delay handling — headway-driven timetables (4-min peak / 8-min off-peak) with each line's departure grid staggered so arrivals don't collapse onto the same minutes |
+| AI Prediction | Crowd prediction & demand forecasting for any chosen date/time, **with lower/upper prediction intervals** (quantile ensemble when the advanced Hangzhou artifact is loaded, symmetric residual band otherwise); per-train per-stop forecasts, traffic pattern analysis, smart recommendations |
 | Alert & Notification | Overcrowding alerts, delay notifications, emergency announcements, real-time updates (Socket.IO) |
 | Analytics Dashboard | Traffic analytics, station performance reports, operational monitoring, AI insight panels |
 | Dataset Importers | Ingest genuine MTA / Seoul Metro / TfL CSVs into `data/` and feed the whole seed pipeline (`scripts/importers/`) |
@@ -238,14 +239,15 @@ for measured model/API benchmarks, and `docs/DEPLOYMENT.md` for AWS/Azure/K8s de
 ```bash
 cd backend
 pip install -r requirements-dev.txt
-pytest tests -v        # 171 tests (API, models, ML artifacts, connections, network, timezone, cache, scheduling advice)
+pytest tests -v        # 176 tests (API, models, ML artifacts, connections, network, timezone, cache, scheduling advice, simulation)
 ```
 
 Frontend: `cd frontend && npm test` runs the Vitest suite (**41 tests** — lines, connections,
 `CrowdEstimateNote`, `ModelBadge`).
 
-CI runs the same suites inside the built Docker image (Linux, pinned deps) plus
-`npm run lint`/`npm run build` for the frontend (see `.github/workflows/ci.yml`).
+CI runs on every branch push and pull request (see `.github/workflows/ci.yml`): a Python job runs
+the backend suite with dev dependencies, a separate job verifies the backend Docker image builds,
+and the frontend runs `lint`, `tsc`, unit tests and a production build.
 
 ## Contributing Guidelines
 

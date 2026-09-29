@@ -39,7 +39,7 @@ Derived strictly from the PRD: *MetroFlow: AI Platform for Metro Crowd Managemen
 | Table | Purpose | Key fields |
 |---|---|---|
 | users | auth + RBAC | email, hashed_password, full_name, role(admin/operator/viewer), is_active |
-| stations | network topology | code (real MTA stop id), name, line, zone, capacity_per_hour, lat/lng — 59 genuine NYC stations (L/N/Q/R/W) |
+| stations | network topology | code (real MTA stop id), name, line, zone, capacity_per_hour, lat/lng — 59 genuine NYC stations (1/2/3, 4/5/6, 7, A/C/E, B/D/F/M, L, N/Q/R/W, SIR) |
 | trains | fleet | code, model, capacity, status(active/maintenance) |
 | train_schedules | timetable | train_id, station_id, direction, arrival, departure, headway_min, status(on_time/delayed/cancelled), delay_min |
 | ridership_records | hourly aggregated footfall per station | station_id, timestamp, entries, exits, occupancy, congestion_level |
@@ -95,7 +95,7 @@ Redis keys: `crowd:latest:{station_id}` snapshots, `alerts:recent` list.
 | GET | /api/v1/crowd/heatmap | any | heatmap matrix (station × hour) |
 | GET | /api/v1/crowd/connections | any | GTFS-derived junction graph between monitored stations (25 real edges, incl. walking interchanges) |
 | GET | /api/v1/crowd/network | any | full real NYC rail network (496 stations / 578 segments) + monitored codes for the geographic map |
-| GET | /api/v1/crowd/station/{id}/history | any | inflow/outflow history (optional `start_time` anchors a chosen past date for historical tracking) |
+| GET | /api/v1/crowd/station/{id}/history | any | inflow/outflow history (optional `start_time` anchors a chosen past date for historical tracking; windows older than the stored history are synthesised as a daily curve so the chart never renders empty) |
 | POST | /api/v1/crowd/ingest | operator+ | sensor/gate ingest (live snapshot refresh) |
 | GET | /api/v1/trains | any | fleet list |
 | GET | /api/v1/trains/live | any | live fleet telemetry (position, status, ETA, load) |

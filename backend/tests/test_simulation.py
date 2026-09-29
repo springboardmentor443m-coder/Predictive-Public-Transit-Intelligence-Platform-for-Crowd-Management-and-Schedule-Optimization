@@ -167,6 +167,25 @@ def test_schedule_for_line_with_no_stations_is_empty():
     assert sim.schedule_rows_for_hour([], "TR-123-01", 0, NOW) == []
 
 
+def test_schedule_arrival_grid_is_staggered_per_line():
+    """Every line used to share the same :00/:08/:16 departure grid, so the
+    scheduling page read as a single flat wave of trains. The grid offset must
+    be deterministic from the train code, stay inside its hour bucket, and
+    differ between lines."""
+    off = sim.schedule_rows_for_hour(["128", "235"], "TR-123-01", 0, at_local(2026, 9, 28, 3))
+    minutes = [r.arrival.minute for r in off]
+    # One run per 8 minutes, all inside the hour bucket.
+    assert minutes == sorted(minutes) and len(set(minutes)) == len(minutes)
+    assert all(m == minutes[0] + (idx * 8) for idx, m in enumerate(minutes))
+    assert 0 <= minutes[0] < 8 and minutes[-1] < 60
+    # Stability: the offset is a pure function of the train code and hour.
+    again = sim.schedule_rows_for_hour(["128", "235"], "TR-123-01", 0, at_local(2026, 9, 28, 3))
+    assert [r.id for r in off] == [r.id for r in again]
+    # A different line is shifted off that grid, so trains stop arriving in lockstep.
+    other = sim.schedule_rows_for_hour(["128", "235"], "TR-ACE-01", 0, at_local(2026, 9, 28, 3))
+    assert [r.arrival.minute for r in other] != minutes
+
+
 def test_advance_from_empty_writes_only_the_current_hour(fresh_db):
     result = sim.advance(fresh_db, now=NOW)
     assert result["ridership"] == len(STATIONS)

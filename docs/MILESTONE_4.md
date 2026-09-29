@@ -19,7 +19,7 @@
 
 ## 2. End-to-End Testing
 
-Automated suite: `backend/tests/test_api.py` (52 API tests) + `test_model_wrappers.py` (7 model tests) = **59 tests**, all passing, run with:
+Automated suite: `backend/tests/test_api.py` (53 API tests) + `test_model_wrappers.py` (10 model tests) = **63 tests** in those two files (176 across the full suite), all passing, run with:
 
 ```bash
 cd backend && pip install -r requirements-dev.txt
@@ -77,7 +77,7 @@ Measured results in [`PERFORMANCE_METRICS.md`](PERFORMANCE_METRICS.md). Key leve
 | Criterion | Status |
 |---|---|
 | Analytics dashboard delivering actionable insights | ✅ insights + model badge (AI Predictions page) + CSV/print |
-| System tested end-to-end with reliable AI outputs | ✅ 52 automated API tests + 7 model tests |
+| System tested end-to-end with reliable AI outputs | ✅ 53 automated API tests + 10 model tests |
 | Platform deployed and accessible via Docker/cloud setup | ✅ compose + k8s + cloud docs |
 | Complete documentation and presentation delivered | ✅ |
 
@@ -95,9 +95,16 @@ Delivered on branch `KOKKIRIGADDA-MANOJ-BABU` after M4 wrap-up:
    tsc --noEmit and npm run build green.
 - **Public health endpoint** -- GET /api/v1/health (login page + k8s probes); login no longer
   probes an auth-protected route (fixes false *Backend Offline*).
-- **Chart resilience** -- analytics/crowd-history charts gained loading + empty states.
+- **Chart resilience** -- analytics/crowd-history charts gained loading + empty states; dark-theme
+  chart tooltips use explicit item/label colours so the values stay readable on every chart.
+- **Crowd history for any past date** -- `GET /crowd/station/{id}/history` synthesises a full
+  daily occupancy curve (weekend-aware, mirrored from the simulation clock's row model so entries
+  and exits stay distinct) when the chosen window predates the stored history; the UI also anchors
+  a date chosen while *Start Hour* is "Now" at midnight instead of emitting an invalid query.
 - **Realistic traffic curve** -- schedules now respect headways (4-min peak / 8-min off-peak),
-  so the Network Traffic Trend shows real rush-hour shape instead of a flat line.
+  so the Network Traffic Trend shows real rush-hour shape instead of a flat line; each line's
+  within-hour departure grid is staggered per train code so the timetable no longer collapses
+  every train onto the same :00/:08/… minutes.
 - **Advanced ML** -- quantile GradientBoosting crowd model with native lower/upper intervals
   (docs/ML_MODELS.md).
 - **Dataset importers** -- MTA / Seoul / TfL real CSV ingestion feeding the seed pipeline
@@ -105,7 +112,8 @@ Delivered on branch `KOKKIRIGADDA-MANOJ-BABU` after M4 wrap-up:
 - **Python hygiene** -- `datetime.utcnow()` fully replaced by `app.core.time.utcnow()`;
   modern | None type hints.
 - **Real NYC subway (59 stations)** -- stations.csv swapped ST01–ST10 demo codes for 59 genuine
-  MTA stop ids (L/N/Q/R/W + S shuttles); crowd/demand models retrained on them
+  MTA stop ids across eight trunk corridors (1/2/3, 4/5/6, 7, A/C/E, B/D/F/M, L, N/Q/R/W and the
+  Staten Island Railway); crowd/demand models retrained on them
   (`nyc_train_metrics.json`: crowd R² 0.981, demand R² 0.969) and made the default
   (`METROFLOW_MODEL_CITY=nyc`); capacity ceiling aligned to a real station
   (`MAX_CAPACITY=14600`) and rolling stock modelled on real MTA car classes (R160/R143/R179/R211).
@@ -118,5 +126,6 @@ Delivered on branch `KOKKIRIGADDA-MANOJ-BABU` after M4 wrap-up:
   `GET /api/v1/crowd/network` (tested: 8 tests). The Crowd dashboard's *geographic* toggle now
   draws the complete rail network as a faint base layer with the 59 monitored stations and their
   live congestion overlaid, while the original schematic view is untouched.
-- **Testing** -- backend suite grown from 59 to **171 tests** (API, models, ML artifacts,
-  connections, network, timezone, cache/live, scheduling advice); frontend Vitest suite **41 tests**.
+- **Testing** -- backend suite grown from 59 to **176 tests** (53 API, 25 simulation, 21 timezone,
+  19 ML artifacts, 14 cache/live, 10 features, 10 model wrappers, 8 connections, 8 network,
+  8 scheduling advice); frontend Vitest suite **41 tests**.

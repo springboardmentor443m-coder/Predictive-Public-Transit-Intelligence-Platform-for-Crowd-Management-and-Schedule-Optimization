@@ -84,6 +84,63 @@ def test_delay_prediction_differs_by_line():
     assert a != b
 
 
+def _delay_fit(out: dict) -> dict:
+    """Model output without the request echo (line/from/to), which simply
+    mirrors the caller's spelling and is identical for identical rows."""
+    return {k: v for k, v in out.items() if k not in ("line", "from_station", "to_station")}
+
+
+def test_delay_typo_line_alias_matches_artifact():
+    """'North Jersey Coast' must resolve to the artifact's 'No Jersey Coast'
+    (the upstream dataset's typo), not to an all-zero one-hot."""
+    m = DelayForecaster()
+    if not m.is_loaded:
+        pytest.skip("NJ delay artifacts not present")
+    alias = m.predict(hour=8, weekday=0, sched_minutes=510, stop_sequence=1.0,
+                      line="North Jersey Coast", from_station="", to_station="")
+    canonical = m.predict(hour=8, weekday=0, sched_minutes=510, stop_sequence=1.0,
+                          line="No Jersey Coast", from_station="", to_station="")
+    unknown = m.predict(hour=8, weekday=0, sched_minutes=510, stop_sequence=1.0,
+                        line="Phantom Line", from_station="", to_station="")
+    assert _delay_fit(alias) == _delay_fit(canonical)
+    assert _delay_fit(alias) != _delay_fit(unknown)
+
+
+def test_delay_bergen_line_trailing_space_ignored():
+    """The artifact keeps 'Bergen Co. Line ' (trailing space); the clean UI
+    label must map onto the same one-hot."""
+    m = DelayForecaster()
+    if not m.is_loaded:
+        pytest.skip("NJ delay artifacts not present")
+    clean = m.predict(hour=8, weekday=0, sched_minutes=510, stop_sequence=1.0,
+                      line="Bergen Co. Line", from_station="", to_station="")
+    raw = m.predict(hour=8, weekday=0, sched_minutes=510, stop_sequence=1.0,
+                    line="Bergen Co. Line ", from_station="", to_station="")
+    assert _delay_fit(clean) == _delay_fit(raw)
+
+
+def test_delay_station_key_normalization():
+    """Station ids must match the artifact vocabulary regardless of the
+    '105' vs '105.0' spelling, and real vocab ids must actually move the
+    prediction (i.e. the features are wired, not stuck at -1)."""
+    m = DelayForecaster()
+    if not m.is_loaded:
+        pytest.skip("NJ delay artifacts not present")
+    if not m.from_ids:
+        pytest.skip("delay artifact has no from_ids vocabulary")
+    first_id = m.from_ids[0]
+    variant_a = first_id if "." in first_id else f"{first_id}.0"
+    variant_b = first_id.split(".")[0] if "." in first_id else first_id
+    a = m.predict(hour=8, weekday=0, sched_minutes=510, stop_sequence=1.0,
+                  line="Main Line", from_station=variant_a, to_station=variant_a)
+    b = m.predict(hour=8, weekday=0, sched_minutes=510, stop_sequence=1.0,
+                  line="Main Line", from_station=variant_b, to_station=variant_b)
+    unknown = m.predict(hour=8, weekday=0, sched_minutes=510, stop_sequence=1.0,
+                        line="Main Line", from_station="99999", to_station="99999")
+    assert _delay_fit(a) == _delay_fit(b)
+    assert _delay_fit(a) != _delay_fit(unknown)
+
+
 def test_delay_model_raises_without_artifacts():
     m = DelayForecaster()
     m.artifact = None

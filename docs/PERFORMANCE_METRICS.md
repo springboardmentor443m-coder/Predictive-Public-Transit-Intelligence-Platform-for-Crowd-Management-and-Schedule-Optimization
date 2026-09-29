@@ -80,10 +80,15 @@ Trained with `kaggle/03_nj_transit_delay.py` (XGBoost, 3M stop-level rows from
 | | delayed-only MAE | 7.43 min |
 
 Served via `POST /api/v1/predictions/delay` (live Delay Predictor on the AI page).
-Inputs are the model's real feature
-space (line, from/to station, stop sequence, scheduled time, weekday, train type);
-top features are `line` (Princeton Shuttle, Atl. City Line, Northeast Corridor),
-schedule phase (`sched_sin`) and weekend flag. There is no synthetic fallback —
+Inputs are the model's real feature space: line (matched to the artifact's exact
+vocabulary — the dataset's own "No Jersey Coast" spelling and a trailing space on
+"Bergen Co. Line " are normalised on top of the UI), stop sequence, scheduled
+time, weekday and train type. The from/to station features are indices over
+numeric stop ids from the artifact (no name mapping ships), so the API treats
+them as optional: blank or off-vocabulary values are encoded as unknown (-1),
+matching the training-time treatment of missing stations. The UI therefore no
+longer exposes free-text origin/destination fields it cannot serve. There is no
+synthetic fallback —
 the endpoint returns clean `503` (not 500) if artifacts are missing. A second
 delay set is trainable via `kaggle/07_railway_delay.py` (Railway Delay 2015,
 312k journeys) for comparison. Refreshing does not require
@@ -128,7 +133,7 @@ line/schedule level delay target.
 
 | Dataset | Size |
 |---|---|
-| Ridership records | 84,960 rows (59 stations × 24 h × 60 days) |
+| Ridership records | 59 stations × 24 h/day over a rolling ~60-day window (the final day is partial, so the exact row count is time-dependent) |
 | Ticketing events (Mongo) | 50,000 generated / 5,000 seeded per run |
 | Schedules | ~170 active timetable entries |
 | Heatmap grid | 1,416 points per render (59 × 24) |

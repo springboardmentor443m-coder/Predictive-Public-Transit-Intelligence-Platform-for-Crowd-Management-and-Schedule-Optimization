@@ -39,22 +39,33 @@ function CrowdTooltip({ active, payload, label }: { active?: boolean; payload?: 
  * on `pranavbadami/nj-transit-amtrak-nec-performance`, and it encodes these
  * corridor names categorically. Substituting the subway's trunk routes here
  * would send values the model has never seen and silently degrade the
- * predictions, so this list must stay in step with the artifact rather than
- * with `lib/lines.ts`.
+ * predictions, so `value` MUST stay in step with the artifact vocabulary
+ * (models_store/delay_classifier.joblib -> line_names) rather than with
+ * `lib/lines.ts`. The label is human-facing; the two divergences are the
+ * dataset's own spelling ("No Jersey Coast") and a trailing space it keeps on
+ * "Bergen Co. Line " (the backend collapses whitespace before matching, so the
+ * clean label still resolves).
  */
-const DELAY_MODEL_LINES = [
-  "Northeast Corrdr",
-  "North Jersey Coast",
-  "Morristown Line",
-  "Montclair-Boonton",
-  "Gladstone Branch",
-  "Raritan Valley",
-  "Main Line",
-  "Bergen Co. Line",
-  "Pascack Valley",
-  "Atl. City Line",
-  "Princeton Shuttle",
+const DELAY_MODEL_LINES: { label: string; value: string }[] = [
+  { label: "Northeast Corrdr", value: "Northeast Corrdr" },
+  { label: "North Jersey Coast", value: "No Jersey Coast" },
+  { label: "Morristown Line", value: "Morristown Line" },
+  { label: "Montclair-Boonton", value: "Montclair-Boonton" },
+  { label: "Gladstone Branch", value: "Gladstone Branch" },
+  { label: "Raritan Valley", value: "Raritan Valley" },
+  { label: "Main Line", value: "Main Line" },
+  { label: "Bergen Co. Line", value: "Bergen Co. Line" },
+  { label: "Pascack Valley", value: "Pascack Valley" },
+  { label: "Atl. City Line", value: "Atl. City Line" },
+  { label: "Princeton Shuttle", value: "Princeton Shuttle" },
 ];
+
+/**
+ * The artifact's operator vocabulary contains a single class ("NJ Transit"),
+ * so an "Amtrak" option would have produced an all-zero train-type one-hot.
+ * The value is sent explicitly with the default and is not user-selectable.
+ */
+const DELAY_TRAIN_TYPE = "NJ Transit";
 
 function Predictions() {
   const { showToast } = useToast();
@@ -93,13 +104,11 @@ function Predictions() {
 
   const [delayForm, setDelayForm] = useState({
     line: "Northeast Corrdr",
-    from_station: "NY Penn",
-    to_station: "Newark Penn",
     stop_sequence: "5",
     hour: "8",
     weekday: "1",
     scheduled_time: "08:30",
-    train_type: "NJ Transit",
+    train_type: DELAY_TRAIN_TYPE,
   });
   const [delayRes, setDelayRes] = useState<DelayPredictResponse | null>(null);
   const [delayBusy, setDelayBusy] = useState(false);
@@ -160,8 +169,6 @@ function Predictions() {
     try {
       const res = await api.post<DelayPredictResponse>("/predictions/delay", {
         line: delayForm.line,
-        from_station: delayForm.from_station,
-        to_station: delayForm.to_station,
         stop_sequence: Number(delayForm.stop_sequence),
         hour: Number(delayForm.hour),
         weekday: Number(delayForm.weekday),
@@ -319,7 +326,11 @@ function Predictions() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                 <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#94a3b8" }} interval="preserveStartEnd" stroke="#334155" />
                 <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} stroke="#334155" />
-                <Tooltip contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: 12, fontSize: 12, color: "#fff" }}
+                  itemStyle={{ color: "#e2e8f0" }}
+                  labelStyle={{ color: "#f8fafc" }}
+                />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Area type="monotone" name="Entries Forecast" dataKey="entries" stroke="#3b82f6" strokeWidth={2.5} fill="#3b82f6" fillOpacity={0.1} />
                 <Area type="monotone" name="Exits Forecast" dataKey="exits" stroke="#10b981" strokeWidth={2.5} fill="#10b981" fillOpacity={0.1} />
@@ -355,27 +366,9 @@ function Predictions() {
                 onChange={(e) => setDelayForm({ ...delayForm, line: e.target.value })}
               >
                 {DELAY_MODEL_LINES.map((l) => (
-                  <option key={l} value={l}>{l}</option>
+                  <option key={l.value} value={l.value}>{l.label}</option>
                 ))}
               </select>
-            </div>
-
-            <div>
-              <label className="label">Origin Station</label>
-              <input
-                className="input"
-                value={delayForm.from_station}
-                onChange={(e) => setDelayForm({ ...delayForm, from_station: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className="label">Destination Station</label>
-              <input
-                className="input"
-                value={delayForm.to_station}
-                onChange={(e) => setDelayForm({ ...delayForm, to_station: e.target.value })}
-              />
             </div>
 
             <div>
@@ -417,18 +410,6 @@ function Predictions() {
                 value={delayForm.scheduled_time}
                 onChange={(e) => setDelayForm({ ...delayForm, scheduled_time: e.target.value })}
               />
-            </div>
-
-            <div>
-              <label className="label">Operator Type</label>
-              <select
-                className="input"
-                value={delayForm.train_type}
-                onChange={(e) => setDelayForm({ ...delayForm, train_type: e.target.value })}
-              >
-                <option>NJ Transit</option>
-                <option>Amtrak</option>
-              </select>
             </div>
 
             <button type="submit" disabled={delayBusy} className="btn-primary col-span-2 py-3 text-xs font-extrabold mt-1">
@@ -490,7 +471,7 @@ function Predictions() {
                 </div>
 
                 <p className="mt-3 text-[11px] text-slate-500 font-mono">
-                  {delayRes.line} · {delayRes.from_station} → {delayRes.to_station}
+                  {delayRes.line} · {DELAY_TRAIN_TYPE}
                 </p>
               </div>
             )}
