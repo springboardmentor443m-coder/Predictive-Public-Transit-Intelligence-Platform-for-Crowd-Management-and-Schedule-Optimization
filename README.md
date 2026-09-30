@@ -68,6 +68,7 @@ MetroFlow/
 │   └── ...
 ├── docs/
 │   ├── PROJECT_PLAN.md           # master plan + API surface
+│   ├── PROJECT_GUIDE.md          # complete guided walkthrough (login → every page, data/ML story, screenshots)
 │   ├── MILESTONE_1..4.md         # weekly milestone reports
 │   ├── DEPLOYMENT.md             # AWS / Azure / Kubernetes guides
 │   ├── PERFORMANCE_METRICS.md    # model + API benchmarks
@@ -231,7 +232,10 @@ false *"Backend Offline"*).
 * **Milestone 3 (Wk 5-6):** real-time monitoring, alerts, schedule optimization - [docs/MILESTONE_3.md](docs/MILESTONE_3.md)
 * **Milestone 4 (Wk 7-8):** analytics, testing, Docker/cloud deployment, docs - [docs/MILESTONE_4.md](docs/MILESTONE_4.md)
 
-See `docs/PROJECT_PLAN.md` for the full week-wise breakdown, `docs/PERFORMANCE_METRICS.md`
+See `docs/PROJECT_GUIDE.md` for a complete guided tour of the application — from the login page
+through every dashboard, explaining data provenance, the ML techniques and where each is used, and
+what every chart/table represents (with screenshots). For the full week-wise breakdown see
+`docs/PROJECT_PLAN.md`, `docs/PERFORMANCE_METRICS.md`
 for measured model/API benchmarks, and `docs/DEPLOYMENT.md` for AWS/Azure/K8s deployment.
 
 ## Testing
