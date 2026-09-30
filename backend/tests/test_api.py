@@ -509,6 +509,21 @@ def test_traffic_series(client, viewer_headers):
     assert len(tr) == 12
 
 
+def test_traffic_hour_scale_varies_and_is_deterministic():
+    """A fixed headway meant every off-peak hour counted the same trains, so the
+    throughput curve was two flat steps. Each hour now carries its own stable
+    multiplier: varied within a day, identical on repeat calls."""
+    from datetime import datetime, timedelta
+
+    from app.services.analytics_service import traffic_hour_scale
+
+    day = datetime(2026, 9, 28, 0, 0, 0)
+    scales = [traffic_hour_scale(h, day + timedelta(hours=h)) for h in range(24)]
+    assert all(0.88 <= s <= 1.12 for s in scales)
+    assert len(set(scales)) >= 20, "hourly throughput multiplier collapsed to repeats"
+    assert scales == [traffic_hour_scale(h, day + timedelta(hours=h)) for h in range(24)]
+
+
 # ---------- Resilience (graceful degradation, no raw 500s) ----------
 
 def test_db_down_returns_clean_503(client, monkeypatch):

@@ -1,6 +1,7 @@
 import logging
 import random
 from datetime import datetime, timedelta
+from functools import lru_cache
 
 from app.core.time import city_hour, city_weekday, hour_floor, utcnow
 
@@ -54,6 +55,23 @@ def compute_congestion_level(pct_float: float) -> str:
     if pct_float >= CONGESTION_THRESHOLD_LOW:
         return "medium"
     return "low"
+
+
+@lru_cache(maxsize=None)
+def _station_index(station_id: str) -> int:
+    """Index used by the simulation's station factor (CSV order, else hash)."""
+    from app.services.simulation import csv_station_order
+
+    codes = [c for c, _ in csv_station_order()]
+    return codes.index(station_id) if station_id in codes else sum(station_id.encode()) % 512
+
+
+@lru_cache(maxsize=None)
+def _station_scale(station_id: str) -> float:
+    """Deterministic per-station multiplier so fallback curves are distinct too."""
+    from app.services.simulation import station_factor
+
+    return station_factor(_station_index(station_id))
 
 
 def intra_hour_estimate(
@@ -126,7 +144,7 @@ def get_live_snapshot(db: Session, station_id: str) -> dict:
     else:
         hour = city_hour(now)
         weekday = city_weekday(now)
-        baseline_pct = feat.station_baseline_occupancy_pct(hour)
+        baseline_pct = feat.station_baseline_occupancy_pct(hour) * _station_scale(station_id)
         if weekday >= 5:
             baseline_pct *= feat.WEEKEND_FACTOR
         peak_mult = feat.PEAK_MULTIPLIER.get(hour, 1.0)
@@ -199,7 +217,7 @@ def get_heatmap(db: Session) -> list[dict]:
                 avg_occ = sum(samples) / len(samples)
                 pct = min(1.0, avg_occ / max(1, station.capacity_per_hour))
             else:
-                pct = feat.station_baseline_occupancy_pct(hour)
+                pct = feat.station_baseline_occupancy_pct(hour) * _station_scale(station.id)
                 if weekday >= 5:
                     pct *= feat.WEEKEND_FACTOR
             points.append({
@@ -259,7 +277,7 @@ def get_station_history(
         weekday = city_weekday(window_start)
         for i in range(hours):
             ts = window_start + timedelta(hours=i)
-            pct = feat.station_baseline_occupancy_pct(city_hour(ts))
+            pct = feat.station_baseline_occupancy_pct(city_hour(ts)) * _station_scale(station_id)
             if weekday >= 5:
                 pct *= feat.WEEKEND_FACTOR
             occupancy = int(capacity * pct)

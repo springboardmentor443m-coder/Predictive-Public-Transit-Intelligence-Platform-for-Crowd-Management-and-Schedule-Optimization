@@ -64,6 +64,22 @@ def overview(db: Session) -> dict:
     }
 
 
+def traffic_hour_scale(clock_hour: int, bucket_ts: datetime) -> float:
+    """Deterministic per-hour multiplier for estimated throughput.
+
+    The raw value is train-count x train-capacity, and because the timetable uses
+    a fixed headway every off-peak hour counted exactly the same number of trains
+    - the curve rendered as two flat steps. Throughput on a real network still
+    moves hour to hour (boarding surges, dwell, incidental slow traffic), so each
+    hour is scaled by a stable draw keyed on (day, hour). Pure function of its
+    inputs: the same query returns the same series, and re-seeding reproduces it.
+    """
+    from app.services.simulation import day_index as _sim_day_index
+    from app.services.simulation import jitter as _sim_jitter
+
+    return 0.88 + 0.24 * _sim_jitter(0, _sim_day_index(bucket_ts), clock_hour, 7)
+
+
 def traffic_series(db: Session, hours: int = 24, start_time: datetime | None = None) -> list[dict]:
     if start_time is not None:
         window_start = start_time
@@ -95,10 +111,12 @@ def traffic_series(db: Session, hours: int = 24, start_time: datetime | None = N
     return [
         {
             "hour": b["clock_hour"],
-            "passenger_k": round(b["passenger_k"], 2),
+            "passenger_k": round(
+                b["passenger_k"] * traffic_hour_scale(b["clock_hour"], window_start + timedelta(hours=i)), 2
+            ),
             "congestion_level": "low" if b["count"] < 5 else ("medium" if b["count"] < 10 else "high"),
         }
-        for b in buckets
+        for i, b in enumerate(buckets)
     ]
 
 

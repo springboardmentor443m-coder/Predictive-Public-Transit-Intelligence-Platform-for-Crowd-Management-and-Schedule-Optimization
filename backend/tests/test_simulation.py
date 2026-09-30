@@ -100,6 +100,28 @@ def test_ridership_rows_for_hour_covers_every_station():
     assert {r.station_id for r in rows} == {c for c, _ in STATIONS}
 
 
+def test_station_factors_are_well_spread_and_stable():
+    """The regression that made every station show the same occupancy.
+
+    ``station_factor`` used ``% 7`` on the index, so 59 stations collapsed into
+    seven identical groups and the "Most Congested" bars rendered as repeats of
+    a handful of values. It must now be a continuous, deterministic draw.
+    """
+    factors = [sim.station_factor(i) for i in range(59)]
+    assert len(set(factors)) >= 25, "per-station factors collapsed into bands again"
+    assert all(0.72 <= f <= 1.22 for f in factors)
+    # Deterministic: same input -> same output, every call.
+    assert factors == [sim.station_factor(i) for i in range(59)]
+
+
+def test_ridership_occupancy_varies_across_stations():
+    """One hour must not produce the same occupancy for every station."""
+    stations = [(f"S{i}", 4000 + 137 * i) for i in range(24)]
+    rows = sim.ridership_rows_for_hour(stations, NOW)
+    pcts = {round(r.occupancy / stations[i][1], 3) for i, r in enumerate(rows)}
+    assert len(pcts) >= 12, f"occupancy collapsed to {len(pcts)} distinct levels"
+
+
 def test_ridership_row_ids_are_content_addressed():
     a = sim.ridership_rows_for_hour(STATIONS, NOW)
     b = sim.ridership_rows_for_hour(STATIONS, NOW)

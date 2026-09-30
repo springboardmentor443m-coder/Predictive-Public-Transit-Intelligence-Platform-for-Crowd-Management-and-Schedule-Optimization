@@ -54,7 +54,10 @@ DAYS = 60
 
 
 def station_factor(idx: int) -> float:
-    return 0.85 + 0.05 * ((idx * 37) % 7)
+    # Mirrors app/services/simulation.py: deterministic continuous per-station
+    # scale in [0.72, 1.22] (the old `% 7` collapsed all stations into 7 bands).
+    seed = ((idx * 73856093) ^ (19349663) ^ (83492791 * 0) ^ (2654435761 * 3))
+    return round(0.72 + 0.50 * ((seed % 1000) / 1000.0), 3)
 
 
 def generate_ridership() -> pd.DataFrame:

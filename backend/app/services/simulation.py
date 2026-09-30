@@ -75,8 +75,16 @@ def day_index(moment: datetime) -> int:
 
 
 def station_factor(idx: int) -> float:
-    """Stable per-station scaling so busy hubs stay busier than quiet stops."""
-    return 0.85 + 0.05 * ((idx * 37) % 7)
+    """Stable per-station scale so busy hubs stay busier than quiet stops.
+
+    Deterministic draw from the same hash the jitter uses, spread continuously
+    across ``[0.72, 1.22]``. The old ``0.85 + 0.05 * ((idx * 37) % 7)`` produced
+    only seven discrete levels, collapsing 59 stations into seven bands — every
+    "Most Congested" bar and station card showed one of a handful of values. The
+    continuous draw keeps each station's level distinct while staying stable
+    across re-seeds and backfills.
+    """
+    return round(0.72 + 0.50 * jitter(idx, 0, 0, 3), 3)
 
 
 def jitter(station_idx: int, day_idx: int, hour: int, salt: int) -> float:
