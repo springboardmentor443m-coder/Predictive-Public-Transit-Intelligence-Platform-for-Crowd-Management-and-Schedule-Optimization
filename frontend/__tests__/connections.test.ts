@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Station, StationConnection } from "../lib/types";
-import { adjacency, neighborsFor, trunkTracks } from "../lib/connections";
+import { adjacency, linkTouches, neighborsFor, trunkTracks } from "../lib/connections";
 import { edgeTrunk, lineColor, trunkForServices } from "../lib/lines";
 
 const STATIONS: Station[] = [
@@ -106,5 +106,38 @@ describe("edgeTrunk", () => {
   it("can be fed through lineColor for paste-safe colours", () => {
     const red = lineColor(edgeTrunk("1;2;3", null) ?? "1/2/3");
     expect(red).toBe("#EE352E");
+  });
+});
+
+describe("linkTouches", () => {
+  it("lights an edge only when the selected code is one of its endpoints", () => {
+    expect(linkTouches("L03", "L02", "L03")).toBe(true);
+    expect(linkTouches("L03", "L03", "L02")).toBe(true);
+    expect(linkTouches("L03", "L01", "L02")).toBe(false);
+  });
+
+  it("never lights an edge that merely passes through a neighbour", () => {
+    // Chain: L01 - L02 - L03. With L03 selected, L02 is its neighbour, so the
+    // L01-L02 edge touches a neighbour but is NOT incident to L03 and must dim.
+    const neighbours = new Set(neighborsFor("L03", CONNECTIONS, STATIONS).map((n) => n.code));
+    expect(neighbours.has("L02")).toBe(true);
+    expect(linkTouches("L03", "L01", "L02")).toBe(false);
+    // ...while L03's own link stays lit.
+    expect(linkTouches("L03", "L02", "L03")).toBe(true);
+  });
+
+  it("returns false when nothing is selected", () => {
+    expect(linkTouches("", "L02", "L03")).toBe(false);
+    expect(linkTouches(null, "L02", "L03")).toBe(false);
+    expect(linkTouches(undefined, "L02", "L03")).toBe(false);
+  });
+
+  it("agrees with the real edge set for every station in the fixture", () => {
+    for (const s of STATIONS) {
+      for (const c of CONNECTIONS) {
+        const expected = c.from_code === s.code || c.to_code === s.code;
+        expect(linkTouches(s.code, c.from_code, c.to_code)).toBe(expected);
+      }
+    }
   });
 });

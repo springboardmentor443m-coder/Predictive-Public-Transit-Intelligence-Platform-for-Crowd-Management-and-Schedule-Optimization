@@ -49,6 +49,20 @@ export function neighborsFor(
   });
 }
 
+/**
+ * True when the edge `(a, b)` is genuinely *incident to* `code` — i.e. `code`
+ * is one of its two endpoints.
+ *
+ * Map highlighting must use this, not `neighborsFor(code).has(...)`: testing
+ * only one endpoint of an edge against the neighbour set lights up every edge
+ * that happens to pass through a neighbour, which drags unrelated paths into
+ * the highlight and hides the one-to-one structure the user is trying to read.
+ */
+export function linkTouches(code: string | null | undefined, a: string, b: string): boolean {
+  if (!code) return false;
+  return a === code || b === code;
+}
+
 /** Max vertex degree among a set of codes, using only along-line edges. */
 function maxAlongDegree(adj: Record<string, string[]>, codes: string[]): number {
   return Math.max(0, ...codes.map((c) => (adj[c] ?? []).length));
