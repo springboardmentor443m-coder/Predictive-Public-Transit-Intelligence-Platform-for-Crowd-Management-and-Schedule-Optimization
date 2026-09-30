@@ -304,13 +304,22 @@ Stations are **coloured by live occupancy** (green→yellow→orange→red). You
 
 ### 7.2 The station list & heatmap
 
-![Crowd heatmap grid](images/05-crowd-heatmap.png)
+![Screenshot 05 — Crowd Monitoring: the 24-hour station congestion heatmap](images/05-crowd-heatmap.png)
+
+**Screenshot 05 — the 24-hour station congestion heatmap.** A station × hour grid of average
+occupancy percentage for the 59 monitored stations, served by `/crowd/heatmap`. Every row is one
+station and every column one hour of the 24-hour window, so the grid answers “which hours are worst
+at which station” in a single glance: cool cells are quiet hours, warm cells are heavy ones. Read
+down a column to find the busiest hour across the whole network; read across a row to see one
+station's daily profile. The morning columns are dominated by commuter stations feeding the core
+(Flushing-Main St, 190 St), and the afternoon/evening columns stay warmer through Midtown and Lower
+Manhattan. Cell colour uses the same live occupancy values that colour the station dots on the map
+above. Click any cell to open that station's history (§7.3).
 
 Beneath the map (or a side panel): 
 - **Station cards** — one per station with current occupancy %, congestion badge, and capacity.
-- **Heatmap** (`/crowd/heatmap`) — a station × hour grid of average occupancy %, the classic
-  “which hours are worst at which station” matrix. Warm cells = heavy hours; the pattern shows
-  morning peaks at commuter stations and evening peaks at downtown ones.
+- **Heatmap** (`/crowd/heatmap`) — the grid shown above, served by the API. Warm cells = heavy
+  hours; the pattern shows morning peaks at commuter stations and evening peaks at downtown ones.
 
 ### 7.3 Selecting a station — history, telemetry & sensor ingest
 
@@ -698,7 +707,7 @@ captured into `docs/images/` from the running app.
 | 02 | `images/02-overview.png` | Overview after login (all KPI cards + congested bars + traffic trend) |
 | 03 | `images/03-overview-tooltip.png` | Hover the tallest congested-station bar so the tooltip value is visible |
 | 04 | `images/04-crowd-map.png` | Crowd page, geographic map view with station colours |
-| 05 | `images/05-crowd-heatmap.png` | Crowd page heatmap grid (station × hour) |
+| 05 | `images/05-crowd-heatmap.png` | Crowd page **24-Hour Station Congestion Heatmap** — the station × hour average-occupancy grid served by `/crowd/heatmap`, warm cells marking the heavy hours and commuter stations lighting up in the morning rush columns |
 | 06 | `images/06-crowd-history.png` | Selected station Inflow vs Outflow with the date tracker visible |
 | 07 | `images/07-train-monitoring.png` | Trains page fleet list with status/Load/ETA columns |
 | 08 | `images/08-train-detail.png` | A train’s detail drawer incl. its 12 h forecast chart |
