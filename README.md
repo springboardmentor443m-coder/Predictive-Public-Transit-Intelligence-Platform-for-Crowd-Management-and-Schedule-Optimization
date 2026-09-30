@@ -63,7 +63,7 @@ MetroFlow/
 │   └── Dockerfile
 ├── frontend/
 │   ├── pages/                    # login + professional dashboard suite (TypeScript + Tailwind)
-│   ├── components/               # layout, KPI cards, charts, heatmap, tables, modals, ConnectionList, MetroMap (schematic + geographic)
+│   ├── components/               # layout, KPI cards, charts, heatmap, tables, modals, ConnectionList, MetroMap (schematic + geographic + connections)
 │   ├── lib/                      # API client, auth context, socket client, lines/connections helpers
 │   └── ...
 ├── docs/
@@ -173,17 +173,39 @@ assets are versioned in `backend/data/`:
 | Asset | Content | Endpoint |
 |---|---|---|
 | `connections.csv` | **Junction graph** between the 59 monitored stations — 25 real edges (21 consecutive-stop along-line links + 4 walking interchanges like the 42 St Shuttle and Queensboro Plaza same-concourse) | `GET /api/v1/crowd/connections` |
-| `nyc_network.json` | **Complete rail network** for the geographic base map — all 496 real stations (lat/lng) and 578 rail segments, tagged with the 59 monitored codes | `GET /api/v1/crowd/network` |
+| `nyc_network.json` | **Complete rail network** for the geographic base map — all 496 real MTA stations (real `stop_lat`/`stop_lon`) and 578 real segments (stops genuinely consecutive on the same trip), tagged with the 59 monitored codes | `GET /api/v1/crowd/network` |
+
+### How real are the "NYC metro paths"?
+
+Real stations, in real positions, connected in the real order — with one deliberate simplification
+worth stating plainly:
+
+- **Real:** the 496 station positions come straight from MTA `stops.txt` coordinates; the 578
+  segments are consecutive stops on the *same GTFS trip*, so the adjacency is the network's real
+  adjacency; each segment is tagged with the routes that actually serve it (`1;2;3`).
+- **Simplified:** the line between two stops is drawn **straight**. MTA's optional `shapes.txt`
+  track polylines are not consumed, so curves and elevated/underground distinctions are not shown.
+  Stops sharing a `parent_station` (the separate platforms inside one complex) collapse to a single
+  junction dot.
+
+It is therefore a real-topology map with straight-line rendering — not surveyed track geometry, and
+not a live GPS trace of vehicles. Full detail in `docs/PROJECT_GUIDE.md` §4.1.
 
 `scripts/build_connections.py` matches GTFS `stop_times` through the `parent_station` map (platform
 ids like `120N` → station `120`) and hard-codes two genuine-feed corrections: the phantom
 `718↔R09` artifact is dropped and the same-complex transfers `718↔R05` / `127↔631` are added.
-`scripts/build_network.py` snapshots the full station/segment geometry (monitored: 59/59 codes match).
+`scripts/build_network.py` snapshots the full station/segment topology (monitored: 59/59 codes match).
 
-On the Crowd dashboard the **schematic** view (one trunk per track) is untouched; the
-**geographic** toggle draws the complete 496-station real network as a faint base layer, overlays
-the 59 monitored stations with live congestion dots, and clicking a station brightens exactly its
-one-hop real connections (with dashed walking interchanges).
+On the Crowd dashboard all three views live in one toggle. The **schematic** view (one trunk per
+track) is untouched; the **geographic** toggle draws the complete 496-station real network as a
+faint base layer, overlays the 59 monitored stations with live congestion dots, and clicking a
+station brightens exactly its one-hop real connections (with dashed walking interchanges); the
+**connections** toggle uses the same true lat/lng projection but strips it back to the monitored
+graph so the one-to-one links are unmistakable — click a station and everything it is not directly
+linked to drops to 14%, each of its own links lights up with a chip naming the routes that serve it
+(`L`, `4/5`), every connected station gets a white ring plus a live occupancy badge, and a side
+panel lists the same links. Only links genuinely incident to the selected station light up, so a
+path that merely passes through a neighbour stays dimmed.
 
 ## ML Models & Confidence Intervals
 
@@ -242,11 +264,11 @@ for measured model/API benchmarks, and [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) 
 ```bash
 cd backend
 pip install -r requirements-dev.txt
-pytest tests -v        # 176 tests (API, models, ML artifacts, connections, network, timezone, cache, scheduling advice, simulation)
+pytest tests -v        # 179 tests (API, models, ML artifacts, connections, network, timezone, cache, scheduling advice, simulation)
 ```
 
-Frontend: `cd frontend && npm test` runs the Vitest suite (**41 tests** — lines, connections,
-`CrowdEstimateNote`, `ModelBadge`).
+Frontend: `cd frontend && npm test` runs the Vitest suite (**45 tests** — lines, connections,
+`linkTouches` one-hop link predicate, `CrowdEstimateNote`, `ModelBadge`).
 
 CI runs on every branch push and pull request (see `.github/workflows/ci.yml`): a Python job runs
 the backend suite with dev dependencies, a separate job verifies the backend Docker image builds,

@@ -11,6 +11,7 @@
 2. [System architecture at a glance](#2-system-architecture-at-a-glance)
 3. [Where every number in this project comes from](#3-where-every-number-in-this-project-comes-from)
 4. [Is the data real New York City?](#4-is-the-data-real-new-york-city)
+   - [4.1 How real are the "NYC metro paths", exactly?](#41-how-real-are-the-nyc-metro-paths-exactly)
 5. [Login page & who can see what](#5-login-page--who-can-see-what)
 6. [Overview dashboard](#6-overview-dashboard)
 7. [Crowd Monitoring](#7-crowd-monitoring)
@@ -164,7 +165,7 @@ Partly yes on purpose; partly simulation — and the boundary is documented, not
 | Piece | Real? | Source |
 |---|---|---|
 | Stations (ids, names, lines, lat/lng) | **Real** | MTA stop list from GTFS (`stations.csv`, 59 MTA stop ids such as `34 St-Penn Station`, `72 St`) |
-| Network map geometry | **Real** | `nyc_network.json` — 496 real NYC subway stations / 578 segments; schematic `connections.csv` (25 edges: 21 along-line + 4 walking connections between MTA stops) |
+| Network map geometry | **Real topology, simplified lines** | `nyc_network.json` — 496 real MTA stations with real `stop_lat`/`stop_lon` and 578 real segments (stations genuinely consecutive on the same trip, tagged with the routes that serve them). The line *between* two stops is drawn straight, so bends are not surveyed track curves — see §4.1. Schematic `connections.csv` (25 edges: 21 along-line + 4 walking connections between MTA stops) |
 | Train classes / line assignments | **Real** | MTA rolling-stock conventions |
 | Station `capacity_per_hour` | **Real** | GTFS peak-hour train arrivals |
 | Passenger counts, occupancy, delays | **Simulated, deterministically** | If a thousand people ride 72 St, and the ML says 11 000/hour capacity — the numbers behave realistically but are produced by the simulation clock, not by physical turnstiles |
@@ -175,6 +176,37 @@ Partly yes on purpose; partly simulation — and the boundary is documented, not
 and real incident datasets (so the ML learns genuine patterns). But a *demo* cannot wait for years
 of turnstile logs, so the passenger layer is simulated deterministically — which is also what lets
 two classmates press “Refresh” and get reproducible numbers during review.
+
+### 4.1 How real are the "NYC metro paths", exactly?
+
+Worth being precise, because this is the one place where "real" needs a caveat.
+
+**What is genuinely real**
+- **Station positions.** Every dot on the map is an MTA station-level stop from the official
+  `stops.txt` feed, at its real `stop_lat` / `stop_lon` (rounded to 6 decimals ≈ 0.1 m). 496 of
+  them, which is the whole subway rather than just our 59 monitored stops.
+- **Station names and codes.** Real MTA identifiers (`34 St-Penn Station`, `L03`, `635`).
+- **Which stops connect to which.** All 578 segments come from consecutive stations on the *same
+  GTFS trip*, so the adjacency is the network's real adjacency — 125 St is genuinely next stop after
+  110 St on the 1 train, because the timetable says so.
+- **Which routes serve a segment.** Each segment is tagged with the semicolon-joined route short
+  names that run it (`1;2;3`), read from `routes.txt` / `trips.txt` / `stop_times.txt`.
+
+**What is simplified**
+- **The line drawn between two stops is a straight segment.** MTA's GTFS ships optional
+  `shapes.txt` track polylines; this build does **not** consume them, so curves, track-level
+  jogs, and elevated/underground distinctions are not represented. A long straight hop across
+  Manhattan is a straight-line abstraction between two real endpoints, not a surveyed alignment.
+- **Complexes collapse to one point.** Stops sharing a `parent_station` (every platform in Times
+  Sq–42 St, etc.) are normalised to their parent junction, so a big interchange appears as one
+  dot rather than its separate platforms.
+- **It is a topology map, not a GPS trace.** Nothing here shows live train positions; the coloured
+  layer is occupancy, not a vehicle running down the line.
+
+**So:** "real NYC metro paths" means *real stations in real positions, connected in the real
+order by the routes that really serve them* — drawn with straight-line simplification between
+stops. That is exactly what makes it useful for spotting transfer hubs and reading congestion
+patterns, and it is why the docs should not claim surveyed track geometry.
 
 ---
 
@@ -230,14 +262,41 @@ It loads six sources in parallel: `/analytics/overview`, `/crowd/live`, `/trains
 
 This page is the operational heart. It shows the network *as a map* and every station *as data*.
 
-### 7.1 The map — two views
+### 7.1 The map — three views
 
 ![Crowd monitoring - map](images/04-crowd-map.png)
 
-- **Geographic view** — drawn from `/crowd/network` (496 real NYC stations / 578 segments):
-  actual lat/lng geography.
-- **Schematic view** — drawn from `/crowd/connections` (25 GTFS-derived edges): 21 along-line plus
-  4 walking connections between MTA stops, making it easy to spot transfer hubs.
+All three sit side by side in the same toggle, so you can switch between them without reloading
+anything. None of them alters another — they are three readings of the same GTFS-derived data.
+
+- **Schematic view** — the original one-track-per-trunk diagram, one continuous band per trunk.
+- **Geographic view** — drawn from `/crowd/network` (496 real MTA stations at their real
+  lat/lng, 578 real segments): actual New York geography, with the full subway as a faint base
+  layer and monitored stations overlaid.
+- **Connections view** — the same true lat/lng projection, but stripped back to the *monitored
+  graph only* so the one-to-one link structure becomes the subject. Built from
+  `/crowd/connections` (25 GTFS-derived edges: 21 along-line plus 4 walking connections between
+  MTA stops).
+
+Both map views plot real stations in their real positions and connect them in the real order the
+GTFS timetable gives; the line between two stops is drawn straight. See §4.1 for exactly what that
+does and does not mean.
+
+**What the connections view adds.** With nothing selected the whole monitored graph is drawn
+bright. Click any station and it isolates that junction completely:
+
+- every station it is **not** directly linked to drops to 14% opacity, so the highlight reads
+  instantly;
+- each link it **does** have is drawn thicker, glows, and carries a chip naming the routes that
+  serve it (e.g. `L`, `4/5`);
+- every connected station gets a white ring plus its own live occupancy badge;
+- a side panel repeats the same links as a one-to-one list, clickable to walk the network.
+
+Only links genuinely **incident to the selected station** light up — an edge that merely passes
+through one of its neighbours stays dimmed, so you never see a path highlighted that the station
+does not actually serve.
+
+![Connections view - station selected](images/16-crowd-connections.png)
 
 Stations are **coloured by live occupancy** (green→yellow→orange→red). You can toggle layers
 (clusters, density) and search stations. Map data = real NYC (§4); occupancy = live snapshots
@@ -507,8 +566,9 @@ are model-derived.
 |---|---|---|---|
 | Overview | Most Congested Stations (bars) | `/crowd/live` occupancy % | rush-hour peak at each station; tallest = worst right now |
 | Overview | Network Traffic Trend (line) | `/analytics/traffic?hours=24` | morning + evening peaks ⇒ realistic demand curve |
-| Crowd | Geographic map | `/crowd/network` (real NYC) | live occupancy colours across real geography |
+| Crowd | Geographic map | `/crowd/network` (real MTA stations + real adjacency; straight-line segments, §4.1) | live occupancy colours across real geography |
 | Crowd | Schematic map | `/crowd/connections` (GTFS edges) | transfer hubs and line structure |
+| Crowd | Connections view | `/crowd/connections` + `/crowd/network` | isolates one junction: lit links, route chips, occupancy badges, side-panel list |
 | Crowd | Heatmap grid | `/crowd/heatmap` | station × hour average occupancy matrix |
 | Crowd | Inflow vs Outflow (lines) | `/crowd/station/{id}/history` | entries vs exits balance; out-of-window dates re-synthesised |
 | Trains | Fleet list badges | `/trains/live` | status/ETA/load per train from schedule rows |
@@ -555,12 +615,14 @@ are model-derived.
 
 ## 18. How we know the system is correct & fast
 
-- **Back end:** **176 automated tests** (pytest) — 53 API, 25 simulation, 21 timezone, 19 ML
+- **Back end:** **179 automated tests** (pytest) — 54 API, 27 simulation, 21 timezone, 19 ML
   artifact, 14 cache/live, 10 feature, 10 model-wrapper, 8 connections, 8 network, 8 scheduling
   advice. They cover the delay-vocabulary edge cases, deterministic schedule grids, out-of-window
-  history synthesis, and every auth/RBAC path.
-- **Front end:** **41 tests** (Vitest) + full TypeScript type-check + ESLint + production build,
-  all green.
+  history synthesis, per-station factor spread (regression against the old 7-value collapse),
+  hourly traffic scaling, and every auth/RBAC path.
+- **Front end:** **45 tests** (Vitest) + full TypeScript type-check + ESLint + production build,
+  all green. Includes the `linkTouches` predicate that keeps map highlighting to genuine one-hop
+  links.
 - **CI:** on every push/PR a pipeline runs the Python test job and a Docker image build job (the
   `.dockerignore` fix removed the bloated `data/` directory from the broker). Also covered in
   docs: latency budgets and prediction-interval coverage measures.
@@ -589,8 +651,8 @@ A ≈ 10 minute demo that hits every selling point:
    re-login as **Viewer** later to prove RBAC greys out actions.
 2. **Overview** — explain each KPI’s formula, hover the congested-stations tooltip (readable!),
    point at the traffic twin peaks, and read the model card aloud (R² 0.981).
-3. **Crowd** — switch map view schematic ↔ geographic (real NYC!), click a station → history
-   chart; pick a date → the timeline re-draws. Then, as Operator, post a fake sensor event and
+3. **Crowd** — switch map view schematic ↔ geographic ↔ connections (real NYC!), click a station →
+   history chart; pick a date → the timeline re-draws. Then, as Operator, post a fake sensor event and
    watch the station’s data/alert react *live*.
 4. **Trains** — open a train, show its detail + forecast; note per-train push updates.
 5. **Scheduling** — show the recommendation cards, explain the no-ML solver honestly, hit
@@ -618,7 +680,7 @@ A ≈ 10 minute demo that hits every selling point:
 - Measured performance: crowd **R² 0.981**, demand **R² 0.969**, delay **AUC/MAE from artifact**.
 - Deterministic seed explains reproducible numbers: **same hour → same numbers**.
 - Roles: **Admin / Operator / Viewer**, enforced on the API with JWT + `require_roles`.
-- Tests: **176 back-end pytest + 41 front-end Vitest**, tsc + ESLint + build green; CI builds the
+- Tests: **179 back-end pytest + 45 front-end Vitest**, tsc + ESLint + build green; CI builds the
   Docker image on every push.
 - Tech: FastAPI · Next.js 14 · Postgres/Redis/Mongo · Recharts · Socket.IO · scikit-learn/XGBoost.
 
@@ -627,7 +689,7 @@ A ≈ 10 minute demo that hits every selling point:
 ## Appendix B — Screenshot checklist
 
 Captured each image from the **live demo** (folder: `docs/images/`
-— the markdown references `images/...` relative to this file). All 15 screenshots have already been
+— the markdown references `images/...` relative to this file). All 16 screenshots have already been
 captured into `docs/images/` from the running app.
 
 | # | File | How to capture it |
@@ -647,3 +709,4 @@ captured into `docs/images/` from the running app.
 | 13 | `images/13-alerts.png` | Alerts Centre list with filters |
 | 14 | `images/14-analytics.png` | Analytics: traffic + radar + 72-Hour occupancy bar chart |
 | 15 | `images/15-settings.png` | Settings: user-management table (admin view) |
+| 16 | `images/16-crowd-connections.png` | Crowd page, **connections** view with a station selected: lit links, route chips, occupancy badges, side-panel list |

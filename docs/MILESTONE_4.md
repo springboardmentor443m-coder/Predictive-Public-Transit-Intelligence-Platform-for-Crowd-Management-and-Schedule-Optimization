@@ -19,7 +19,7 @@
 
 ## 2. End-to-End Testing
 
-Automated suite: `backend/tests/test_api.py` (53 API tests) + `test_model_wrappers.py` (10 model tests) = **63 tests** in those two files (176 across the full suite), all passing, run with:
+Automated suite: `backend/tests/test_api.py` (54 API tests) + `test_model_wrappers.py` (10 model tests) = **64 tests** in those two files (179 across the full suite), all passing, run with:
 
 ```bash
 cd backend && pip install -r requirements-dev.txt
@@ -125,7 +125,13 @@ Delivered on branch `KOKKIRIGADDA-MANOJ-BABU` after M4 wrap-up:
   (496 stations / 578 rail segments) into data/nyc_network.json, served at
   `GET /api/v1/crowd/network` (tested: 8 tests). The Crowd dashboard's *geographic* toggle now
   draws the complete rail network as a faint base layer with the 59 monitored stations and their
-  live congestion overlaid, while the original schematic view is untouched.
-- **Testing** -- backend suite grown from 59 to **176 tests** (53 API, 25 simulation, 21 timezone,
+  live congestion overlaid, while the original schematic view is untouched. A third *connections*
+  toggle isolates a single junction: everything the selected station is not directly linked to
+  drops to 14%, each of its own links lights up with a route chip, and a side panel lists the same
+  links. Highlighting uses the tested `linkTouches` predicate so only links genuinely incident to
+  the selection light up. Map fidelity note: stations, coordinates and adjacency are real MTA
+  GTFS data, but the line between two stops is drawn straight (no `shapes.txt` polylines) -- see
+  PROJECT_GUIDE.md 4.1.
+- **Testing** -- backend suite grown from 59 to **179 tests** (54 API, 27 simulation, 21 timezone,
   19 ML artifacts, 14 cache/live, 10 features, 10 model wrappers, 8 connections, 8 network,
-  8 scheduling advice); frontend Vitest suite **41 tests**.
+  8 scheduling advice); frontend Vitest suite **45 tests**.
