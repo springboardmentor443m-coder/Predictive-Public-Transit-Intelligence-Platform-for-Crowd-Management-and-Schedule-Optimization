@@ -222,8 +222,7 @@ down — end users never see raw stack traces (DB failures return a clean `503`)
 
 A public `GET /api/v1/health` endpoint backs the login page and Kubernetes probes — it is
 **unauthenticated** and reports reachability without leaking data. The login screen pings it to
-decide "online / offline" instead of probing an auth-protected route (which previously caused a
-false *"Backend Offline"*).
+decide "online / offline" instead of probing an auth-protected route.
 
 ## Milestone Mapping (PRD)
 
@@ -232,11 +231,11 @@ false *"Backend Offline"*).
 * **Milestone 3 (Wk 5-6):** real-time monitoring, alerts, schedule optimization - [docs/MILESTONE_3.md](docs/MILESTONE_3.md)
 * **Milestone 4 (Wk 7-8):** analytics, testing, Docker/cloud deployment, docs - [docs/MILESTONE_4.md](docs/MILESTONE_4.md)
 
-See `docs/PROJECT_GUIDE.md` for a complete guided tour of the application — from the login page
+See [docs/PROJECT_GUIDE.md](docs/PROJECT_GUIDE.md) for a complete guided tour of the application — from the login page
 through every dashboard, explaining data provenance, the ML techniques and where each is used, and
 what every chart/table represents (with screenshots). For the full week-wise breakdown see
-`docs/PROJECT_PLAN.md`, `docs/PERFORMANCE_METRICS.md`
-for measured model/API benchmarks, and `docs/DEPLOYMENT.md` for AWS/Azure/K8s deployment.
+[docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md), [docs/PERFORMANCE_METRICS.md](docs/PERFORMANCE_METRICS.md)
+for measured model/API benchmarks, and [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for AWS/Azure/K8s deployment.
 
 ## Testing
 
