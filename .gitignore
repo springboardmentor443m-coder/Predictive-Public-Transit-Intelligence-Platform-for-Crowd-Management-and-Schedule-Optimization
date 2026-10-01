@@ -2,3 +2,22 @@
 __pycache__/
 *.pyc
 backend/ai_metroflow.db
+
+# Unused BMRCL GTFS files
+data/bmrcl/Explain GitHub Branching.html
+data/bmrcl/Explain GitHub Branching_files/
+data/bmrcl/areas.txt
+data/bmrcl/attributions.txt
+data/bmrcl/bmrcl-frequencies/
+data/bmrcl/fare_attributes.txt
+data/bmrcl/fare_leg_rules.txt
+data/bmrcl/fare_media.txt
+data/bmrcl/fare_products.txt
+data/bmrcl/fare_rules.txt
+data/bmrcl/feed_info.txt
+data/bmrcl/levels.txt
+data/bmrcl/pathways.txt
+data/bmrcl/stop_areas.txt
+data/bmrcl/timeframes.txt
+data/bmrcl/transfers.txt
+data/bmrcl/translations.txt
