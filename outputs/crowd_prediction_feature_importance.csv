@@ -1,0 +1,98 @@
+Feature,Importance
+Ridership_entry,0.3888053
+Previous_Day_Ridership,0.09844198
+Hour,0.04421762
+Station_Trinity,0.031368047
+"Station_Dr. B. R. Ambedkar Station, Vidhana Soudha",0.024006812
+Station_Benniganahalli,0.02151914
+"Station_Nadaprabhu Kempegowda Station, Majestic",0.019676331
+Net_Flow,0.019458797
+Station_Mahatma Gandhi Road,0.01939663
+Previous_Hour_Net_Flow,0.019393722
+Ridership_exit,0.013462324
+Station_Cubbon Park,0.0126314685
+Station_Baiyappanahalli,0.0124282595
+Station_Pattandur Agrahara,0.012093743
+Station_Sri Sathya Sai Hospital,0.011055184
+Station_Halasuru,0.010185872
+Station_Yeshwantpur,0.009953012
+Station_Kadugodi Tree Park,0.009943845
+"Station_Sir M. Visvesvaraya Stn., Central College",0.009861473
+Rolling_3H_Avg,0.009415857
+Station_Krantivira Sangolli Rayanna Railway Station,0.008815553
+Station_Pattanagere,0.008364014
+Is_Weekend,0.008164696
+Previous_Hour_Ridership,0.0068922364
+Station_Chickpete,0.0068473895
+Previous_Hour_Exit,0.006742032
+Station_Indiranagar,0.006267496
+Day_of_Week,0.0060259555
+Station_Krishnarajapura,0.0059848204
+Station_Kengeri Bus Terminal,0.0059767007
+Station_Dasarahalli,0.0059750243
+Station_Yelachenahalli,0.0056706415
+Station_Seetharampalya,0.005565618
+Station_Jayanagar,0.0055029234
+Station_Vijayanagar,0.004914442
+Station_Krishna Rajendra Market,0.0048771515
+Station_Mysore Road,0.004793466
+Is_Peak_Hour,0.004770722
+Station_Magadi Road,0.0045904857
+Station_Nallurahalli,0.004443379
+Station_Nagasandra,0.0043850346
+Station_Kundalahalli,0.0043563265
+Station_Garudacharpalya,0.004108698
+Station_Challaghatta,0.0039588166
+Station_South End Circle,0.003951377
+Station_National College,0.003622445
+Station_Doddakallasandra,0.0035986714
+Station_Madavara,0.0032917175
+Station_Hoodi,0.0028532215
+Station_Swami Vivekananda Road,0.0028220387
+Station_Hopefarm Channasandra,0.0027883928
+"Station_Sri Balagangadharanatha Swamiji Station, Hosahalli",0.002545809
+Station_Vajarahalli,0.0025040505
+Station_Mantri Square Sampige Road,0.0024401885
+Station_Sandal Soap Factory,0.002368332
+Station_Goraguntepalya,0.0021648281
+Station_Jalahalli,0.0021523028
+Station_Singayyanapalya,0.0019687635
+Station_Lalbagh,0.0019262707
+Station_Peenya,0.0018988684
+Station_Whitefield (Kadugodi),0.0018456385
+Station_Mahalakshmi,0.0018313226
+Station_Rajajinagar,0.0017293149
+Station_Mahakavi Kuvempu Road,0.0015626525
+Station_Deepanjali Nagar,0.0015146191
+Station_Jaya Prakash Nagar,0.0013766706
+Month,0.001225689
+Station_Silk Institute,0.0012139913
+Station_Infosys Foundation Konappana Agrahara,0.0012112784
+Station_Attiguppe,0.0010996136
+Station_Konanakunte Cross,0.0009463215
+Station_Peenya Industry,0.00085757254
+Station_Thalaghattapura,0.0007976933
+Station_Kengeri,0.00076732563
+Day_of_Month,0.0007211119
+Station_Manjunathanagara,0.0006351885
+Station_Chikkabidarakallu,0.00046127226
+Station_Banashankari,0.00045470943
+Station_Delta Electronics Bommasandra,0.00045231683
+Station_BTM Layout,0.0003968043
+Station_Beratena Agrahara,0.00036537633
+Station_Pantharapalya - Nayandahalli,0.0003272238
+Station_Electronic City,0.0
+Station_Central Silk Board,0.0
+Station_Kudlu Gate,0.0
+Station_Biocon Hebbagodi,0.0
+Station_Bommanahalli,0.0
+Station_Jnanabharathi,0.0
+Station_Jayadeva Hospital,0.0
+Station_Srirampura,0.0
+Station_Hongasandra,0.0
+Station_Huskur Road,0.0
+Station_Hosa Road,0.0
+Station_Ragigudda,0.0
+Station_Rajarajeshwari Nagar,0.0
+Station_Singasandra,0.0
+Station_Rashtreeya Vidyalaya Road,0.0
