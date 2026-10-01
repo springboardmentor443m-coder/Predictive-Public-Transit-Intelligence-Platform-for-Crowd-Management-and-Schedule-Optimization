@@ -1,0 +1,924 @@
+Date,Hour,Station,Ridership_entry,Ridership_exit,Net_Flow,Is_Peak_Hour,Anomaly_Label
+2025-08-01,8,Benniganahalli,3095,1185,1910,1,-1
+2025-08-01,9,Benniganahalli,3674,1514,2160,1,-1
+2025-08-01,19,Benniganahalli,1901,3012,-1111,1,-1
+2025-08-01,9,Cubbon Park,470,3215,-2745,1,-1
+2025-08-01,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",378,3478,-3100,0,-1
+2025-08-01,9,Indiranagar,1907,3853,-1946,1,-1
+2025-08-01,18,Indiranagar,3456,2386,1070,1,-1
+2025-08-01,9,Mahatma Gandhi Road,380,4405,-4025,1,-1
+2025-08-01,10,Mahatma Gandhi Road,323,3194,-2871,0,-1
+2025-08-01,18,Mahatma Gandhi Road,3696,1358,2338,1,-1
+2025-08-01,19,Mahatma Gandhi Road,3149,1389,1760,1,-1
+2025-08-01,16,"Nadaprabhu Kempegowda Station, Majestic",1683,2935,-1252,0,-1
+2025-08-01,17,"Nadaprabhu Kempegowda Station, Majestic",2031,3493,-1462,1,-1
+2025-08-01,18,"Nadaprabhu Kempegowda Station, Majestic",2284,3935,-1651,1,-1
+2025-08-01,19,"Nadaprabhu Kempegowda Station, Majestic",2436,4111,-1675,1,-1
+2025-08-01,20,"Nadaprabhu Kempegowda Station, Majestic",1983,3601,-1618,0,-1
+2025-08-01,21,"Nadaprabhu Kempegowda Station, Majestic",1400,3291,-1891,0,-1
+2025-08-01,10,"Sir M. Visvesvaraya Stn., Central College",425,4024,-3599,0,-1
+2025-08-01,9,Trinity,332,4268,-3936,1,-1
+2025-08-02,20,Mahatma Gandhi Road,2819,1739,1080,0,-1
+2025-08-02,14,"Nadaprabhu Kempegowda Station, Majestic",1953,3319,-1366,0,-1
+2025-08-02,15,"Nadaprabhu Kempegowda Station, Majestic",1730,2959,-1229,0,-1
+2025-08-02,16,"Nadaprabhu Kempegowda Station, Majestic",2074,3237,-1163,0,-1
+2025-08-02,17,"Nadaprabhu Kempegowda Station, Majestic",2337,3594,-1257,1,-1
+2025-08-02,18,"Nadaprabhu Kempegowda Station, Majestic",2628,3740,-1112,1,-1
+2025-08-02,19,"Nadaprabhu Kempegowda Station, Majestic",2591,4043,-1452,1,-1
+2025-08-02,20,"Nadaprabhu Kempegowda Station, Majestic",2196,3533,-1337,0,-1
+2025-08-02,21,"Nadaprabhu Kempegowda Station, Majestic",1836,3027,-1191,0,-1
+2025-08-02,10,"Sir M. Visvesvaraya Stn., Central College",337,4111,-3774,0,-1
+2025-08-03,11,Chickpete,1216,3810,-2594,0,-1
+2025-08-03,12,Chickpete,1583,3620,-2037,0,-1
+2025-08-03,13,Chickpete,2313,2947,-634,0,-1
+2025-08-03,15,Chickpete,3360,2618,742,0,-1
+2025-08-03,12,"Nadaprabhu Kempegowda Station, Majestic",2479,3262,-783,0,-1
+2025-08-03,13,"Nadaprabhu Kempegowda Station, Majestic",2491,3070,-579,0,-1
+2025-08-03,14,"Nadaprabhu Kempegowda Station, Majestic",2567,3414,-847,0,-1
+2025-08-03,15,"Nadaprabhu Kempegowda Station, Majestic",2551,3605,-1054,0,-1
+2025-08-03,16,"Nadaprabhu Kempegowda Station, Majestic",2649,3692,-1043,0,-1
+2025-08-03,17,"Nadaprabhu Kempegowda Station, Majestic",2964,3603,-639,1,-1
+2025-08-03,18,"Nadaprabhu Kempegowda Station, Majestic",2567,3485,-918,1,-1
+2025-08-03,19,"Nadaprabhu Kempegowda Station, Majestic",2352,3381,-1029,1,-1
+2025-08-04,8,Benniganahalli,3262,1518,1744,1,-1
+2025-08-04,9,Benniganahalli,4225,1761,2464,1,-1
+2025-08-04,10,Benniganahalli,3608,1524,2084,0,-1
+2025-08-04,18,Benniganahalli,1730,3188,-1458,1,-1
+2025-08-04,9,Cubbon Park,491,3446,-2955,1,-1
+2025-08-04,10,Cubbon Park,404,3166,-2762,0,-1
+2025-08-04,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",421,3826,-3405,0,-1
+2025-08-04,9,Indiranagar,2034,4323,-2289,1,-1
+2025-08-04,10,Indiranagar,1418,3437,-2019,0,-1
+2025-08-04,18,Indiranagar,3561,2109,1452,1,-1
+2025-08-04,9,Mahatma Gandhi Road,428,4288,-3860,1,-1
+2025-08-04,10,Mahatma Gandhi Road,432,3758,-3326,0,-1
+2025-08-04,18,Mahatma Gandhi Road,3978,983,2995,1,-1
+2025-08-04,9,"Nadaprabhu Kempegowda Station, Majestic",2749,2715,34,1,-1
+2025-08-04,10,"Nadaprabhu Kempegowda Station, Majestic",2069,2777,-708,0,-1
+2025-08-04,17,"Nadaprabhu Kempegowda Station, Majestic",2299,3376,-1077,1,-1
+2025-08-04,18,"Nadaprabhu Kempegowda Station, Majestic",2475,3187,-712,1,-1
+2025-08-04,19,"Nadaprabhu Kempegowda Station, Majestic",2638,3099,-461,1,-1
+2025-08-04,10,"Sir M. Visvesvaraya Stn., Central College",439,4543,-4104,0,-1
+2025-08-04,9,Trinity,317,4656,-4339,1,-1
+2025-08-04,10,Trinity,324,3478,-3154,0,-1
+2025-08-04,18,Trinity,3988,466,3522,1,-1
+2025-08-05,9,Benniganahalli,3864,1509,2355,1,-1
+2025-08-05,10,Benniganahalli,3159,1305,1854,0,-1
+2025-08-05,18,Benniganahalli,1713,3212,-1499,1,-1
+2025-08-05,19,Benniganahalli,1706,3106,-1400,1,-1
+2025-08-05,9,Cubbon Park,556,3707,-3151,1,-1
+2025-08-05,10,Cubbon Park,447,3334,-2887,0,-1
+2025-08-05,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",405,3634,-3229,0,-1
+2025-08-05,9,Indiranagar,2141,4395,-2254,1,-1
+2025-08-05,10,Indiranagar,1491,3332,-1841,0,-1
+2025-08-05,18,Indiranagar,3850,2227,1623,1,-1
+2025-08-05,19,Indiranagar,3127,2200,927,1,-1
+2025-08-05,9,Mahatma Gandhi Road,401,4745,-4344,1,-1
+2025-08-05,10,Mahatma Gandhi Road,420,3560,-3140,0,-1
+2025-08-05,18,Mahatma Gandhi Road,3842,1083,2759,1,-1
+2025-08-05,19,Mahatma Gandhi Road,3306,941,2365,1,-1
+2025-08-05,10,Pattandur Agrahara,318,3391,-3073,0,-1
+2025-08-05,10,"Sir M. Visvesvaraya Stn., Central College",420,4427,-4007,0,-1
+2025-08-05,9,Trinity,322,4828,-4506,1,-1
+2025-08-05,10,Trinity,331,3399,-3068,0,-1
+2025-08-05,18,Trinity,3847,443,3404,1,-1
+2025-08-06,9,Benniganahalli,4286,1675,2611,1,-1
+2025-08-06,10,Benniganahalli,3415,1463,1952,0,-1
+2025-08-06,18,Benniganahalli,1918,3336,-1418,1,-1
+2025-08-06,19,Benniganahalli,1808,3287,-1479,1,-1
+2025-08-06,9,Cubbon Park,541,3730,-3189,1,-1
+2025-08-06,10,Cubbon Park,481,3304,-2823,0,-1
+2025-08-06,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",403,3753,-3350,0,-1
+2025-08-06,9,Indiranagar,2195,4346,-2151,1,-1
+2025-08-06,10,Indiranagar,1541,3616,-2075,0,-1
+2025-08-06,18,Indiranagar,3708,2328,1380,1,-1
+2025-08-06,19,Indiranagar,3223,2248,975,1,-1
+2025-08-06,9,Mahatma Gandhi Road,455,4523,-4068,1,-1
+2025-08-06,10,Mahatma Gandhi Road,392,3690,-3298,0,-1
+2025-08-06,18,Mahatma Gandhi Road,3846,1191,2655,1,-1
+2025-08-06,19,Mahatma Gandhi Road,3456,1139,2317,1,-1
+2025-08-06,17,"Nadaprabhu Kempegowda Station, Majestic",2063,3334,-1271,1,-1
+2025-08-06,18,"Nadaprabhu Kempegowda Station, Majestic",2350,3639,-1289,1,-1
+2025-08-06,19,"Nadaprabhu Kempegowda Station, Majestic",2504,3490,-986,1,-1
+2025-08-06,20,"Nadaprabhu Kempegowda Station, Majestic",1924,2843,-919,0,-1
+2025-08-06,10,Pattandur Agrahara,315,3482,-3167,0,-1
+2025-08-06,10,"Sir M. Visvesvaraya Stn., Central College",454,4344,-3890,0,-1
+2025-08-06,9,Trinity,369,4803,-4434,1,-1
+2025-08-06,10,Trinity,382,3488,-3106,0,-1
+2025-08-06,18,Trinity,3968,471,3497,1,-1
+2025-08-07,9,Benniganahalli,3983,1604,2379,1,-1
+2025-08-07,10,Benniganahalli,3578,1387,2191,0,-1
+2025-08-07,18,Benniganahalli,2010,3207,-1197,1,-1
+2025-08-07,9,Cubbon Park,538,3472,-2934,1,-1
+2025-08-07,10,Cubbon Park,458,3207,-2749,0,-1
+2025-08-07,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",409,3582,-3173,0,-1
+2025-08-07,9,Indiranagar,2130,4111,-1981,1,-1
+2025-08-07,10,Indiranagar,1567,3331,-1764,0,-1
+2025-08-07,18,Indiranagar,3712,2149,1563,1,-1
+2025-08-07,19,Indiranagar,3310,2213,1097,1,-1
+2025-08-07,9,Mahatma Gandhi Road,430,4279,-3849,1,-1
+2025-08-07,10,Mahatma Gandhi Road,403,3581,-3178,0,-1
+2025-08-07,18,Mahatma Gandhi Road,3625,1111,2514,1,-1
+2025-08-07,19,Mahatma Gandhi Road,3307,1163,2144,1,-1
+2025-08-07,16,"Nadaprabhu Kempegowda Station, Majestic",1697,3390,-1693,0,-1
+2025-08-07,17,"Nadaprabhu Kempegowda Station, Majestic",2016,4131,-2115,1,-1
+2025-08-07,18,"Nadaprabhu Kempegowda Station, Majestic",2291,4578,-2287,1,-1
+2025-08-07,19,"Nadaprabhu Kempegowda Station, Majestic",2349,4733,-2384,1,-1
+2025-08-07,20,"Nadaprabhu Kempegowda Station, Majestic",2118,3985,-1867,0,-1
+2025-08-07,21,"Nadaprabhu Kempegowda Station, Majestic",1611,3587,-1976,0,-1
+2025-08-07,10,Pattandur Agrahara,321,3112,-2791,0,-1
+2025-08-07,10,"Sir M. Visvesvaraya Stn., Central College",399,4184,-3785,0,-1
+2025-08-07,9,Trinity,345,4587,-4242,1,-1
+2025-08-07,10,Trinity,396,3278,-2882,0,-1
+2025-08-07,18,Trinity,3676,465,3211,1,-1
+2025-08-08,17,"Nadaprabhu Kempegowda Station, Majestic",1941,3535,-1594,1,-1
+2025-08-08,18,"Nadaprabhu Kempegowda Station, Majestic",2095,3905,-1810,1,-1
+2025-08-08,19,"Nadaprabhu Kempegowda Station, Majestic",1964,3947,-1983,1,-1
+2025-08-08,20,"Nadaprabhu Kempegowda Station, Majestic",1618,3471,-1853,0,-1
+2025-08-08,21,"Nadaprabhu Kempegowda Station, Majestic",1312,3089,-1777,0,-1
+2025-08-08,9,Trinity,270,3346,-3076,1,-1
+2025-08-09,13,"Nadaprabhu Kempegowda Station, Majestic",2114,3026,-912,0,-1
+2025-08-09,14,"Nadaprabhu Kempegowda Station, Majestic",2043,3254,-1211,0,-1
+2025-08-09,15,"Nadaprabhu Kempegowda Station, Majestic",1921,2996,-1075,0,-1
+2025-08-09,16,"Nadaprabhu Kempegowda Station, Majestic",2087,3374,-1287,0,-1
+2025-08-09,17,"Nadaprabhu Kempegowda Station, Majestic",2363,3537,-1174,1,-1
+2025-08-09,18,"Nadaprabhu Kempegowda Station, Majestic",2242,3966,-1724,1,-1
+2025-08-09,19,"Nadaprabhu Kempegowda Station, Majestic",2200,3711,-1511,1,-1
+2025-08-09,20,"Nadaprabhu Kempegowda Station, Majestic",1914,3439,-1525,0,-1
+2025-08-09,21,"Nadaprabhu Kempegowda Station, Majestic",1666,2813,-1147,0,-1
+2025-08-10,12,Chickpete,1732,3139,-1407,0,-1
+2025-08-10,9,"Nadaprabhu Kempegowda Station, Majestic",1830,2988,-1158,1,-1
+2025-08-10,10,"Nadaprabhu Kempegowda Station, Majestic",2260,3149,-889,0,-1
+2025-08-10,11,"Nadaprabhu Kempegowda Station, Majestic",3194,3740,-546,0,-1
+2025-08-10,12,"Nadaprabhu Kempegowda Station, Majestic",4365,4191,174,0,-1
+2025-08-10,13,"Nadaprabhu Kempegowda Station, Majestic",3103,3716,-613,0,-1
+2025-08-10,14,"Nadaprabhu Kempegowda Station, Majestic",2319,3480,-1161,0,-1
+2025-08-10,15,"Nadaprabhu Kempegowda Station, Majestic",2575,3708,-1133,0,-1
+2025-08-10,16,"Nadaprabhu Kempegowda Station, Majestic",2748,4004,-1256,0,-1
+2025-08-10,17,"Nadaprabhu Kempegowda Station, Majestic",2919,3961,-1042,1,-1
+2025-08-10,18,"Nadaprabhu Kempegowda Station, Majestic",2842,3819,-977,1,-1
+2025-08-10,19,"Nadaprabhu Kempegowda Station, Majestic",2721,3287,-566,1,-1
+2025-08-10,20,"Nadaprabhu Kempegowda Station, Majestic",1888,2903,-1015,0,-1
+2025-08-10,21,"Nadaprabhu Kempegowda Station, Majestic",1725,2862,-1137,0,-1
+2025-08-11,8,Benniganahalli,3333,1564,1769,1,-1
+2025-08-11,9,Benniganahalli,3956,1851,2105,1,-1
+2025-08-11,10,Benniganahalli,3395,1682,1713,0,-1
+2025-08-11,18,Benniganahalli,2043,3362,-1319,1,-1
+2025-08-11,19,Benniganahalli,1688,3222,-1534,1,-1
+2025-08-11,9,Cubbon Park,525,3475,-2950,1,-1
+2025-08-11,10,Cubbon Park,427,3200,-2773,0,-1
+2025-08-11,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",457,3934,-3477,0,-1
+2025-08-11,9,Indiranagar,2132,4368,-2236,1,-1
+2025-08-11,10,Indiranagar,1512,3696,-2184,0,-1
+2025-08-11,18,Indiranagar,3698,2148,1550,1,-1
+2025-08-11,9,Mahatma Gandhi Road,408,4356,-3948,1,-1
+2025-08-11,10,Mahatma Gandhi Road,379,3753,-3374,0,-1
+2025-08-11,18,Mahatma Gandhi Road,3749,1152,2597,1,-1
+2025-08-11,9,"Nadaprabhu Kempegowda Station, Majestic",3345,2853,492,1,-1
+2025-08-11,10,"Nadaprabhu Kempegowda Station, Majestic",2239,3056,-817,0,-1
+2025-08-11,17,"Nadaprabhu Kempegowda Station, Majestic",2493,3287,-794,1,-1
+2025-08-11,18,"Nadaprabhu Kempegowda Station, Majestic",2821,3631,-810,1,-1
+2025-08-11,19,"Nadaprabhu Kempegowda Station, Majestic",2703,3778,-1075,1,-1
+2025-08-11,10,"Sir M. Visvesvaraya Stn., Central College",474,4642,-4168,0,-1
+2025-08-11,9,Trinity,357,4566,-4209,1,-1
+2025-08-11,10,Trinity,319,3447,-3128,0,-1
+2025-08-11,18,Trinity,3953,484,3469,1,-1
+2025-08-12,8,Benniganahalli,3219,1326,1893,1,-1
+2025-08-12,9,Benniganahalli,4090,1741,2349,1,-1
+2025-08-12,10,Benniganahalli,3216,1563,1653,0,-1
+2025-08-12,18,Benniganahalli,1874,3334,-1460,1,-1
+2025-08-12,19,Benniganahalli,1770,3420,-1650,1,-1
+2025-08-12,9,Cubbon Park,566,3703,-3137,1,-1
+2025-08-12,10,Cubbon Park,502,3390,-2888,0,-1
+2025-08-12,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",450,4062,-3612,0,-1
+2025-08-12,9,Indiranagar,2188,4329,-2141,1,-1
+2025-08-12,10,Indiranagar,1580,3517,-1937,0,-1
+2025-08-12,18,Indiranagar,3708,2337,1371,1,-1
+2025-08-12,19,Indiranagar,3347,2291,1056,1,-1
+2025-08-12,9,Mahatma Gandhi Road,497,4657,-4160,1,-1
+2025-08-12,10,Mahatma Gandhi Road,669,3601,-2932,0,-1
+2025-08-12,18,Mahatma Gandhi Road,3962,1161,2801,1,-1
+2025-08-12,19,Mahatma Gandhi Road,3274,1080,2194,1,-1
+2025-08-12,16,"Nadaprabhu Kempegowda Station, Majestic",1817,3042,-1225,0,-1
+2025-08-12,18,"Nadaprabhu Kempegowda Station, Majestic",2472,3639,-1167,1,-1
+2025-08-12,19,"Nadaprabhu Kempegowda Station, Majestic",2553,3779,-1226,1,-1
+2025-08-12,20,"Nadaprabhu Kempegowda Station, Majestic",2007,2866,-859,0,-1
+2025-08-12,10,Pattandur Agrahara,318,3532,-3214,0,-1
+2025-08-12,10,"Sir M. Visvesvaraya Stn., Central College",452,4450,-3998,0,-1
+2025-08-12,9,Trinity,394,4818,-4424,1,-1
+2025-08-12,10,Trinity,333,3483,-3150,0,-1
+2025-08-12,18,Trinity,4061,461,3600,1,-1
+2025-08-12,19,Trinity,3232,358,2874,1,-1
+2025-08-13,8,Benniganahalli,3195,1202,1993,1,-1
+2025-08-13,9,Benniganahalli,4114,1605,2509,1,-1
+2025-08-13,10,Benniganahalli,3207,1585,1622,0,-1
+2025-08-13,18,Benniganahalli,1863,3266,-1403,1,-1
+2025-08-13,19,Benniganahalli,1859,3588,-1729,1,-1
+2025-08-13,9,Cubbon Park,537,3740,-3203,1,-1
+2025-08-13,10,Cubbon Park,546,3251,-2705,0,-1
+2025-08-13,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",452,4141,-3689,0,-1
+2025-08-13,9,Indiranagar,2200,4211,-2011,1,-1
+2025-08-13,10,Indiranagar,1519,3689,-2170,0,-1
+2025-08-13,18,Indiranagar,3519,2085,1434,1,-1
+2025-08-13,19,Indiranagar,3568,2324,1244,1,-1
+2025-08-13,9,Mahatma Gandhi Road,512,4406,-3894,1,-1
+2025-08-13,10,Mahatma Gandhi Road,708,3705,-2997,0,-1
+2025-08-13,18,Mahatma Gandhi Road,3663,1026,2637,1,-1
+2025-08-13,19,Mahatma Gandhi Road,3721,998,2723,1,-1
+2025-08-13,16,"Nadaprabhu Kempegowda Station, Majestic",1669,3268,-1599,0,-1
+2025-08-13,17,"Nadaprabhu Kempegowda Station, Majestic",2326,3780,-1454,1,-1
+2025-08-13,18,"Nadaprabhu Kempegowda Station, Majestic",2488,4297,-1809,1,-1
+2025-08-13,19,"Nadaprabhu Kempegowda Station, Majestic",2656,4546,-1890,1,-1
+2025-08-13,20,"Nadaprabhu Kempegowda Station, Majestic",2165,4251,-2086,0,-1
+2025-08-13,21,"Nadaprabhu Kempegowda Station, Majestic",1702,3630,-1928,0,-1
+2025-08-13,10,Pattandur Agrahara,302,3584,-3282,0,-1
+2025-08-13,10,"Sir M. Visvesvaraya Stn., Central College",473,4481,-4008,0,-1
+2025-08-13,9,Trinity,394,4658,-4264,1,-1
+2025-08-13,10,Trinity,382,3626,-3244,0,-1
+2025-08-13,18,Trinity,3859,489,3370,1,-1
+2025-08-13,19,Trinity,3539,417,3122,1,-1
+2025-08-14,9,Benniganahalli,3693,1608,2085,1,-1
+2025-08-14,10,Benniganahalli,2956,1349,1607,0,-1
+2025-08-14,18,Benniganahalli,2619,3197,-578,1,-1
+2025-08-14,19,Benniganahalli,2421,3204,-783,1,-1
+2025-08-14,9,Cubbon Park,490,3370,-2880,1,-1
+2025-08-14,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",445,3736,-3291,0,-1
+2025-08-14,9,Indiranagar,1925,3902,-1977,1,-1
+2025-08-14,10,Indiranagar,1440,3147,-1707,0,-1
+2025-08-14,18,Indiranagar,3834,2245,1589,1,-1
+2025-08-14,19,Indiranagar,3326,2245,1081,1,-1
+2025-08-14,9,Mahatma Gandhi Road,460,4142,-3682,1,-1
+2025-08-14,10,Mahatma Gandhi Road,374,3189,-2815,0,-1
+2025-08-14,18,Mahatma Gandhi Road,3660,1323,2337,1,-1
+2025-08-14,9,"Nadaprabhu Kempegowda Station, Majestic",2543,2882,-339,1,-1
+2025-08-14,10,"Nadaprabhu Kempegowda Station, Majestic",1787,2788,-1001,0,-1
+2025-08-14,13,"Nadaprabhu Kempegowda Station, Majestic",1814,3147,-1333,0,-1
+2025-08-14,14,"Nadaprabhu Kempegowda Station, Majestic",1759,3490,-1731,0,-1
+2025-08-14,15,"Nadaprabhu Kempegowda Station, Majestic",1716,3695,-1979,0,-1
+2025-08-14,16,"Nadaprabhu Kempegowda Station, Majestic",2316,4675,-2359,0,-1
+2025-08-14,17,"Nadaprabhu Kempegowda Station, Majestic",2502,6052,-3550,1,-1
+2025-08-14,18,"Nadaprabhu Kempegowda Station, Majestic",2819,7052,-4233,1,-1
+2025-08-14,19,"Nadaprabhu Kempegowda Station, Majestic",3230,8254,-5024,1,-1
+2025-08-14,20,"Nadaprabhu Kempegowda Station, Majestic",2684,8407,-5723,0,-1
+2025-08-14,21,"Nadaprabhu Kempegowda Station, Majestic",2203,9112,-6909,0,-1
+2025-08-14,22,"Nadaprabhu Kempegowda Station, Majestic",1723,6170,-4447,0,-1
+2025-08-14,10,"Sir M. Visvesvaraya Stn., Central College",454,4729,-4275,0,-1
+2025-08-14,9,Trinity,341,4343,-4002,1,-1
+2025-08-14,18,Trinity,3594,509,3085,1,-1
+2025-08-14,19,Yeshwantpur,1032,3251,-2219,1,-1
+2025-08-14,20,Yeshwantpur,1140,2970,-1830,0,-1
+2025-08-15,9,"Nadaprabhu Kempegowda Station, Majestic",2469,2959,-490,1,-1
+2025-08-15,10,"Nadaprabhu Kempegowda Station, Majestic",2563,3515,-952,0,-1
+2025-08-15,11,"Nadaprabhu Kempegowda Station, Majestic",2922,3971,-1049,0,-1
+2025-08-15,12,"Nadaprabhu Kempegowda Station, Majestic",2933,4833,-1900,0,-1
+2025-08-15,13,"Nadaprabhu Kempegowda Station, Majestic",3092,5153,-2061,0,-1
+2025-08-15,14,"Nadaprabhu Kempegowda Station, Majestic",3235,4199,-964,0,-1
+2025-08-15,15,"Nadaprabhu Kempegowda Station, Majestic",2748,4327,-1579,0,-1
+2025-08-15,16,"Nadaprabhu Kempegowda Station, Majestic",3348,4184,-836,0,-1
+2025-08-15,17,"Nadaprabhu Kempegowda Station, Majestic",3269,4178,-909,1,-1
+2025-08-15,18,"Nadaprabhu Kempegowda Station, Majestic",3344,4486,-1142,1,-1
+2025-08-15,19,"Nadaprabhu Kempegowda Station, Majestic",3340,4294,-954,1,-1
+2025-08-15,20,"Nadaprabhu Kempegowda Station, Majestic",3132,3652,-520,0,-1
+2025-08-15,21,"Nadaprabhu Kempegowda Station, Majestic",2222,3197,-975,0,-1
+2025-08-16,11,Mahalakshmi,1762,2840,-1078,0,-1
+2025-08-16,10,"Nadaprabhu Kempegowda Station, Majestic",2285,2742,-457,0,-1
+2025-08-16,12,"Nadaprabhu Kempegowda Station, Majestic",2165,3070,-905,0,-1
+2025-08-16,13,"Nadaprabhu Kempegowda Station, Majestic",2236,3428,-1192,0,-1
+2025-08-16,14,"Nadaprabhu Kempegowda Station, Majestic",2273,3353,-1080,0,-1
+2025-08-16,15,"Nadaprabhu Kempegowda Station, Majestic",1959,3316,-1357,0,-1
+2025-08-16,16,"Nadaprabhu Kempegowda Station, Majestic",2311,3898,-1587,0,-1
+2025-08-16,17,"Nadaprabhu Kempegowda Station, Majestic",3024,3990,-966,1,-1
+2025-08-16,18,"Nadaprabhu Kempegowda Station, Majestic",2742,3957,-1215,1,-1
+2025-08-16,19,"Nadaprabhu Kempegowda Station, Majestic",2857,4043,-1186,1,-1
+2025-08-16,20,"Nadaprabhu Kempegowda Station, Majestic",2392,3356,-964,0,-1
+2025-08-16,21,"Nadaprabhu Kempegowda Station, Majestic",2019,2896,-877,0,-1
+2025-08-16,10,"Sir M. Visvesvaraya Stn., Central College",309,3293,-2984,0,-1
+2025-08-17,11,Chickpete,1033,3216,-2183,0,-1
+2025-08-17,12,Chickpete,1694,3090,-1396,0,-1
+2025-08-17,13,Chickpete,2148,2992,-844,0,-1
+2025-08-17,11,"Nadaprabhu Kempegowda Station, Majestic",2515,2840,-325,0,-1
+2025-08-17,12,"Nadaprabhu Kempegowda Station, Majestic",2617,3244,-627,0,-1
+2025-08-17,13,"Nadaprabhu Kempegowda Station, Majestic",2586,4005,-1419,0,-1
+2025-08-17,14,"Nadaprabhu Kempegowda Station, Majestic",2932,3639,-707,0,-1
+2025-08-17,15,"Nadaprabhu Kempegowda Station, Majestic",2774,3798,-1024,0,-1
+2025-08-17,16,"Nadaprabhu Kempegowda Station, Majestic",3032,3898,-866,0,-1
+2025-08-17,17,"Nadaprabhu Kempegowda Station, Majestic",3448,4382,-934,1,-1
+2025-08-17,18,"Nadaprabhu Kempegowda Station, Majestic",3108,3613,-505,1,-1
+2025-08-17,19,"Nadaprabhu Kempegowda Station, Majestic",2834,3524,-690,1,-1
+2025-08-17,20,"Nadaprabhu Kempegowda Station, Majestic",2525,3314,-789,0,-1
+2025-08-17,21,"Nadaprabhu Kempegowda Station, Majestic",2286,2975,-689,0,-1
+2025-08-17,20,Yeshwantpur,2811,1106,1705,0,-1
+2025-08-18,8,Benniganahalli,3346,1555,1791,1,-1
+2025-08-18,9,Benniganahalli,3765,1984,1781,1,-1
+2025-08-18,10,Benniganahalli,3372,1489,1883,0,-1
+2025-08-18,18,Benniganahalli,1757,3319,-1562,1,-1
+2025-08-18,19,Benniganahalli,1671,3154,-1483,1,-1
+2025-08-18,9,Cubbon Park,513,3481,-2968,1,-1
+2025-08-18,10,Cubbon Park,417,3147,-2730,0,-1
+2025-08-18,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",392,3896,-3504,0,-1
+2025-08-18,9,Indiranagar,1946,4249,-2303,1,-1
+2025-08-18,10,Indiranagar,1398,3509,-2111,0,-1
+2025-08-18,18,Indiranagar,3530,2082,1448,1,-1
+2025-08-18,9,Mahatma Gandhi Road,416,4386,-3970,1,-1
+2025-08-18,10,Mahatma Gandhi Road,403,3514,-3111,0,-1
+2025-08-18,18,Mahatma Gandhi Road,3737,932,2805,1,-1
+2025-08-18,7,"Nadaprabhu Kempegowda Station, Majestic",3215,1615,1600,1,-1
+2025-08-18,9,"Nadaprabhu Kempegowda Station, Majestic",3055,2938,117,1,-1
+2025-08-18,10,"Nadaprabhu Kempegowda Station, Majestic",2681,2837,-156,0,-1
+2025-08-18,17,"Nadaprabhu Kempegowda Station, Majestic",2483,3442,-959,1,-1
+2025-08-18,18,"Nadaprabhu Kempegowda Station, Majestic",2745,3400,-655,1,-1
+2025-08-18,19,"Nadaprabhu Kempegowda Station, Majestic",2732,3319,-587,1,-1
+2025-08-18,10,"Sir M. Visvesvaraya Stn., Central College",419,4511,-4092,0,-1
+2025-08-18,9,Trinity,333,4411,-4078,1,-1
+2025-08-18,10,Trinity,296,3404,-3108,0,-1
+2025-08-18,18,Trinity,3977,480,3497,1,-1
+2025-09-01,8,Benniganahalli,3301,1576,1725,1,-1
+2025-09-01,9,Benniganahalli,3894,1810,2084,1,-1
+2025-09-01,10,Benniganahalli,3270,1429,1841,0,-1
+2025-09-01,19,Benniganahalli,1789,3369,-1580,1,-1
+2025-09-01,9,Cubbon Park,542,3677,-3135,1,-1
+2025-09-01,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",475,3833,-3358,0,-1
+2025-09-01,9,Indiranagar,1978,4285,-2307,1,-1
+2025-09-01,10,Indiranagar,1392,3430,-2038,0,-1
+2025-09-01,19,Indiranagar,3344,2213,1131,1,-1
+2025-09-01,9,Mahatma Gandhi Road,445,4636,-4191,1,-1
+2025-09-01,10,Mahatma Gandhi Road,420,3367,-2947,0,-1
+2025-09-01,19,Mahatma Gandhi Road,3963,791,3172,1,-1
+2025-09-01,9,"Nadaprabhu Kempegowda Station, Majestic",2900,2714,186,1,-1
+2025-09-01,17,"Nadaprabhu Kempegowda Station, Majestic",2344,3195,-851,1,-1
+2025-09-01,19,"Nadaprabhu Kempegowda Station, Majestic",2802,3451,-649,1,-1
+2025-09-01,10,"Sir M. Visvesvaraya Stn., Central College",385,4298,-3913,0,-1
+2025-09-01,9,Trinity,360,4501,-4141,1,-1
+2025-09-01,10,Trinity,298,3269,-2971,0,-1
+2025-09-01,19,Trinity,3469,381,3088,1,-1
+2025-09-02,8,Benniganahalli,3186,1293,1893,1,-1
+2025-09-02,9,Benniganahalli,4044,1659,2385,1,-1
+2025-09-02,10,Benniganahalli,2957,1439,1518,0,-1
+2025-09-02,18,Benniganahalli,1748,3291,-1543,1,-1
+2025-09-02,19,Benniganahalli,1748,3327,-1579,1,-1
+2025-09-02,9,Cubbon Park,531,3855,-3324,1,-1
+2025-09-02,10,Cubbon Park,475,3313,-2838,0,-1
+2025-09-02,18,Cubbon Park,3686,608,3078,1,-1
+2025-09-02,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",399,3878,-3479,0,-1
+2025-09-02,9,Indiranagar,2096,4110,-2014,1,-1
+2025-09-02,10,Indiranagar,1425,3583,-2158,0,-1
+2025-09-02,18,Indiranagar,3780,2127,1653,1,-1
+2025-09-02,19,Indiranagar,3230,2171,1059,1,-1
+2025-09-02,9,Mahatma Gandhi Road,453,4558,-4105,1,-1
+2025-09-02,10,Mahatma Gandhi Road,373,3672,-3299,0,-1
+2025-09-02,18,Mahatma Gandhi Road,3846,1045,2801,1,-1
+2025-09-02,19,Mahatma Gandhi Road,3609,924,2685,1,-1
+2025-09-02,16,"Nadaprabhu Kempegowda Station, Majestic",1882,3026,-1144,0,-1
+2025-09-02,17,"Nadaprabhu Kempegowda Station, Majestic",2144,3306,-1162,1,-1
+2025-09-02,18,"Nadaprabhu Kempegowda Station, Majestic",2428,3563,-1135,1,-1
+2025-09-02,19,"Nadaprabhu Kempegowda Station, Majestic",2334,3560,-1226,1,-1
+2025-09-02,10,Pattandur Agrahara,292,3335,-3043,0,-1
+2025-09-02,10,"Sir M. Visvesvaraya Stn., Central College",421,4343,-3922,0,-1
+2025-09-02,9,Trinity,340,4585,-4245,1,-1
+2025-09-02,10,Trinity,359,3535,-3176,0,-1
+2025-09-02,18,Trinity,4075,524,3551,1,-1
+2025-09-03,9,Benniganahalli,4067,1707,2360,1,-1
+2025-09-03,10,Benniganahalli,3453,1456,1997,0,-1
+2025-09-03,18,Benniganahalli,1965,3520,-1555,1,-1
+2025-09-03,9,Cubbon Park,563,3914,-3351,1,-1
+2025-09-03,10,Cubbon Park,436,3168,-2732,0,-1
+2025-09-03,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",409,3983,-3574,0,-1
+2025-09-03,9,Indiranagar,2068,4151,-2083,1,-1
+2025-09-03,10,Indiranagar,1549,3514,-1965,0,-1
+2025-09-03,18,Indiranagar,3674,2246,1428,1,-1
+2025-09-03,9,Mahatma Gandhi Road,475,4718,-4243,1,-1
+2025-09-03,10,Mahatma Gandhi Road,385,3634,-3249,0,-1
+2025-09-03,18,Mahatma Gandhi Road,3936,1096,2840,1,-1
+2025-09-03,16,"Nadaprabhu Kempegowda Station, Majestic",1826,3253,-1427,0,-1
+2025-09-03,17,"Nadaprabhu Kempegowda Station, Majestic",2339,3735,-1396,1,-1
+2025-09-03,18,"Nadaprabhu Kempegowda Station, Majestic",2398,4153,-1755,1,-1
+2025-09-03,19,"Nadaprabhu Kempegowda Station, Majestic",2304,3995,-1691,1,-1
+2025-09-03,20,"Nadaprabhu Kempegowda Station, Majestic",2515,3532,-1017,0,-1
+2025-09-03,21,"Nadaprabhu Kempegowda Station, Majestic",1818,2782,-964,0,-1
+2025-09-03,10,Pattandur Agrahara,273,3457,-3184,0,-1
+2025-09-03,10,"Sir M. Visvesvaraya Stn., Central College",444,4513,-4069,0,-1
+2025-09-03,9,Trinity,331,4650,-4319,1,-1
+2025-09-03,10,Trinity,351,3486,-3135,0,-1
+2025-09-03,18,Trinity,3841,530,3311,1,-1
+2025-09-04,8,Benniganahalli,3100,1223,1877,1,-1
+2025-09-04,9,Benniganahalli,3870,1611,2259,1,-1
+2025-09-04,10,Benniganahalli,3381,1407,1974,0,-1
+2025-09-04,18,Benniganahalli,2038,3534,-1496,1,-1
+2025-09-04,19,Benniganahalli,1941,3310,-1369,1,-1
+2025-09-04,9,Cubbon Park,531,3449,-2918,1,-1
+2025-09-04,10,Cubbon Park,436,3164,-2728,0,-1
+2025-09-04,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",384,3831,-3447,0,-1
+2025-09-04,9,Indiranagar,2020,4232,-2212,1,-1
+2025-09-04,10,Indiranagar,1433,3281,-1848,0,-1
+2025-09-04,18,Indiranagar,3812,2197,1615,1,-1
+2025-09-04,9,Mahatma Gandhi Road,422,4495,-4073,1,-1
+2025-09-04,10,Mahatma Gandhi Road,402,3541,-3139,0,-1
+2025-09-04,18,Mahatma Gandhi Road,3976,1284,2692,1,-1
+2025-09-04,19,Mahatma Gandhi Road,3238,1149,2089,1,-1
+2025-09-04,14,"Nadaprabhu Kempegowda Station, Majestic",1630,2987,-1357,0,-1
+2025-09-04,15,"Nadaprabhu Kempegowda Station, Majestic",1554,2895,-1341,0,-1
+2025-09-04,16,"Nadaprabhu Kempegowda Station, Majestic",1875,3594,-1719,0,-1
+2025-09-04,17,"Nadaprabhu Kempegowda Station, Majestic",2486,4357,-1871,1,-1
+2025-09-04,18,"Nadaprabhu Kempegowda Station, Majestic",2705,4798,-2093,1,-1
+2025-09-04,19,"Nadaprabhu Kempegowda Station, Majestic",2500,4500,-2000,1,-1
+2025-09-04,20,"Nadaprabhu Kempegowda Station, Majestic",2127,4155,-2028,0,-1
+2025-09-04,21,"Nadaprabhu Kempegowda Station, Majestic",1613,3614,-2001,0,-1
+2025-09-04,10,Pattandur Agrahara,304,3233,-2929,0,-1
+2025-09-04,10,"Sir M. Visvesvaraya Stn., Central College",453,4429,-3976,0,-1
+2025-09-04,9,Trinity,352,4619,-4267,1,-1
+2025-09-04,18,Trinity,3790,476,3314,1,-1
+2025-09-05,9,Indiranagar,1268,2969,-1701,1,-1
+2025-09-05,16,"Nadaprabhu Kempegowda Station, Majestic",1832,2936,-1104,0,-1
+2025-09-05,17,"Nadaprabhu Kempegowda Station, Majestic",1890,3458,-1568,1,-1
+2025-09-05,18,"Nadaprabhu Kempegowda Station, Majestic",2203,4188,-1985,1,-1
+2025-09-05,19,"Nadaprabhu Kempegowda Station, Majestic",2316,4541,-2225,1,-1
+2025-09-05,20,"Nadaprabhu Kempegowda Station, Majestic",2030,3814,-1784,0,-1
+2025-09-05,21,"Nadaprabhu Kempegowda Station, Majestic",1703,3377,-1674,0,-1
+2025-09-06,14,"Nadaprabhu Kempegowda Station, Majestic",1888,3129,-1241,0,-1
+2025-09-06,16,"Nadaprabhu Kempegowda Station, Majestic",1872,3223,-1351,0,-1
+2025-09-06,17,"Nadaprabhu Kempegowda Station, Majestic",2329,3584,-1255,1,-1
+2025-09-06,18,"Nadaprabhu Kempegowda Station, Majestic",2598,3762,-1164,1,-1
+2025-09-06,19,"Nadaprabhu Kempegowda Station, Majestic",2236,3736,-1500,1,-1
+2025-09-06,20,"Nadaprabhu Kempegowda Station, Majestic",2376,3421,-1045,0,-1
+2025-09-06,21,"Nadaprabhu Kempegowda Station, Majestic",1931,2753,-822,0,-1
+2025-09-06,10,"Sir M. Visvesvaraya Stn., Central College",316,3846,-3530,0,-1
+2025-09-07,11,Chickpete,1158,3230,-2072,0,-1
+2025-09-07,12,Chickpete,1639,3515,-1876,0,-1
+2025-09-07,12,"Nadaprabhu Kempegowda Station, Majestic",2630,3267,-637,0,-1
+2025-09-07,13,"Nadaprabhu Kempegowda Station, Majestic",2391,3185,-794,0,-1
+2025-09-07,14,"Nadaprabhu Kempegowda Station, Majestic",2532,3447,-915,0,-1
+2025-09-07,15,"Nadaprabhu Kempegowda Station, Majestic",2423,3287,-864,0,-1
+2025-09-07,16,"Nadaprabhu Kempegowda Station, Majestic",2860,3274,-414,0,-1
+2025-09-07,17,"Nadaprabhu Kempegowda Station, Majestic",3116,3408,-292,1,-1
+2025-09-07,18,"Nadaprabhu Kempegowda Station, Majestic",2717,3588,-871,1,-1
+2025-09-08,8,Benniganahalli,3260,1539,1721,1,-1
+2025-09-08,9,Benniganahalli,3968,1793,2175,1,-1
+2025-09-08,10,Benniganahalli,2966,1490,1476,0,-1
+2025-09-08,18,Benniganahalli,1791,3114,-1323,1,-1
+2025-09-08,19,Benniganahalli,1625,3218,-1593,1,-1
+2025-09-08,9,Cubbon Park,525,3551,-3026,1,-1
+2025-09-08,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",419,3780,-3361,0,-1
+2025-09-08,9,Indiranagar,1930,4349,-2419,1,-1
+2025-09-08,10,Indiranagar,1396,3460,-2064,0,-1
+2025-09-08,18,Indiranagar,3498,2058,1440,1,-1
+2025-09-08,9,Mahatma Gandhi Road,444,4630,-4186,1,-1
+2025-09-08,10,Mahatma Gandhi Road,327,3360,-3033,0,-1
+2025-09-08,18,Mahatma Gandhi Road,3679,1131,2548,1,-1
+2025-09-08,19,Mahatma Gandhi Road,3453,1073,2380,1,-1
+2025-09-08,9,"Nadaprabhu Kempegowda Station, Majestic",2728,2682,46,1,-1
+2025-09-08,17,"Nadaprabhu Kempegowda Station, Majestic",2382,3223,-841,1,-1
+2025-09-08,18,"Nadaprabhu Kempegowda Station, Majestic",2486,3229,-743,1,-1
+2025-09-08,19,"Nadaprabhu Kempegowda Station, Majestic",2699,3491,-792,1,-1
+2025-09-08,10,Pattandur Agrahara,278,3268,-2990,0,-1
+2025-09-08,10,"Sir M. Visvesvaraya Stn., Central College",429,4433,-4004,0,-1
+2025-09-08,9,Trinity,352,4867,-4515,1,-1
+2025-09-08,10,Trinity,326,3271,-2945,0,-1
+2025-09-08,18,Trinity,3836,463,3373,1,-1
+2025-09-09,8,Benniganahalli,3412,1406,2006,1,-1
+2025-09-09,9,Benniganahalli,3924,1663,2261,1,-1
+2025-09-09,10,Benniganahalli,3427,1479,1948,0,-1
+2025-09-09,18,Benniganahalli,1854,3417,-1563,1,-1
+2025-09-09,19,Benniganahalli,1492,3263,-1771,1,-1
+2025-09-09,9,Cubbon Park,562,3883,-3321,1,-1
+2025-09-09,10,Cubbon Park,428,3181,-2753,0,-1
+2025-09-09,18,Cubbon Park,3651,621,3030,1,-1
+2025-09-09,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",406,3782,-3376,0,-1
+2025-09-09,9,Indiranagar,2139,4474,-2335,1,-1
+2025-09-09,10,Indiranagar,1535,3636,-2101,0,-1
+2025-09-09,18,Indiranagar,3770,2169,1601,1,-1
+2025-09-09,9,Mahatma Gandhi Road,464,4807,-4343,1,-1
+2025-09-09,10,Mahatma Gandhi Road,355,3442,-3087,0,-1
+2025-09-09,18,Mahatma Gandhi Road,3996,1060,2936,1,-1
+2025-09-09,19,Mahatma Gandhi Road,3324,1082,2242,1,-1
+2025-09-09,18,"Nadaprabhu Kempegowda Station, Majestic",2468,3333,-865,1,-1
+2025-09-09,19,"Nadaprabhu Kempegowda Station, Majestic",2393,3246,-853,1,-1
+2025-09-09,10,Pattandur Agrahara,282,3570,-3288,0,-1
+2025-09-09,10,"Sir M. Visvesvaraya Stn., Central College",409,4320,-3911,0,-1
+2025-09-09,9,Sri Sathya Sai Hospital,150,3006,-2856,1,-1
+2025-09-09,10,Sri Sathya Sai Hospital,323,3422,-3099,0,-1
+2025-09-09,9,Trinity,400,4864,-4464,1,-1
+2025-09-09,10,Trinity,363,3484,-3121,0,-1
+2025-09-09,18,Trinity,3886,515,3371,1,-1
+2025-09-10,8,Benniganahalli,3245,1244,2001,1,-1
+2025-09-10,9,Benniganahalli,4015,1708,2307,1,-1
+2025-09-10,10,Benniganahalli,3169,1388,1781,0,-1
+2025-09-10,18,Benniganahalli,1817,3544,-1727,1,-1
+2025-09-10,19,Benniganahalli,1655,3160,-1505,1,-1
+2025-09-10,9,Cubbon Park,577,3848,-3271,1,-1
+2025-09-10,10,Cubbon Park,549,3260,-2711,0,-1
+2025-09-10,18,Cubbon Park,3609,666,2943,1,-1
+2025-09-10,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",422,3880,-3458,0,-1
+2025-09-10,9,Indiranagar,2216,4244,-2028,1,-1
+2025-09-10,10,Indiranagar,1518,3645,-2127,0,-1
+2025-09-10,18,Indiranagar,3871,2374,1497,1,-1
+2025-09-10,9,Mahatma Gandhi Road,460,4603,-4143,1,-1
+2025-09-10,10,Mahatma Gandhi Road,375,3736,-3361,0,-1
+2025-09-10,18,Mahatma Gandhi Road,3999,1165,2834,1,-1
+2025-09-10,10,"Nadaprabhu Kempegowda Station, Majestic",1749,2794,-1045,0,-1
+2025-09-10,16,"Nadaprabhu Kempegowda Station, Majestic",1863,2907,-1044,0,-1
+2025-09-10,17,"Nadaprabhu Kempegowda Station, Majestic",2774,3369,-595,1,-1
+2025-09-10,18,"Nadaprabhu Kempegowda Station, Majestic",2794,3626,-832,1,-1
+2025-09-10,19,"Nadaprabhu Kempegowda Station, Majestic",2540,3368,-828,1,-1
+2025-09-10,10,Pattandur Agrahara,267,3426,-3159,0,-1
+2025-09-10,10,"Sir M. Visvesvaraya Stn., Central College",435,4464,-4029,0,-1
+2025-09-10,9,Sri Sathya Sai Hospital,127,2808,-2681,1,-1
+2025-09-10,10,Sri Sathya Sai Hospital,275,3383,-3108,0,-1
+2025-09-10,9,Trinity,368,4842,-4474,1,-1
+2025-09-10,10,Trinity,383,3421,-3038,0,-1
+2025-09-10,18,Trinity,3933,589,3344,1,-1
+2025-09-11,9,Benniganahalli,3691,1724,1967,1,-1
+2025-09-11,10,Benniganahalli,3444,1356,2088,0,-1
+2025-09-11,18,Benniganahalli,1982,3377,-1395,1,-1
+2025-09-11,19,Benniganahalli,1636,3206,-1570,1,-1
+2025-09-11,9,Cubbon Park,545,3630,-3085,1,-1
+2025-09-11,10,Cubbon Park,428,3210,-2782,0,-1
+2025-09-11,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",414,3935,-3521,0,-1
+2025-09-11,9,Indiranagar,2116,4273,-2157,1,-1
+2025-09-11,10,Indiranagar,1497,3376,-1879,0,-1
+2025-09-11,18,Indiranagar,3750,2452,1298,1,-1
+2025-09-11,19,Indiranagar,3178,2192,986,1,-1
+2025-09-11,9,Mahatma Gandhi Road,431,4409,-3978,1,-1
+2025-09-11,10,Mahatma Gandhi Road,368,3634,-3266,0,-1
+2025-09-11,18,Mahatma Gandhi Road,3950,1172,2778,1,-1
+2025-09-11,19,Mahatma Gandhi Road,3276,1005,2271,1,-1
+2025-09-11,17,"Nadaprabhu Kempegowda Station, Majestic",2230,3301,-1071,1,-1
+2025-09-11,18,"Nadaprabhu Kempegowda Station, Majestic",2615,3793,-1178,1,-1
+2025-09-11,19,"Nadaprabhu Kempegowda Station, Majestic",2460,3404,-944,1,-1
+2025-09-11,20,"Nadaprabhu Kempegowda Station, Majestic",1981,2655,-674,0,-1
+2025-09-11,10,Pattandur Agrahara,272,3404,-3132,0,-1
+2025-09-11,10,"Sir M. Visvesvaraya Stn., Central College",422,4694,-4272,0,-1
+2025-09-11,9,Trinity,364,4574,-4210,1,-1
+2025-09-11,10,Trinity,337,3593,-3256,0,-1
+2025-09-11,18,Trinity,3861,530,3331,1,-1
+2025-09-12,8,Benniganahalli,3181,1120,2061,1,-1
+2025-09-12,9,Benniganahalli,3891,1629,2262,1,-1
+2025-09-12,18,Benniganahalli,2088,3315,-1227,1,-1
+2025-09-12,19,Benniganahalli,1936,3248,-1312,1,-1
+2025-09-12,9,Cubbon Park,491,3354,-2863,1,-1
+2025-09-12,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",379,3532,-3153,0,-1
+2025-09-12,9,Indiranagar,1948,3948,-2000,1,-1
+2025-09-12,10,Indiranagar,1372,3118,-1746,0,-1
+2025-09-12,18,Indiranagar,3479,2232,1247,1,-1
+2025-09-12,9,Mahatma Gandhi Road,492,4428,-3936,1,-1
+2025-09-12,18,Mahatma Gandhi Road,3749,1529,2220,1,-1
+2025-09-12,19,Mahatma Gandhi Road,3153,1592,1561,1,-1
+2025-09-12,16,"Nadaprabhu Kempegowda Station, Majestic",1798,3600,-1802,0,-1
+2025-09-12,17,"Nadaprabhu Kempegowda Station, Majestic",2321,4350,-2029,1,-1
+2025-09-12,18,"Nadaprabhu Kempegowda Station, Majestic",2815,5036,-2221,1,-1
+2025-09-12,19,"Nadaprabhu Kempegowda Station, Majestic",2587,5196,-2609,1,-1
+2025-09-12,20,"Nadaprabhu Kempegowda Station, Majestic",2203,4243,-2040,0,-1
+2025-09-12,21,"Nadaprabhu Kempegowda Station, Majestic",1648,3928,-2280,0,-1
+2025-09-12,9,"Sir M. Visvesvaraya Stn., Central College",274,3026,-2752,1,-1
+2025-09-12,10,"Sir M. Visvesvaraya Stn., Central College",443,4123,-3680,0,-1
+2025-09-12,9,Trinity,337,4318,-3981,1,-1
+2025-09-12,10,Trinity,325,3156,-2831,0,-1
+2025-09-13,12,Chickpete,709,3382,-2673,0,-1
+2025-09-13,12,"Nadaprabhu Kempegowda Station, Majestic",2115,3168,-1053,0,-1
+2025-09-13,13,"Nadaprabhu Kempegowda Station, Majestic",2088,3631,-1543,0,-1
+2025-09-13,14,"Nadaprabhu Kempegowda Station, Majestic",2189,3836,-1647,0,-1
+2025-09-13,15,"Nadaprabhu Kempegowda Station, Majestic",2136,3452,-1316,0,-1
+2025-09-13,16,"Nadaprabhu Kempegowda Station, Majestic",2355,4067,-1712,0,-1
+2025-09-13,17,"Nadaprabhu Kempegowda Station, Majestic",2654,4201,-1547,1,-1
+2025-09-13,18,"Nadaprabhu Kempegowda Station, Majestic",2788,4503,-1715,1,-1
+2025-09-13,19,"Nadaprabhu Kempegowda Station, Majestic",2631,4321,-1690,1,-1
+2025-09-13,20,"Nadaprabhu Kempegowda Station, Majestic",2367,3746,-1379,0,-1
+2025-09-13,21,"Nadaprabhu Kempegowda Station, Majestic",1864,2657,-793,0,-1
+2025-09-14,11,Chickpete,1078,3708,-2630,0,-1
+2025-09-14,12,Chickpete,1942,3996,-2054,0,-1
+2025-09-14,13,Chickpete,2294,3129,-835,0,-1
+2025-09-14,15,Chickpete,3286,2196,1090,0,-1
+2025-09-14,11,"Nadaprabhu Kempegowda Station, Majestic",2683,3028,-345,0,-1
+2025-09-14,12,"Nadaprabhu Kempegowda Station, Majestic",2748,3785,-1037,0,-1
+2025-09-14,13,"Nadaprabhu Kempegowda Station, Majestic",2581,3631,-1050,0,-1
+2025-09-14,14,"Nadaprabhu Kempegowda Station, Majestic",2800,3612,-812,0,-1
+2025-09-14,15,"Nadaprabhu Kempegowda Station, Majestic",2778,3691,-913,0,-1
+2025-09-14,16,"Nadaprabhu Kempegowda Station, Majestic",3046,3825,-779,0,-1
+2025-09-14,17,"Nadaprabhu Kempegowda Station, Majestic",3270,4306,-1036,1,-1
+2025-09-14,18,"Nadaprabhu Kempegowda Station, Majestic",3357,3967,-610,1,-1
+2025-09-14,19,"Nadaprabhu Kempegowda Station, Majestic",2858,3764,-906,1,-1
+2025-09-14,20,"Nadaprabhu Kempegowda Station, Majestic",2394,2762,-368,0,-1
+2025-09-14,21,"Nadaprabhu Kempegowda Station, Majestic",1925,2609,-684,0,-1
+2025-09-15,8,Benniganahalli,3509,1581,1928,1,-1
+2025-09-15,9,Benniganahalli,4203,1819,2384,1,-1
+2025-09-15,10,Benniganahalli,3627,1498,2129,0,-1
+2025-09-15,18,Benniganahalli,1770,3333,-1563,1,-1
+2025-09-15,19,Benniganahalli,1604,3290,-1686,1,-1
+2025-09-15,9,Cubbon Park,561,3630,-3069,1,-1
+2025-09-15,10,Cubbon Park,456,3142,-2686,0,-1
+2025-09-15,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",400,4023,-3623,0,-1
+2025-09-15,9,Indiranagar,2094,4316,-2222,1,-1
+2025-09-15,10,Indiranagar,1451,3428,-1977,0,-1
+2025-09-15,18,Indiranagar,3661,2169,1492,1,-1
+2025-09-15,9,Mahatma Gandhi Road,449,4538,-4089,1,-1
+2025-09-15,10,Mahatma Gandhi Road,406,3554,-3148,0,-1
+2025-09-15,18,Mahatma Gandhi Road,3860,1078,2782,1,-1
+2025-09-15,9,"Nadaprabhu Kempegowda Station, Majestic",2944,2693,251,1,-1
+2025-09-15,17,"Nadaprabhu Kempegowda Station, Majestic",2197,3241,-1044,1,-1
+2025-09-15,18,"Nadaprabhu Kempegowda Station, Majestic",2738,3516,-778,1,-1
+2025-09-15,19,"Nadaprabhu Kempegowda Station, Majestic",2587,3492,-905,1,-1
+2025-09-15,10,Pattandur Agrahara,273,3232,-2959,0,-1
+2025-09-15,10,"Sir M. Visvesvaraya Stn., Central College",437,4741,-4304,0,-1
+2025-09-15,9,Trinity,343,4708,-4365,1,-1
+2025-09-15,10,Trinity,325,3548,-3223,0,-1
+2025-09-15,18,Trinity,3916,462,3454,1,-1
+2025-09-16,9,Baiyappanahalli,3318,1090,2228,1,-1
+2025-09-16,8,Benniganahalli,3249,1365,1884,1,-1
+2025-09-16,9,Benniganahalli,4425,1675,2750,1,-1
+2025-09-16,10,Benniganahalli,3417,1583,1834,0,-1
+2025-09-16,18,Benniganahalli,1962,3559,-1597,1,-1
+2025-09-16,19,Benniganahalli,1636,3295,-1659,1,-1
+2025-09-16,9,Cubbon Park,563,3691,-3128,1,-1
+2025-09-16,10,Cubbon Park,494,3267,-2773,0,-1
+2025-09-16,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",450,3666,-3216,0,-1
+2025-09-16,9,Indiranagar,2155,4277,-2122,1,-1
+2025-09-16,10,Indiranagar,1506,3571,-2065,0,-1
+2025-09-16,18,Indiranagar,3760,2414,1346,1,-1
+2025-09-16,9,Mahatma Gandhi Road,488,4613,-4125,1,-1
+2025-09-16,10,Mahatma Gandhi Road,378,3556,-3178,0,-1
+2025-09-16,18,Mahatma Gandhi Road,3943,1130,2813,1,-1
+2025-09-16,19,Mahatma Gandhi Road,3364,1062,2302,1,-1
+2025-09-16,17,"Nadaprabhu Kempegowda Station, Majestic",2193,3281,-1088,1,-1
+2025-09-16,18,"Nadaprabhu Kempegowda Station, Majestic",2556,3370,-814,1,-1
+2025-09-16,19,"Nadaprabhu Kempegowda Station, Majestic",2339,3186,-847,1,-1
+2025-09-16,10,Pattandur Agrahara,286,3748,-3462,0,-1
+2025-09-16,10,"Sir M. Visvesvaraya Stn., Central College",434,4513,-4079,0,-1
+2025-09-16,10,Sri Sathya Sai Hospital,242,3366,-3124,0,-1
+2025-09-16,9,Trinity,416,4804,-4388,1,-1
+2025-09-16,10,Trinity,346,3491,-3145,0,-1
+2025-09-16,18,Trinity,4125,541,3584,1,-1
+2025-09-17,8,Benniganahalli,3277,1411,1866,1,-1
+2025-09-17,9,Benniganahalli,4366,1776,2590,1,-1
+2025-09-17,10,Benniganahalli,3238,1479,1759,0,-1
+2025-09-17,18,Benniganahalli,1989,3546,-1557,1,-1
+2025-09-17,19,Benniganahalli,1785,3314,-1529,1,-1
+2025-09-17,9,Cubbon Park,602,3671,-3069,1,-1
+2025-09-17,10,Cubbon Park,509,3287,-2778,0,-1
+2025-09-17,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",458,3873,-3415,0,-1
+2025-09-17,9,Indiranagar,2223,4275,-2052,1,-1
+2025-09-17,10,Indiranagar,1610,3568,-1958,0,-1
+2025-09-17,18,Indiranagar,3829,2356,1473,1,-1
+2025-09-17,9,Mahatma Gandhi Road,466,4615,-4149,1,-1
+2025-09-17,10,Mahatma Gandhi Road,392,3629,-3237,0,-1
+2025-09-17,18,Mahatma Gandhi Road,3971,1285,2686,1,-1
+2025-09-17,19,Mahatma Gandhi Road,3248,1196,2052,1,-1
+2025-09-17,17,"Nadaprabhu Kempegowda Station, Majestic",2101,3449,-1348,1,-1
+2025-09-17,18,"Nadaprabhu Kempegowda Station, Majestic",2609,3929,-1320,1,-1
+2025-09-17,19,"Nadaprabhu Kempegowda Station, Majestic",2729,3789,-1060,1,-1
+2025-09-17,20,"Nadaprabhu Kempegowda Station, Majestic",1895,2679,-784,0,-1
+2025-09-17,9,Pattandur Agrahara,264,3048,-2784,1,-1
+2025-09-17,10,Pattandur Agrahara,313,3704,-3391,0,-1
+2025-09-17,10,"Sir M. Visvesvaraya Stn., Central College",416,4415,-3999,0,-1
+2025-09-17,10,Sri Sathya Sai Hospital,256,3128,-2872,0,-1
+2025-09-17,9,Trinity,379,4931,-4552,1,-1
+2025-09-17,10,Trinity,353,3444,-3091,0,-1
+2025-09-17,18,Trinity,3999,546,3453,1,-1
+2025-09-18,8,Benniganahalli,3375,1273,2102,1,-1
+2025-09-18,9,Benniganahalli,4253,1774,2479,1,-1
+2025-09-18,10,Benniganahalli,3076,1449,1627,0,-1
+2025-09-18,18,Benniganahalli,2130,3390,-1260,1,-1
+2025-09-18,19,Benniganahalli,1672,3461,-1789,1,-1
+2025-09-18,9,Cubbon Park,590,3619,-3029,1,-1
+2025-09-18,18,Cubbon Park,3975,626,3349,1,-1
+2025-09-18,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",400,3541,-3141,0,-1
+2025-09-18,18,"Dr. B. R. Ambedkar Station, Vidhana Soudha",3632,323,3309,1,-1
+2025-09-18,9,Indiranagar,2199,4254,-2055,1,-1
+2025-09-18,10,Indiranagar,1579,3329,-1750,0,-1
+2025-09-18,18,Indiranagar,3575,2446,1129,1,-1
+2025-09-18,19,Indiranagar,3369,2338,1031,1,-1
+2025-09-18,9,Mahatma Gandhi Road,461,4491,-4030,1,-1
+2025-09-18,10,Mahatma Gandhi Road,408,3553,-3145,0,-1
+2025-09-18,18,Mahatma Gandhi Road,4372,1071,3301,1,-1
+2025-09-18,19,Mahatma Gandhi Road,3388,1068,2320,1,-1
+2025-09-18,16,"Nadaprabhu Kempegowda Station, Majestic",1855,3037,-1182,0,-1
+2025-09-18,17,"Nadaprabhu Kempegowda Station, Majestic",1800,3554,-1754,1,-1
+2025-09-18,18,"Nadaprabhu Kempegowda Station, Majestic",2824,3913,-1089,1,-1
+2025-09-18,19,"Nadaprabhu Kempegowda Station, Majestic",2620,3816,-1196,1,-1
+2025-09-18,10,Pattandur Agrahara,282,3516,-3234,0,-1
+2025-09-18,10,"Sir M. Visvesvaraya Stn., Central College",421,4479,-4058,0,-1
+2025-09-18,10,Sri Sathya Sai Hospital,266,3155,-2889,0,-1
+2025-09-18,9,Trinity,417,4685,-4268,1,-1
+2025-09-18,10,Trinity,349,3412,-3063,0,-1
+2025-09-18,18,Trinity,4421,515,3906,1,-1
+2025-09-18,19,Trinity,3234,494,2740,1,-1
+2025-09-19,8,Benniganahalli,3150,1255,1895,1,-1
+2025-09-19,9,Benniganahalli,3976,1549,2427,1,-1
+2025-09-19,10,Benniganahalli,2992,1307,1685,0,-1
+2025-09-19,18,Benniganahalli,2075,3466,-1391,1,-1
+2025-09-19,19,Benniganahalli,1742,3244,-1502,1,-1
+2025-09-19,9,Cubbon Park,462,3370,-2908,1,-1
+2025-09-19,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",410,3553,-3143,0,-1
+2025-09-19,9,Indiranagar,1944,3854,-1910,1,-1
+2025-09-19,10,Indiranagar,1476,3307,-1831,0,-1
+2025-09-19,18,Indiranagar,3654,2300,1354,1,-1
+2025-09-19,9,Mahatma Gandhi Road,443,4295,-3852,1,-1
+2025-09-19,10,Mahatma Gandhi Road,335,3428,-3093,0,-1
+2025-09-19,18,Mahatma Gandhi Road,3835,1336,2499,1,-1
+2025-09-19,19,Mahatma Gandhi Road,3240,1537,1703,1,-1
+2025-09-19,14,"Nadaprabhu Kempegowda Station, Majestic",1550,2930,-1380,0,-1
+2025-09-19,16,"Nadaprabhu Kempegowda Station, Majestic",1780,3483,-1703,0,-1
+2025-09-19,17,"Nadaprabhu Kempegowda Station, Majestic",2367,4651,-2284,1,-1
+2025-09-19,18,"Nadaprabhu Kempegowda Station, Majestic",2568,4717,-2149,1,-1
+2025-09-19,19,"Nadaprabhu Kempegowda Station, Majestic",2392,4535,-2143,1,-1
+2025-09-19,20,"Nadaprabhu Kempegowda Station, Majestic",2241,3839,-1598,0,-1
+2025-09-19,21,"Nadaprabhu Kempegowda Station, Majestic",1757,3436,-1679,0,-1
+2025-09-19,10,"Sir M. Visvesvaraya Stn., Central College",383,4502,-4119,0,-1
+2025-09-19,9,Trinity,359,4431,-4072,1,-1
+2025-09-19,10,Trinity,312,3415,-3103,0,-1
+2025-09-19,18,Trinity,3778,507,3271,1,-1
+2025-09-20,18,Mahatma Gandhi Road,3310,2544,766,1,-1
+2025-09-20,19,Mahatma Gandhi Road,3294,2297,997,1,-1
+2025-09-20,20,Mahatma Gandhi Road,3124,1770,1354,0,-1
+2025-09-20,10,"Nadaprabhu Kempegowda Station, Majestic",2106,2875,-769,0,-1
+2025-09-20,12,"Nadaprabhu Kempegowda Station, Majestic",1970,3042,-1072,0,-1
+2025-09-20,13,"Nadaprabhu Kempegowda Station, Majestic",2020,3431,-1411,0,-1
+2025-09-20,14,"Nadaprabhu Kempegowda Station, Majestic",1924,3954,-2030,0,-1
+2025-09-20,15,"Nadaprabhu Kempegowda Station, Majestic",1989,3635,-1646,0,-1
+2025-09-20,16,"Nadaprabhu Kempegowda Station, Majestic",2173,3913,-1740,0,-1
+2025-09-20,17,"Nadaprabhu Kempegowda Station, Majestic",2749,4483,-1734,1,-1
+2025-09-20,18,"Nadaprabhu Kempegowda Station, Majestic",2923,4551,-1628,1,-1
+2025-09-20,19,"Nadaprabhu Kempegowda Station, Majestic",2702,4545,-1843,1,-1
+2025-09-20,20,"Nadaprabhu Kempegowda Station, Majestic",2247,3661,-1414,0,-1
+2025-09-20,21,"Nadaprabhu Kempegowda Station, Majestic",1916,3061,-1145,0,-1
+2025-09-20,10,"Sir M. Visvesvaraya Stn., Central College",359,4148,-3789,0,-1
+2025-09-21,11,Chickpete,1290,3610,-2320,0,-1
+2025-09-21,12,Chickpete,1784,3480,-1696,0,-1
+2025-09-21,12,"Nadaprabhu Kempegowda Station, Majestic",2290,3274,-984,0,-1
+2025-09-21,13,"Nadaprabhu Kempegowda Station, Majestic",2369,3133,-764,0,-1
+2025-09-21,14,"Nadaprabhu Kempegowda Station, Majestic",2500,3235,-735,0,-1
+2025-09-21,15,"Nadaprabhu Kempegowda Station, Majestic",2487,2934,-447,0,-1
+2025-09-21,16,"Nadaprabhu Kempegowda Station, Majestic",2684,3302,-618,0,-1
+2025-09-21,17,"Nadaprabhu Kempegowda Station, Majestic",2830,3163,-333,1,-1
+2025-09-21,18,"Nadaprabhu Kempegowda Station, Majestic",2739,3126,-387,1,-1
+2025-09-22,8,Benniganahalli,3681,1574,2107,1,-1
+2025-09-22,9,Benniganahalli,4305,1733,2572,1,-1
+2025-09-22,10,Benniganahalli,3134,1567,1567,0,-1
+2025-09-22,18,Benniganahalli,1890,3420,-1530,1,-1
+2025-09-22,19,Benniganahalli,1558,3236,-1678,1,-1
+2025-09-22,9,Cubbon Park,568,3580,-3012,1,-1
+2025-09-22,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",409,3701,-3292,0,-1
+2025-09-22,9,Indiranagar,2091,4455,-2364,1,-1
+2025-09-22,10,Indiranagar,1408,3410,-2002,0,-1
+2025-09-22,18,Indiranagar,3631,2175,1456,1,-1
+2025-09-22,9,Mahatma Gandhi Road,470,4662,-4192,1,-1
+2025-09-22,10,Mahatma Gandhi Road,326,3356,-3030,0,-1
+2025-09-22,18,Mahatma Gandhi Road,3960,1020,2940,1,-1
+2025-09-22,9,"Nadaprabhu Kempegowda Station, Majestic",2697,2776,-79,1,-1
+2025-09-22,18,"Nadaprabhu Kempegowda Station, Majestic",2678,3554,-876,1,-1
+2025-09-22,19,"Nadaprabhu Kempegowda Station, Majestic",2314,3227,-913,1,-1
+2025-09-22,10,"Sir M. Visvesvaraya Stn., Central College",383,4392,-4009,0,-1
+2025-09-22,9,Trinity,345,4709,-4364,1,-1
+2025-09-22,10,Trinity,303,3497,-3194,0,-1
+2025-09-22,18,Trinity,3913,467,3446,1,-1
+2025-09-23,9,Baiyappanahalli,3327,1127,2200,1,-1
+2025-09-23,8,Benniganahalli,3374,1329,2045,1,-1
+2025-09-23,9,Benniganahalli,4312,1691,2621,1,-1
+2025-09-23,10,Benniganahalli,3262,1445,1817,0,-1
+2025-09-23,18,Benniganahalli,1912,3533,-1621,1,-1
+2025-09-23,19,Benniganahalli,1535,3283,-1748,1,-1
+2025-09-23,9,Cubbon Park,549,3759,-3210,1,-1
+2025-09-23,10,Cubbon Park,508,3342,-2834,0,-1
+2025-09-23,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",432,3776,-3344,0,-1
+2025-09-23,9,Indiranagar,2147,4304,-2157,1,-1
+2025-09-23,10,Indiranagar,1551,3532,-1981,0,-1
+2025-09-23,18,Indiranagar,3816,2357,1459,1,-1
+2025-09-23,9,Mahatma Gandhi Road,469,4700,-4231,1,-1
+2025-09-23,10,Mahatma Gandhi Road,514,3660,-3146,0,-1
+2025-09-23,18,Mahatma Gandhi Road,3872,1132,2740,1,-1
+2025-09-23,19,Mahatma Gandhi Road,3282,941,2341,1,-1
+2025-09-23,17,"Nadaprabhu Kempegowda Station, Majestic",2221,3226,-1005,1,-1
+2025-09-23,18,"Nadaprabhu Kempegowda Station, Majestic",2563,3628,-1065,1,-1
+2025-09-23,19,"Nadaprabhu Kempegowda Station, Majestic",2462,3139,-677,1,-1
+2025-09-23,10,Pattandur Agrahara,273,3333,-3060,0,-1
+2025-09-23,10,"Sir M. Visvesvaraya Stn., Central College",427,4449,-4022,0,-1
+2025-09-23,9,Trinity,389,4771,-4382,1,-1
+2025-09-23,10,Trinity,389,3708,-3319,0,-1
+2025-09-23,18,Trinity,4003,496,3507,1,-1
+2025-09-24,8,Benniganahalli,3367,1376,1991,1,-1
+2025-09-24,9,Benniganahalli,4146,1753,2393,1,-1
+2025-09-24,10,Benniganahalli,3213,1417,1796,0,-1
+2025-09-24,18,Benniganahalli,1938,3371,-1433,1,-1
+2025-09-24,19,Benniganahalli,1844,3377,-1533,1,-1
+2025-09-24,9,Cubbon Park,583,3671,-3088,1,-1
+2025-09-24,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",387,3751,-3364,0,-1
+2025-09-24,9,Indiranagar,2182,4228,-2046,1,-1
+2025-09-24,10,Indiranagar,1514,3459,-1945,0,-1
+2025-09-24,18,Indiranagar,3799,2243,1556,1,-1
+2025-09-24,19,Indiranagar,3228,2175,1053,1,-1
+2025-09-24,9,Mahatma Gandhi Road,495,4646,-4151,1,-1
+2025-09-24,10,Mahatma Gandhi Road,360,3503,-3143,0,-1
+2025-09-24,18,Mahatma Gandhi Road,3989,1223,2766,1,-1
+2025-09-24,16,"Nadaprabhu Kempegowda Station, Majestic",1719,2923,-1204,0,-1
+2025-09-24,17,"Nadaprabhu Kempegowda Station, Majestic",2095,3316,-1221,1,-1
+2025-09-24,18,"Nadaprabhu Kempegowda Station, Majestic",2482,3759,-1277,1,-1
+2025-09-24,19,"Nadaprabhu Kempegowda Station, Majestic",2466,3696,-1230,1,-1
+2025-09-24,20,"Nadaprabhu Kempegowda Station, Majestic",2107,2841,-734,0,-1
+2025-09-24,10,Pattandur Agrahara,263,3369,-3106,0,-1
+2025-09-24,10,"Sir M. Visvesvaraya Stn., Central College",412,4327,-3915,0,-1
+2025-09-24,9,Trinity,396,4696,-4300,1,-1
+2025-09-24,10,Trinity,331,3603,-3272,0,-1
+2025-09-24,18,Trinity,3965,504,3461,1,-1
+2025-09-25,8,Benniganahalli,3335,1289,2046,1,-1
+2025-09-25,9,Benniganahalli,4186,1743,2443,1,-1
+2025-09-25,10,Benniganahalli,3086,1471,1615,0,-1
+2025-09-25,18,Benniganahalli,2053,3327,-1274,1,-1
+2025-09-25,19,Benniganahalli,1826,3247,-1421,1,-1
+2025-09-25,9,Cubbon Park,528,3505,-2977,1,-1
+2025-09-25,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",425,3767,-3342,0,-1
+2025-09-25,9,Indiranagar,2031,4227,-2196,1,-1
+2025-09-25,10,Indiranagar,1581,3325,-1744,0,-1
+2025-09-25,18,Indiranagar,3737,2187,1550,1,-1
+2025-09-25,9,Mahatma Gandhi Road,521,4504,-3983,1,-1
+2025-09-25,10,Mahatma Gandhi Road,366,3261,-2895,0,-1
+2025-09-25,18,Mahatma Gandhi Road,3800,1243,2557,1,-1
+2025-09-25,19,Mahatma Gandhi Road,3279,1143,2136,1,-1
+2025-09-25,16,"Nadaprabhu Kempegowda Station, Majestic",1791,2973,-1182,0,-1
+2025-09-25,17,"Nadaprabhu Kempegowda Station, Majestic",2339,3779,-1440,1,-1
+2025-09-25,18,"Nadaprabhu Kempegowda Station, Majestic",2522,3918,-1396,1,-1
+2025-09-25,19,"Nadaprabhu Kempegowda Station, Majestic",2471,3825,-1354,1,-1
+2025-09-25,20,"Nadaprabhu Kempegowda Station, Majestic",2050,2921,-871,0,-1
+2025-09-25,10,"Sir M. Visvesvaraya Stn., Central College",458,4632,-4174,0,-1
+2025-09-25,9,Trinity,360,4770,-4410,1,-1
+2025-09-25,10,Trinity,333,3180,-2847,0,-1
+2025-09-25,18,Trinity,3866,472,3394,1,-1
+2025-09-26,9,Benniganahalli,3951,1530,2421,1,-1
+2025-09-26,18,Benniganahalli,2030,3248,-1218,1,-1
+2025-09-26,19,Benniganahalli,1820,3106,-1286,1,-1
+2025-09-26,9,Cubbon Park,527,3250,-2723,1,-1
+2025-09-26,10,"Dr. B. R. Ambedkar Station, Vidhana Soudha",367,3316,-2949,0,-1
+2025-09-26,9,Indiranagar,1832,3723,-1891,1,-1
+2025-09-26,18,Indiranagar,3430,2194,1236,1,-1
+2025-09-26,9,Mahatma Gandhi Road,396,4172,-3776,1,-1
+2025-09-26,10,Mahatma Gandhi Road,399,3195,-2796,0,-1
+2025-09-26,18,Mahatma Gandhi Road,3724,1475,2249,1,-1
+2025-09-26,14,"Nadaprabhu Kempegowda Station, Majestic",1591,3152,-1561,0,-1
+2025-09-26,16,"Nadaprabhu Kempegowda Station, Majestic",1731,3746,-2015,0,-1
+2025-09-26,17,"Nadaprabhu Kempegowda Station, Majestic",2312,4643,-2331,1,-1
+2025-09-26,18,"Nadaprabhu Kempegowda Station, Majestic",2775,5799,-3024,1,-1
+2025-09-26,19,"Nadaprabhu Kempegowda Station, Majestic",2706,5318,-2612,1,-1
+2025-09-26,20,"Nadaprabhu Kempegowda Station, Majestic",2391,4884,-2493,0,-1
+2025-09-26,21,"Nadaprabhu Kempegowda Station, Majestic",1800,4288,-2488,0,-1
+2025-09-26,22,"Nadaprabhu Kempegowda Station, Majestic",1087,2755,-1668,0,-1
+2025-09-26,10,"Sir M. Visvesvaraya Stn., Central College",449,4083,-3634,0,-1
+2025-09-26,9,Trinity,367,4406,-4039,1,-1
+2025-09-27,11,Chickpete,389,3179,-2790,0,-1
+2025-09-27,12,Chickpete,681,3464,-2783,0,-1
+2025-09-27,10,"Nadaprabhu Kempegowda Station, Majestic",2193,2830,-637,0,-1
+2025-09-27,11,"Nadaprabhu Kempegowda Station, Majestic",2263,3024,-761,0,-1
+2025-09-27,12,"Nadaprabhu Kempegowda Station, Majestic",1960,3445,-1485,0,-1
+2025-09-27,13,"Nadaprabhu Kempegowda Station, Majestic",2049,3874,-1825,0,-1
+2025-09-27,14,"Nadaprabhu Kempegowda Station, Majestic",2183,4221,-2038,0,-1
+2025-09-27,15,"Nadaprabhu Kempegowda Station, Majestic",2019,3862,-1843,0,-1
+2025-09-27,16,"Nadaprabhu Kempegowda Station, Majestic",2278,4296,-2018,0,-1
+2025-09-27,17,"Nadaprabhu Kempegowda Station, Majestic",2497,4875,-2378,1,-1
+2025-09-27,18,"Nadaprabhu Kempegowda Station, Majestic",2618,5713,-3095,1,-1
+2025-09-27,19,"Nadaprabhu Kempegowda Station, Majestic",2774,5077,-2303,1,-1
+2025-09-27,20,"Nadaprabhu Kempegowda Station, Majestic",2297,4241,-1944,0,-1
+2025-09-27,21,"Nadaprabhu Kempegowda Station, Majestic",1964,3563,-1599,0,-1
+2025-09-28,11,Chickpete,1149,3763,-2614,0,-1
+2025-09-28,12,Chickpete,2201,3399,-1198,0,-1
+2025-09-28,15,Chickpete,2985,2183,802,0,-1
+2025-09-28,11,"Nadaprabhu Kempegowda Station, Majestic",2484,2932,-448,0,-1
+2025-09-28,12,"Nadaprabhu Kempegowda Station, Majestic",2352,3577,-1225,0,-1
+2025-09-28,13,"Nadaprabhu Kempegowda Station, Majestic",2440,3439,-999,0,-1
+2025-09-28,14,"Nadaprabhu Kempegowda Station, Majestic",2444,3603,-1159,0,-1
+2025-09-28,15,"Nadaprabhu Kempegowda Station, Majestic",2339,3471,-1132,0,-1
+2025-09-28,16,"Nadaprabhu Kempegowda Station, Majestic",2614,3563,-949,0,-1
+2025-09-28,17,"Nadaprabhu Kempegowda Station, Majestic",2931,3831,-900,1,-1
+2025-09-28,18,"Nadaprabhu Kempegowda Station, Majestic",2770,4469,-1699,1,-1
+2025-09-28,19,"Nadaprabhu Kempegowda Station, Majestic",2669,3548,-879,1,-1
+2025-09-28,20,"Nadaprabhu Kempegowda Station, Majestic",2185,2834,-649,0,-1
+2025-09-29,8,Benniganahalli,3380,1431,1949,1,-1
+2025-09-29,9,Benniganahalli,3834,1667,2167,1,-1
+2025-09-29,9,Cubbon Park,502,3205,-2703,1,-1
+2025-09-29,9,Indiranagar,1791,3823,-2032,1,-1
+2025-09-29,10,Indiranagar,1327,3150,-1823,0,-1
+2025-09-29,18,Indiranagar,3365,1902,1463,1,-1
+2025-09-29,9,Mahatma Gandhi Road,381,4094,-3713,1,-1
+2025-09-29,14,"Nadaprabhu Kempegowda Station, Majestic",1666,2888,-1222,0,-1
+2025-09-29,16,"Nadaprabhu Kempegowda Station, Majestic",1863,3081,-1218,0,-1
+2025-09-29,17,"Nadaprabhu Kempegowda Station, Majestic",2042,4502,-2460,1,-1
+2025-09-29,18,"Nadaprabhu Kempegowda Station, Majestic",2520,4003,-1483,1,-1
+2025-09-29,19,"Nadaprabhu Kempegowda Station, Majestic",2581,4474,-1893,1,-1
+2025-09-29,20,"Nadaprabhu Kempegowda Station, Majestic",2098,3371,-1273,0,-1
+2025-09-29,21,"Nadaprabhu Kempegowda Station, Majestic",1575,2911,-1336,0,-1
+2025-09-29,10,"Sir M. Visvesvaraya Stn., Central College",303,3480,-3177,0,-1
+2025-09-29,9,Trinity,340,4164,-3824,1,-1
+2025-09-29,10,Trinity,312,3211,-2899,0,-1
+2025-09-30,9,Benniganahalli,3664,1441,2223,1,-1
+2025-09-30,9,Indiranagar,1656,3690,-2034,1,-1
+2025-09-30,9,Mahatma Gandhi Road,377,3959,-3582,1,-1
+2025-09-30,10,"Nadaprabhu Kempegowda Station, Majestic",1628,2891,-1263,0,-1
+2025-09-30,12,"Nadaprabhu Kempegowda Station, Majestic",1500,3204,-1704,0,-1
+2025-09-30,13,"Nadaprabhu Kempegowda Station, Majestic",1605,3922,-2317,0,-1
+2025-09-30,14,"Nadaprabhu Kempegowda Station, Majestic",1897,4822,-2925,0,-1
+2025-09-30,15,"Nadaprabhu Kempegowda Station, Majestic",1678,4654,-2976,0,-1
+2025-09-30,16,"Nadaprabhu Kempegowda Station, Majestic",2054,5859,-3805,0,-1
+2025-09-30,17,"Nadaprabhu Kempegowda Station, Majestic",2414,7408,-4994,1,-1
+2025-09-30,18,"Nadaprabhu Kempegowda Station, Majestic",2675,7787,-5112,1,-1
+2025-09-30,19,"Nadaprabhu Kempegowda Station, Majestic",2865,8776,-5911,1,-1
+2025-09-30,20,"Nadaprabhu Kempegowda Station, Majestic",2555,8425,-5870,0,-1
+2025-09-30,21,"Nadaprabhu Kempegowda Station, Majestic",2170,8126,-5956,0,-1
+2025-09-30,22,"Nadaprabhu Kempegowda Station, Majestic",1385,5467,-4082,0,-1
+2025-09-30,9,Trinity,317,4052,-3735,1,-1
+2025-09-30,19,Yeshwantpur,1056,3833,-2777,1,-1
+2025-09-30,20,Yeshwantpur,1239,3755,-2516,0,-1
