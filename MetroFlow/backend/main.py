@@ -1,0 +1,271 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+from pathlib import Path
+import joblib
+import pandas as pd
+from pydantic import BaseModel
+from app.database import Base, engine
+from app.models.station import Station
+from app.routes.station import router as station_router
+
+# Load trained MetroFlow model
+MODEL_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "models"
+    / "metroflow_final_ridership_model.pkl"
+)
+
+model = joblib.load(MODEL_PATH)
+
+class PredictionInput(BaseModel):
+    station: str
+    hour: int
+    day_of_week: int
+    current_ridership: float
+
+app = FastAPI(
+    title="MetroFlow API",
+    description="AI-powered Metro Crowd Management and Schedule Optimization API",
+    version="1.0.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.on_event("startup")
+def create_tables():
+    Base.metadata.create_all(bind=engine)
+
+@app.get("/stations/congestion")
+def get_station_congestion(hour: int | None = None, date: str | None = None):
+    data_path = (
+        Path(__file__).resolve().parents[1]
+        / "datasets"
+        / "raw"
+        / "station-hourly.csv"
+    )
+    if not data_path.exists():
+        data_path = Path("../datasets/raw/station-hourly.csv")
+
+    pred_path = (
+        Path(__file__).resolve().parents[1]
+        / "datasets"
+        / "processed"
+        / "metroflow_predictions.csv"
+    )
+    if not pred_path.exists():
+        pred_path = Path("../datasets/processed/metroflow_predictions.csv")
+
+    df = pd.read_csv(data_path, sep=";")
+    target_date = date if date else str(df["Date"].max())
+    target_hour = hour if hour is not None else 18
+
+    subset = df[(df["Date"] == target_date) & (df["Hour"] == target_hour)].copy()
+    if subset.empty:
+        target_date = str(df["Date"].max())
+        target_hour = 18
+        subset = df[(df["Date"] == target_date) & (df["Hour"] == target_hour)].copy()
+
+    if pred_path.exists():
+        pred_df = pd.read_csv(pred_path)
+        thresholds = pred_df[["Station", "Medium_Threshold", "High_Threshold", "Very_High_Threshold"]].drop_duplicates()
+        merged = subset.merge(thresholds, on="Station", how="left")
+    else:
+        merged = subset.copy()
+        merged["Medium_Threshold"] = None
+        merged["High_Threshold"] = None
+        merged["Very_High_Threshold"] = None
+
+    def classify_congestion(row):
+        r = row["Ridership"]
+        vh = row.get("Very_High_Threshold")
+        h = row.get("High_Threshold")
+        m = row.get("Medium_Threshold")
+
+        if pd.notna(vh) and r >= vh:
+            return "Critical"
+        elif pd.notna(h) and r >= h:
+            return "High"
+        elif pd.notna(m) and r >= m:
+            return "Medium"
+        else:
+            return "Low"
+
+    merged["congestion_level"] = merged.apply(classify_congestion, axis=1)
+    merged = merged.sort_values(by="Ridership", ascending=False)
+
+    station_list = [
+        {
+            "station": str(row["Station"]),
+            "ridership": int(row["Ridership"]),
+            "congestion_level": str(row["congestion_level"]),
+        }
+        for _, row in merged.iterrows()
+    ]
+
+    return {
+        "date": target_date,
+        "hour": target_hour,
+        "total_stations": len(station_list),
+        "stations": station_list,
+    }
+
+app.include_router(station_router)
+
+@app.post("/predict")
+def predict_ridership(data: PredictionInput):
+
+    is_weekend = int(data.day_of_week >= 5)
+
+    is_peak_hour = int(
+        data.hour in [7, 8, 9, 17, 18, 19, 20]
+    )
+
+    input_data = pd.DataFrame([{
+        "Station": data.station,
+        "Hour": data.hour,
+        "DayOfWeek": data.day_of_week,
+        "IsWeekend": is_weekend,
+        "IsPeakHour": is_peak_hour,
+        "Ridership": data.current_ridership
+    }])
+
+    prediction = float(model.predict(input_data)[0])
+
+    # Ridership cannot be negative
+    prediction = max(0, prediction)
+
+    # Load station-specific crowd thresholds
+    results_path = (
+        Path(__file__).resolve().parents[1]
+        / "datasets"
+        / "processed"
+        / "metroflow_predictions.csv"
+    )
+
+    results_df = pd.read_csv(results_path)
+
+    station_data = results_df[
+        results_df["Station"] == data.station
+    ]
+
+    if station_data.empty:
+        crowd_level = "Unknown"
+        recommendation = "Station not found in the analyzed dataset"
+    else:
+        medium_threshold = station_data["Medium_Threshold"].iloc[0]
+        high_threshold = station_data["High_Threshold"].iloc[0]
+        very_high_threshold = station_data["Very_High_Threshold"].iloc[0]
+
+        if prediction >= very_high_threshold:
+            crowd_level = "Very High"
+            recommendation = "Increase service frequency and closely monitor crowding"
+        elif prediction >= high_threshold:
+            crowd_level = "High"
+            recommendation = "Monitor station closely and consider additional service"
+        elif prediction >= medium_threshold:
+            crowd_level = "Medium"
+            recommendation = "Maintain normal service and continue monitoring"
+        else:
+            crowd_level = "Low"
+            recommendation = "Normal/off-peak operations"
+
+    return {
+        "station": data.station,
+        "hour": data.hour,
+        "current_ridership": data.current_ridership,
+        "predicted_next_hour_ridership": round(prediction, 2),
+        "crowd_level": crowd_level,
+        "recommendation": recommendation
+    }
+
+@app.get("/")
+def root():
+    return {
+        "message": "MetroFlow API is running",
+        "status": "success",
+    }
+
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "healthy",
+    }
+
+
+@app.get("/database-test")
+def database_test():
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(text("SELECT current_database();"))
+            database_name = result.fetchone()[0]
+
+        return {
+            "status": "success",
+            "message": "Database connected successfully using SQLAlchemy",
+            "database": database_name,
+        }
+
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e),
+        }
+
+@app.get("/analytics")
+def get_analytics():
+    import pandas as pd
+
+    data_path = "../datasets/raw/station-hourly.csv"
+
+    df = pd.read_csv(data_path, sep=";")
+
+    total_ridership = int(df["Ridership"].sum())
+    total_stations = int(df["Station"].nunique())
+
+    busiest_station = (
+        df.groupby("Station")["Ridership"]
+        .sum()
+        .idxmax()
+    )
+
+    peak_hour = int(
+        df.groupby("Hour")["Ridership"]
+        .sum()
+        .idxmax()
+    )
+
+    return {
+        "total_ridership": total_ridership,
+        "total_stations": total_stations,
+        "busiest_station": busiest_station,
+        "peak_hour": peak_hour
+    }
+@app.get("/weather-summary")
+def get_weather_summary():
+    weather_path = (
+        Path(__file__).resolve().parents[1]
+        / "datasets"
+        / "raw"
+        / "bengaluru-weather-2025.csv"
+    )
+    if not weather_path.exists():
+        weather_path = Path("../datasets/raw/bengaluru-weather-2025.csv")
+
+    df = pd.read_csv(weather_path)
+
+    df = df[df["month"].isin([8, 9])].copy()
+
+    return {
+        "average_temperature": round(float(df["temp"].mean()), 2),
+        "average_humidity": round(float(df["rhum"].mean()), 2),
+        "total_rainfall": round(float(df["prcp"].sum()), 2),
+        "average_wind_speed": round(float(df["wspd"].mean()), 2),
+    }
