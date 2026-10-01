@@ -171,6 +171,7 @@ Partly yes on purpose; partly simulation — and the boundary is documented, not
 | Passenger counts, occupancy, delays | **Simulated, deterministically** | If a thousand people ride 72 St, and the ML says 11 000/hour capacity — the numbers behave realistically but are produced by the simulation clock, not by physical turnstiles |
 | ML training data | **Real public datasets** | NYC subway traffic (2017–2021), Seoul Metro usage (2015–2021), Hangzhou Metro (Jan 2019), TfL, NJ Transit–Amtrak NEC on-time performance (2018–2019) — hosted on Kaggle; the *demo-city* models are re-trained on the synthetic ridership CSV built from the real MTA station set so the product works offline |
 | Delays / timetable | **Real-ish** | schedule tables are seeded to mimic real transit behaviour and are editable by operators |
+| All timestamps and chart hour axes | **New York time** | the operating day is NYC's, so every hour label ("07:00", "17:00") means New York local time — see §4.2 |
 
 **Why mix?** A real production system needs real station geography (so the maps mean something)
 and real incident datasets (so the ML learns genuine patterns). But a *demo* cannot wait for years
@@ -207,6 +208,29 @@ Worth being precise, because this is the one place where "real" needs a caveat.
 order by the routes that really serve them* — drawn with straight-line simplification between
 stops. That is exactly what makes it useful for spotting transfer hubs and reading congestion
 patterns, and it is why the docs should not claim surveyed track geometry.
+
+### 4.2 Which timezone is the app on? (both, and it says so)
+
+The app deliberately runs on **two clocks**, because the transit data and the viewer live in
+different parts of the world:
+
+- **New York time (`America/New_York`)** — the operating day. Every simulated hour, every chart
+  x-axis, the 24-hour heatmap columns, and the peak-hour labels all mean NYC local time. A
+  "morning peak" at `07:00` is 7 a.m. in New York.
+- **IST (`Asia/Kolkata`, fixed UTC+05:30)** — the reviewer's own wall clock. Useful for "when did I
+  open this", but it does **not** describe the data.
+
+Both are shown together and labelled in the header clock and the sidebar, with the timezone
+abbreviation next to each: `14:23:05 EDT / 23:53:05 IST`. New York switches between **EDT (UTC-4)**
+and **EST (UTC-5)** on daylight saving, so the abbreviation and offset are computed per render
+rather than hardcoded — which is why NYC sits 9h30m behind IST in summer and 10h30m behind in
+winter. Chart axes are formatted through the same `frontend/lib/time.ts` helpers so a `07:00`
+column reads `07:00` regardless of the viewer's own timezone.
+
+**Why this matters.** Without the label, a browser in IST renders `new Date(...).toLocaleTimeString()`
+in IST, so the crowd chart's 7 a.m. New York rush hour appeared at `17:20` on the axis while a live
+clock in the corner read `14:23`. Both numbers were "correct" and the screen looked broken. Fixing
+the axis *and* labelling the clocks removes the ambiguity.
 
 ---
 
@@ -276,21 +300,26 @@ anything. None of them alters another — they are three readings of the same GT
 - **Connections view** — the same true lat/lng projection, but stripped back to the *monitored
   graph only* so the one-to-one link structure becomes the subject. Built from
   `/crowd/connections` (25 GTFS-derived edges: 21 along-line plus 4 walking connections between
-  MTA stops).
+  MTA stops). Clicking a station lights its one-hop links with route chips and occupancy badges, but
+  the **rest of the network stays visible** at reduced opacity rather than fading out — you read the
+  selected junction *in the context of* the whole graph, so the surrounding connection paths of
+  every other station remain on screen.
 
 Both map views plot real stations in their real positions and connect them in the real order the
 GTFS timetable gives; the line between two stops is drawn straight. See §4.1 for exactly what that
 does and does not mean.
 
 **What the connections view adds.** With nothing selected the whole monitored graph is drawn
-bright. Click any station and it isolates that junction completely:
+bright. Click any station and that junction is emphasised:
 
-- every station it is **not** directly linked to drops to 14% opacity, so the highlight reads
-  instantly;
 - each link it **does** have is drawn thicker, glows, and carries a chip naming the routes that
   serve it (e.g. `L`, `4/5`);
 - every connected station gets a white ring plus its own live occupancy badge;
-- a side panel repeats the same links as a one-to-one list, clickable to walk the network.
+- a side panel repeats the same links as a one-to-one list, clickable to walk the network;
+- everything **else stays on screen** — unrelated stations at 55% opacity, their links at
+  42–45%, transfers at 32%. The selection reads by emphasis rather than by erasure, so the
+  connection paths of every other station in the network remain visible and you can see the
+  selected junction in its real surroundings instead of on an empty canvas.
 
 Only links genuinely **incident to the selected station** light up — an edge that merely passes
 through one of its neighbours stays dimmed, so you never see a path highlighted that the station
@@ -629,9 +658,9 @@ are model-derived.
   advice. They cover the delay-vocabulary edge cases, deterministic schedule grids, out-of-window
   history synthesis, per-station factor spread (regression against the old 7-value collapse),
   hourly traffic scaling, and every auth/RBAC path.
-- **Front end:** **45 tests** (Vitest) + full TypeScript type-check + ESLint + production build,
+- **Front end:** **53 tests** (Vitest) + full TypeScript type-check + ESLint + production build,
   all green. Includes the `linkTouches` predicate that keeps map highlighting to genuine one-hop
-  links.
+  links, and the timezone suite proving the NYC/IST clocks stay correct across EDT/EST.
 - **CI:** on every push/PR a pipeline runs the Python test job and a Docker image build job (the
   `.dockerignore` fix removed the bloated `data/` directory from the broker). Also covered in
   docs: latency budgets and prediction-interval coverage measures.

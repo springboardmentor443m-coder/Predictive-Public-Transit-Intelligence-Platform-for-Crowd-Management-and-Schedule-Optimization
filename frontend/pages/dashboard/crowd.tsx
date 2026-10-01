@@ -22,6 +22,7 @@ import api from "../../lib/api";
 import { lineColor, lineStyle } from "../../lib/lines";
 import { getSocket, joinStationRoom } from "../../lib/socket";
 import { downloadCsv } from "../../lib/csv";
+import { nycDateHourLabel, nycHourLabel } from "../../lib/time";
 import type { Station, LiveCrowdSnapshot, StationHeatmapPoint, StationHistoryPoint, StationConnection, NetworkPayload, ModelInfo } from "../../lib/types";
 
 interface HistoryRow {
@@ -99,8 +100,8 @@ const [st, lv, hm, mi, conn, net] = await Promise.all([
       .then((res) => {
         setHistory(
           res.data.map((r) => ({
-            time: new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-            full: new Date(r.timestamp).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
+            time: nycHourLabel(new Date(r.timestamp)),
+            full: nycDateHourLabel(new Date(r.timestamp)),
             entries: r.entries,
             exits: r.exits,
             occupancy: r.occupancy,
@@ -347,7 +348,9 @@ const [st, lv, hm, mi, conn, net] = await Promise.all([
               <h3 className="font-extrabold tracking-tight text-white">
                 Inflow vs Outflow — {selectedStation?.name || "Station"}
               </h3>
-              <p className="text-xs text-slate-400">{historyAnchorLabel}</p>
+              <p className="text-xs text-slate-400">
+                {historyAnchorLabel} <span className="text-slate-500">· x-axis is New York time</span>
+              </p>
             </div>
             <select
               className="input w-auto py-1 text-xs"

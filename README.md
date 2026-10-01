@@ -201,11 +201,13 @@ track) is untouched; the **geographic** toggle draws the complete 496-station re
 faint base layer, overlays the 59 monitored stations with live congestion dots, and clicking a
 station brightens exactly its one-hop real connections (with dashed walking interchanges); the
 **connections** toggle uses the same true lat/lng projection but strips it back to the monitored
-graph so the one-to-one links are unmistakable — click a station and everything it is not directly
-linked to drops to 14%, each of its own links lights up with a chip naming the routes that serve it
-(`L`, `4/5`), every connected station gets a white ring plus a live occupancy badge, and a side
-panel lists the same links. Only links genuinely incident to the selected station light up, so a
-path that merely passes through a neighbour stays dimmed.
+graph so the one-to-one links are unmistakable — click a station and each of its own links lights up
+with a chip naming the routes that serve it (`L`, `4/5`), every connected station gets a white ring
+plus a live occupancy badge, and a side panel lists the same links. Only links genuinely incident to
+the selected station light up, so a path that merely passes through a neighbour stays recessive.
+Meanwhile every other station's connection paths stay on screen at reduced opacity (stations 55%,
+links 42–45%) instead of vanishing, so the selection is read *in the context of* the whole network
+rather than in isolation.
 
 ## ML Models & Confidence Intervals
 
@@ -267,8 +269,9 @@ pip install -r requirements-dev.txt
 pytest tests -v        # 179 tests (API, models, ML artifacts, connections, network, timezone, cache, scheduling advice, simulation)
 ```
 
-Frontend: `cd frontend && npm test` runs the Vitest suite (**45 tests** — lines, connections,
-`linkTouches` one-hop link predicate, `CrowdEstimateNote`, `ModelBadge`).
+Frontend: `cd frontend && npm test` runs the Vitest suite (**53 tests** — lines, connections,
+`linkTouches` one-hop link predicate, `CrowdEstimateNote`, `ModelBadge`, and the NYC/IST timezone
+helpers).
 
 CI runs on every branch push and pull request (see `.github/workflows/ci.yml`): a Python job runs
 the backend suite with dev dependencies, a separate job verifies the backend Docker image builds,

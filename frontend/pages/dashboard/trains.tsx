@@ -9,6 +9,7 @@ import { withAuth } from "../../lib/auth";
 import api from "../../lib/api";
 import { lineColor, lineCorridor, lineStyle, orderedLines } from "../../lib/lines";
 import { getSocket, joinTrainRoom } from "../../lib/socket";
+import { nycHourLabel } from "../../lib/time";
 import type { TrainLive, ScheduleEntry, PredictionPoint } from "../../lib/types";
 
 function Trains() {
@@ -110,7 +111,7 @@ function Trains() {
   const fleetLines = orderedLines(trains.map((t) => t.line));
 
   const forecastChart = forecast.map((p) => ({
-    label: p.timestamp ? new Date(p.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : `${String(p.hour).padStart(2, "0")}:00`,
+    label: p.timestamp ? nycHourLabel(new Date(p.timestamp)) : `${String(p.hour).padStart(2, "0")}:00`,
     occupancy: p.predicted_occupancy_pct,
     entries: (p as PredictionPoint & { predicted_entries?: number }).predicted_entries,
   }));

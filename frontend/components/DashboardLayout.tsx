@@ -25,6 +25,7 @@ import { useTheme } from "./ThemeContext";
 import { useToast } from "./ToastContext";
 import CommandPalette from "./CommandPalette";
 import { ALL_TRUNKS } from "../lib/lines";
+import { dualClock, type ZonedClock } from "../lib/time";
 import api from "../lib/api";
 
 interface NavItem {
@@ -63,12 +64,12 @@ export default function DashboardLayout({ title, subtitle, children }: Dashboard
   const router = useRouter();
 
   const [open, setOpen] = useState(false);
-  const [clock, setClock] = useState("");
+  const [clock, setClock] = useState<{ ist: ZonedClock; nyc: ZonedClock } | null>(null);
   const [openAlerts, setOpenAlerts] = useState(0);
   const [cmdOpen, setCmdOpen] = useState(false);
 
   useEffect(() => {
-    const tick = () => setClock(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+    const tick = () => setClock(dualClock(new Date()));
     tick();
     const iv = setInterval(tick, 1000);
     return () => clearInterval(iv);
@@ -124,7 +125,28 @@ export default function DashboardLayout({ title, subtitle, children }: Dashboard
             Live Operations Active
           </p>
           <p className="mt-0.5 text-[11px] text-slate-400 font-mono">
-            {clock} · {ALL_TRUNKS.length} Trunk Routes
+            {clock ? (
+              <>
+                <span title={`Your local time (${clock.ist.offset})`}>
+                  {clock.ist.time} {clock.ist.zone}
+                </span>
+                <span className="mx-1 text-slate-600">|</span>
+                <span
+                  className="text-brand-300"
+                  title={`New York time (${clock.nyc.offset}) - all data and chart axes on this app use this clock`}
+                >
+                  {clock.nyc.time} {clock.nyc.zone}
+                </span>
+              </>
+            ) : (
+              "--:--:--"
+            )}{" "}
+            · {ALL_TRUNKS.length} Trunk Routes
+          </p>
+          <p className="mt-0.5 text-[10px] leading-snug text-slate-500">
+            All transit data below is on{" "}
+            <span className="font-semibold text-slate-400">New York time</span>
+            {clock ? ` (${clock.nyc.zone})` : ""}; your local time (IST) is shown for reference only.
           </p>
         </div>
 
@@ -254,13 +276,31 @@ export default function DashboardLayout({ title, subtitle, children }: Dashboard
               {theme === "light" ? <Moon className="h-4 w-4 text-indigo-400" /> : <Sun className="h-4 w-4 text-amber-400" />}
             </button>
 
-            {/* Live Clock Badge */}
-            <span className="hidden items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-400 border border-emerald-500/20 md:inline-flex">
+            {/* Live Clock Badge - both clocks, always labelled */}
+            <span
+              className="hidden items-center gap-2.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-400 border border-emerald-500/20 md:inline-flex"
+              title="New York time drives every dataset and chart axis in this app. IST is your local time."
+            >
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
               </span>
-              <span className="font-mono">{clock}</span>
+              {clock ? (
+                <span className="flex items-center gap-2 font-mono">
+                  <span title={`New York (${clock.nyc.offset}) - the timezone all app data uses`}>
+                    {clock.nyc.time} {clock.nyc.zone}
+                  </span>
+                  <span className="text-emerald-700">/</span>
+                  <span
+                    className="text-emerald-500/70"
+                    title={`Your local time (${clock.ist.offset})`}
+                  >
+                    {clock.ist.time} IST
+                  </span>
+                </span>
+              ) : (
+                <span className="font-mono">--:--:--</span>
+              )}
             </span>
 
             {/* User Profile Capsule */}

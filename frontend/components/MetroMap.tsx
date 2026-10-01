@@ -429,8 +429,12 @@ export default function MetroMap({
                   if (!a || !b || !aSt || !bSt) return null;
                   const color = lineColor(edgeTrunk(e.vias, aSt.line) ?? "1/2/3");
                   const active = linksSelected(e.from_code, e.to_code);
+                  // Non-selected links stay legible rather than fading to a
+                  // ghost: the selection should *emphasise* the one-hop
+                  // neighbourhood, not hide the rest of the network the
+                  // reviewer is trying to read it against.
                   const dim = selectedCode !== "" && !active;
-                  const opacity = dim ? 0.08 : 1;
+                  const opacity = dim ? 0.42 : 1;
                   const strokeWidth = active ? 7 : 3.5;
                   return (
                     <g key={`${e.from_code}-${e.to_code}`}>
@@ -499,6 +503,7 @@ export default function MetroMap({
                   if (!a || !b || !aSt || !bSt) return null;
                   const active = linksSelected(e.from_code, e.to_code);
                   const dim = selectedCode !== "" && !active;
+                  const opacity = selectedCode && !active ? 0.45 : 1;
                   return (
                     <g key={`${e.from_code}-${e.to_code}`}>
                       <title>{`${aSt.name} ↔ ${bSt.name} · walking interchange`}</title>
@@ -511,7 +516,7 @@ export default function MetroMap({
                         strokeWidth={active ? 3.5 : 2}
                         strokeDasharray="6 5"
                         strokeLinecap="round"
-                        opacity={dim ? 0.08 : 1}
+                        opacity={dim ? 0.32 : 1}
                       />
                     </g>
                   );
@@ -566,7 +571,7 @@ export default function MetroMap({
                   if (!a || !b || !aSt || !bSt) return null;
                   const color = lineColor(edgeTrunk(e.vias, aSt.line) ?? "1/2/3");
                   const active = linksSelected(e.from_code, e.to_code);
-                  const opacity = selectedCode && !active ? 0.18 : 1;
+                  const opacity = selectedCode && !active ? 0.45 : 1;
                   return (
                     <g key={`${e.from_code}-${e.to_code}`}>
                       <title>{`${aSt.name} ↔ ${bSt.name} · via ${viaLabel(e.vias)}`}</title>
@@ -605,7 +610,7 @@ export default function MetroMap({
                   const bSt = byCode[e.to_code];
                   if (!a || !b || !aSt || !bSt) return null;
                   const active = linksSelected(e.from_code, e.to_code);
-                  const opacity = selectedCode && !active ? 0.18 : 1;
+                  const opacity = selectedCode && !active ? 0.45 : 1;
                   return (
                     <g key={`${e.from_code}-${e.to_code}`}>
                       <title>{`${aSt.name} ↔ ${bSt.name} · walking interchange`}</title>
@@ -661,7 +666,9 @@ export default function MetroMap({
               <g
                 key={nodeKey(s)}
                 onClick={() => onSelect && onSelect(s.id)}
-                opacity={dimmed ? (isConnections ? 0.14 : 0.32) : 1}
+                // Unrelated stations stay visible (not ghosted) so the whole network
+                  // remains readable while one station is selected.
+                  opacity={dimmed ? (isConnections ? 0.55 : 0.45) : 1}
                 className="cursor-pointer group"
               >
                 <title>{`${s.name} (${s.id}) · Line: ${s.line} · Occupancy: ${pct}% · Congestion: ${snap?.congestion_level || "low"}`}</title>
@@ -902,7 +909,7 @@ export default function MetroMap({
           {isSchematic
             ? "Click any station node to open real-time telemetry"
             : isConnections
-              ? "Click a station: every station it links to lights up with the routes that serve it"
+              ? "Click a station: every station it links to lights up with the routes that serve it, while the full network stays visible around it"
               : "Selecting a station highlights its one-hop real-world connections"}
         </span>
       </div>

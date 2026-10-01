@@ -126,12 +126,17 @@ Delivered on branch `KOKKIRIGADDA-MANOJ-BABU` after M4 wrap-up:
   `GET /api/v1/crowd/network` (tested: 8 tests). The Crowd dashboard's *geographic* toggle now
   draws the complete rail network as a faint base layer with the 59 monitored stations and their
   live congestion overlaid, while the original schematic view is untouched. A third *connections*
-  toggle isolates a single junction: everything the selected station is not directly linked to
-  drops to 14%, each of its own links lights up with a route chip, and a side panel lists the same
-  links. Highlighting uses the tested `linkTouches` predicate so only links genuinely incident to
-  the selection light up. Map fidelity note: stations, coordinates and adjacency are real MTA
-  GTFS data, but the line between two stops is drawn straight (no `shapes.txt` polylines) -- see
-  PROJECT_GUIDE.md 4.1.
+toggle isolates a single junction: each of the selected station's own links lights up with a route
+   chip and a side panel lists the same links, while every other station stays visible at reduced
+   opacity (stations 55%, links 42-45%) so the whole network's connection paths remain readable
+   around the selection. Highlighting uses the tested `linkTouches` predicate so only links
+   genuinely incident to the selection light up. Map fidelity note: stations, coordinates and
+   adjacency are real MTA GTFS data, but the line between two stops is drawn straight (no
+   `shapes.txt` polylines) -- see PROJECT_GUIDE.md 4.1.
+- **Dual clocks** -- the app shows New York time and IST side by side and labels both (PROJECT_GUIDE.md
+   4.2), because the operating day is NYC's while the viewer is in India. `frontend/lib/time.ts`
+   computes EDT/EST and the UTC offset per render, and all chart hour axes format through it, so a
+   07:00 New York peak no longer renders at 17:20 in an IST browser. Covered by 8 frontend tests.
 - **Testing** -- backend suite grown from 59 to **179 tests** (54 API, 27 simulation, 21 timezone,
   19 ML artifacts, 14 cache/live, 10 features, 10 model wrappers, 8 connections, 8 network,
-  8 scheduling advice); frontend Vitest suite **45 tests**.
+  8 scheduling advice); frontend Vitest suite **53 tests**.
