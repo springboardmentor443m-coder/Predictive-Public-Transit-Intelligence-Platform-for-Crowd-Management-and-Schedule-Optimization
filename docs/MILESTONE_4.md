@@ -126,11 +126,14 @@ Delivered on branch `KOKKIRIGADDA-MANOJ-BABU` after M4 wrap-up:
   `GET /api/v1/crowd/network` (tested: 8 tests). The Crowd dashboard's *geographic* toggle now
   draws the complete rail network as a faint base layer with the 59 monitored stations and their
   live congestion overlaid, while the original schematic view is untouched. A third *connections*
-toggle isolates a single junction: each of the selected station's own links lights up with a route
-   chip and a side panel lists the same links, while every other station stays visible at reduced
-   opacity (stations 55%, links 42-45%) so the whole network's connection paths remain readable
-   around the selection. Highlighting uses the tested `linkTouches` predicate so only links
-   genuinely incident to the selection light up. Map fidelity note: stations, coordinates and
+toggle isolates a single junction by **exploding the graph into two depth planes** (the plane model
+   lives in `frontend/lib/mapDepth.ts`): the selection and its genuine one-hop links rise onto a
+   bright layer with animated dashes, route chips, white rings and occupancy badges, while every other
+   station and all of its remaining connection paths drop onto a floor plane pushed down 16px, thinned
+   and blurred, tied to the raised layer by vertical risers and lit by a soft pool beneath the
+   selection. The side panel repeats the same links as a list, and with nothing selected the graph
+   returns to a single flat plane. Highlighting uses the tested `linkTouches` predicate so only links
+   genuinely incident to the selection are lifted. Map fidelity note: stations, coordinates and
    adjacency are real MTA GTFS data, but the line between two stops is drawn straight (no
    `shapes.txt` polylines) -- see PROJECT_GUIDE.md 4.1.
 - **Dual clocks** -- the app shows New York time and IST side by side and labels both (PROJECT_GUIDE.md
@@ -139,4 +142,5 @@ toggle isolates a single junction: each of the selected station's own links ligh
    07:00 New York peak no longer renders at 17:20 in an IST browser. Covered by 8 frontend tests.
 - **Testing** -- backend suite grown from 59 to **179 tests** (54 API, 27 simulation, 21 timezone,
   19 ML artifacts, 14 cache/live, 10 features, 10 model wrappers, 8 connections, 8 network,
-  8 scheduling advice); frontend Vitest suite **53 tests**.
+  8 scheduling advice); frontend Vitest suite **72 tests** (including a render-level suite that asserts
+   the connections map really stacks two planes and flattens again when nothing is selected).

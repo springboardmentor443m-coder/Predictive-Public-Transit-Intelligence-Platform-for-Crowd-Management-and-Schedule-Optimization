@@ -411,6 +411,19 @@ html.light .hero-gradient {
 .map-label { fill: rgb(var(--mf-map-label)); }
 .group:hover .map-label { fill: #59a5ff; }
 
+/* ---- Connections view: depth stack ---- */
+/* Dashes travel along links that are genuinely part of the selected
+   junction, so a lit path reads as live rather than merely coloured. */
+.map-flow {
+  animation: map-flow-dash 1.4s linear infinite;
+}
+@keyframes map-flow-dash {
+  to { stroke-dashoffset: -34; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-flow { animation: none; }
+}
+
 /* ---- Scrollbar ---- */
 .scroll-thin::-webkit-scrollbar { height: 6px; width: 6px; }
 .scroll-thin::-webkit-scrollbar-track { @apply bg-transparent; }

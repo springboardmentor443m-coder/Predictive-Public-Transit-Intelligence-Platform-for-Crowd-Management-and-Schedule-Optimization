@@ -2,6 +2,17 @@ import { useMemo, useState } from "react";
 import { congestionColor } from "./StatusBadge";
 import { edgeTrunk, lineColor, lineCorridor, lineStyle, orderedLines, trunkForServices } from "../lib/lines";
 import { linkTouches } from "../lib/connections";
+import {
+  FLOOR_LIFT,
+  FOCUS_SHADOW,
+  FLOOR_BLUR,
+  linkDepth,
+  needsRiser,
+  nodeDepth,
+  planeFilter,
+  planeTransform,
+  type DepthPlane,
+} from "../lib/mapDepth";
 import ConnectionList from "./ConnectionList";
 import type { Station, LiveCrowdSnapshot, StationConnection, NetworkPayload } from "../lib/types";
 
@@ -215,6 +226,306 @@ export default function MetroMap({
     [selectedCode]
   );
 
+  /**
+   * Draws one station. The caller supplies the depth plane, so the focus view
+   * can paint its floor nodes and its lifted nodes in the correct z order while
+   * sharing one definition of what a station looks like.
+   */
+  const renderNode = (s: Station, plane: DepthPlane) => {
+    const snap = liveById[s.id];
+    const pct = snap?.occupancy_pct ?? 0;
+    const col = congestionColor(pct);
+    const isSel = selected === s.id;
+    let x: number;
+    let y: number;
+    if (!isSchematic) {
+      const p = geo.byCode[s.code];
+      if (!p) return null;
+      x = p.x;
+      y = p.y;
+    } else {
+      const stops = lines[s.line];
+      const idx = stops.findIndex((st) => st.id === s.id);
+      x = xFor(idx, stops.length);
+      y = trackY[s.line];
+    }
+
+    const inGraph = graphCodes.has(s.code);
+    const onSelectedPath = selectedCode !== "" && neighborsOfSelected.has(s.code);
+    const showLabel = isSchematic || isConnections || isSel || inGraph;
+    const isDirect = isConnections && onSelectedPath;
+    const tip = `${s.name} (${s.id}) · Line: ${s.line} · Occupancy: ${pct}% · Congestion: ${
+      snap?.congestion_level || "low"
+    }`;
+
+    /* ---- Connections view: depth-plane aware node ---- */
+    if (isConnections) {
+      const d = nodeDepth(isSel, onSelectedPath, selectedCode !== "");
+      const onFloor = d.plane === "floor";
+
+      return (
+        <g
+          key={nodeKey(s)}
+          onClick={() => onSelect && onSelect(s.id)}
+          opacity={d.opacity}
+          data-station={s.code}
+          data-plane={d.plane}
+          className="cursor-pointer group"
+        >
+          <title>{tip}</title>
+          <circle cx={x} cy={y} r={10} fill="transparent" />
+
+          {onFloor ? (
+            /* Floor station: a small solid pip. Deliberately label-free — the
+               floor is context, and 59 names would bury the lifted layer. */
+            <>
+              <circle
+                cx={x}
+                cy={y}
+                r={d.core + 2.5}
+                fill={col}
+                opacity={0.12}
+                pointerEvents="none"
+              />
+              <circle cx={x} cy={y} r={d.core} fill={col} pointerEvents="none" />
+              <circle
+                cx={x}
+                cy={y}
+                r={d.core}
+                fill="none"
+                stroke="#0f172a"
+                strokeWidth={1.5}
+                pointerEvents="none"
+              />
+            </>
+          ) : (
+            <>
+              {/* Dashed riser collar: catches the eye where the node meets
+                  the shadow it casts on the floor. */}
+              <circle
+                cx={x}
+                cy={y}
+                r={d.halo + 3}
+                fill="none"
+                stroke="#f8fafc"
+                strokeWidth={0.75}
+                strokeDasharray="2 5"
+                opacity={0.3}
+                pointerEvents="none"
+              />
+              {/* Selection ring. */}
+              {isSel && (
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={d.halo + 5}
+                  fill="none"
+                  className="map-select-ring"
+                  strokeWidth={2}
+                  strokeDasharray="4 3"
+                  pointerEvents="none"
+                />
+              )}
+              {/* Direct-neighbour ring. */}
+              {onSelectedPath && (
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={d.halo}
+                  fill="none"
+                  stroke={isDirect ? "#ffffff" : col}
+                  strokeWidth={isDirect ? 2 : 1.5}
+                  opacity={0.95}
+                  pointerEvents="none"
+                />
+              )}
+              {isDirect && (
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={d.halo - 1}
+                  fill="none"
+                  stroke={col}
+                  strokeWidth={1}
+                  className="map-select-ring"
+                  opacity={0.6}
+                  pointerEvents="none"
+                />
+              )}
+              {/* Congestion halo. */}
+              <circle
+                cx={x}
+                cy={y}
+                r={d.halo}
+                fill={col}
+                opacity={isSel ? 0.5 : 0.4}
+                filter="url(#glow-node)"
+                pointerEvents="none"
+              />
+              {/* Core dot. */}
+              <circle
+                cx={x}
+                cy={y}
+                r={d.core}
+                fill={col}
+                className="map-node-ring transition-transform group-hover:scale-125"
+                strokeWidth={isSel ? 3 : 2.5}
+                stroke={isSel ? "#ffffff" : undefined}
+              />
+              {/* Name + live occupancy, on the raised layer only. */}
+              {d.labelled && (
+                <>
+                  <text
+                    x={x}
+                    y={y - d.core - 8}
+                    textAnchor="middle"
+                    fontSize={isSel ? 11 : 9.5}
+                    fontWeight={isSel ? 800 : 700}
+                    fill={isSel ? "#ffffff" : "#e2e8f0"}
+                    className="map-label select-none"
+                    stroke="#020617"
+                    strokeWidth={2.5}
+                    paintOrder="stroke"
+                    pointerEvents="none"
+                  >
+                    {s.name.length > 20 ? s.name.slice(0, 19) + "…" : s.name}
+                  </text>
+                  <text
+                    x={x}
+                    y={y + d.core + 14}
+                    textAnchor="middle"
+                    fontSize={9.5}
+                    fontWeight={800}
+                    fill={col}
+                    className="font-mono select-none"
+                    stroke="#020617"
+                    strokeWidth={2.5}
+                    paintOrder="stroke"
+                    pointerEvents="none"
+                  >
+                    {pct}%
+                  </text>
+                </>
+              )}
+            </>
+          )}
+        </g>
+      );
+    }
+
+    /* ---- Schematic / geographic view: unchanged flat rendering ---- */
+    const dimmed = isGeoLike && selectedCode !== "" && !isSel && !onSelectedPath;
+    const coreR = isSel ? 9 : 7;
+    const haloR = isSel ? 15 : 11;
+
+    return (
+      <g
+        key={nodeKey(s)}
+        onClick={() => onSelect && onSelect(s.id)}
+        opacity={dimmed ? 0.45 : 1}
+        className="cursor-pointer group"
+      >
+        <title>{tip}</title>
+        <circle cx={x} cy={y} r={10} fill="transparent" />
+        {isSel && (
+          <circle
+            cx={x}
+            cy={y}
+            r={16}
+            fill="none"
+            className="map-select-ring"
+            strokeWidth={2}
+            strokeDasharray="4 3"
+            pointerEvents="none"
+          />
+        )}
+        {isGeoLike && onSelectedPath && (
+          <circle
+            cx={x}
+            cy={y}
+            r={12}
+            fill="none"
+            stroke={col}
+            strokeWidth={1.5}
+            opacity={0.8}
+            pointerEvents="none"
+          />
+        )}
+        <circle
+          cx={x}
+          cy={y}
+          r={haloR}
+          fill={col}
+          opacity={isSel ? 0.45 : 0.35}
+          filter="url(#glow-node)"
+          pointerEvents="none"
+        />
+        <circle
+          cx={x}
+          cy={y}
+          r={coreR}
+          fill={col}
+          className="map-node-ring transition-transform group-hover:scale-125"
+          strokeWidth={isSel ? 3 : 2.5}
+          stroke={isSel ? "#ffffff" : undefined}
+        />
+        {isSchematic ? (
+          <>
+            <text
+              x={x}
+              y={y - 16}
+              textAnchor="middle"
+              fontSize={10}
+              fontWeight={700}
+              className="map-label select-none"
+            >
+              {fitLabel(s.name, lines[s.line].length)}
+            </text>
+            <text
+              x={x}
+              y={y + 24}
+              textAnchor="middle"
+              fontSize={9.5}
+              fontWeight={800}
+              fill={col}
+              className="font-mono select-none"
+            >
+              {pct}%
+            </text>
+          </>
+        ) : showLabel ? (
+          <text
+            x={x}
+            y={y - 12}
+            textAnchor="middle"
+            fontSize={isSel ? 10.5 : 9}
+            fontWeight={isSel ? 800 : 600}
+            fill={isSel ? "#fff" : undefined}
+            className="map-label select-none"
+            pointerEvents="none"
+          >
+            {s.name.length > 18 ? s.name.slice(0, 17) + "…" : s.name}
+          </text>
+        ) : null}
+      </g>
+    );
+  };
+
+  // The depth stack only exists while a junction is being examined. With
+  // nothing selected the whole graph is one flat plane - exploding an unselected
+  // map would imply a focus that does not exist.
+  const exploded = isConnections && selectedCode !== "";
+
+  // The focus view splits its nodes across the two planes so the lifted layer
+  // can be painted in front of the floor rather than interleaved with it.
+  const onFocusPlane = (s: Station) => s.id === selected || neighborsOfSelected.has(s.code);
+  const focusNodes = isConnections
+    ? nodeList.filter((s) => !exploded || onFocusPlane(s))
+    : [];
+  const floorNodes = isConnections
+    ? nodeList.filter((s) => exploded && !onFocusPlane(s))
+    : [];
+
   return (
     <div className="space-y-3">
       {/* Line Filters & Controls */}
@@ -281,7 +592,7 @@ export default function MetroMap({
             {isSchematic
               ? "Hover a track chip for its routes"
               : isConnections
-                ? "Click a station to light up its direct links"
+                ? "Click a station to raise its direct links above the network"
                 : "Click a station to trace its real connections"}
           </span>
         </div>
@@ -321,6 +632,30 @@ export default function MetroMap({
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
+
+            {/* Depth-of-field for the floor plane: the rest of the network sits
+                below the focus plane, so it is rendered slightly soft. */}
+            <filter id="depth-floor" x="-5%" y="-5%" width="110%" height="110%">
+              <feGaussianBlur stdDeviation={FLOOR_BLUR} />
+            </filter>
+
+            {/* Cast shadow so the focus plane visibly floats above the floor. */}
+            <filter id="depth-lift" x="-25%" y="-25%" width="150%" height="150%">
+              <feDropShadow
+                dx="0"
+                dy={FOCUS_SHADOW.dy}
+                stdDeviation={FOCUS_SHADOW.blur}
+                floodColor="#020617"
+                floodOpacity={FOCUS_SHADOW.opacity}
+              />
+            </filter>
+
+            {/* Atmospheric pool of light under the raised focus layer. */}
+            <radialGradient id="depth-spotlight" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.16" />
+              <stop offset="55%" stopColor="#6366f1" stopOpacity="0.07" />
+              <stop offset="100%" stopColor="#0f172a" stopOpacity="0" />
+            </radialGradient>
           </defs>
 
           {/* Grid Background Lines */}
@@ -377,103 +712,242 @@ export default function MetroMap({
             </>
           ) : isConnections ? (
             <>
-              {/* Faint real-network backdrop — orientation only, so the monitored
-                  graph reads as the subject instead of the other way round. */}
-              {network?.segments.map((seg) => {
-                const a = geo.byCode[seg.a];
-                const b = geo.byCode[seg.b];
-                if (!a || !b) return null;
-                const active = linksSelected(seg.a, seg.b);
-                return (
-                  <line
-                    key={`${seg.a}-${seg.b}`}
-                    x1={a.x}
-                    y1={a.y}
-                    x2={b.x}
-                    y2={b.y}
-                    stroke={lineColor(trunkForServices(seg.r) ?? "")}
-                    strokeWidth={1.2}
-                    strokeLinecap="round"
-                    opacity={selectedCode ? (active ? 0.4 : 0.05) : 0.16}
-                  />
-                );
-              })}
+              {/* ============================================================
+                  CONNECTIONS VIEW - a two-plane depth stack.
 
-              {/* Ghost dots for the real stops we do not monitor. */}
-              {network &&
-                network.stations.map((ns) => {
-                  if (monitoredCodes.has(ns.c)) return null;
-                  const p = geo.byCode[ns.c];
-                  if (!p) return null;
+                  Everything is sorted onto one of two Z planes (see
+                  lib/mapDepth.ts): the selected station and its genuine
+                  one-hop links sit on the raised FOCUS plane at true
+                  coordinates; every other station and every other
+                  connection path sits on the FLOOR plane, pushed down,
+                  blurred and thinned. The floor is drawn first, so the
+                  focus layer is unambiguously in front of it.
+                  ============================================================ */}
+
+              {/* ---------- FLOOR PLANE (z = 0) ---------- */}
+              <g
+                transform={exploded ? planeTransform("floor") : undefined}
+                filter={exploded ? planeFilter("floor") : undefined}
+                data-plane="floor"
+              >
+                {/* Real-network backdrop, for orientation only. */}
+                {network?.segments.map((seg) => {
+                  const a = geo.byCode[seg.a];
+                  const b = geo.byCode[seg.b];
+                  if (!a || !b) return null;
                   return (
-                    <circle
-                      key={ns.c}
-                      cx={p.x}
-                      cy={p.y}
-                      r={1.8}
-                      fill="#334155"
-                      opacity={selectedCode ? 0.18 : 0.4}
+                    <line
+                      key={`${seg.a}-${seg.b}`}
+                      x1={a.x}
+                      y1={a.y}
+                      x2={b.x}
+                      y2={b.y}
+                      stroke={lineColor(trunkForServices(seg.r) ?? "")}
+                      strokeWidth={1.1}
+                      strokeLinecap="round"
+                      opacity={selectedCode ? 0.1 : 0.2}
                     />
                   );
                 })}
 
-              {/* Every monitored train link, drawn bright so the graph reads as a
-                  network first and only then as a map. */}
-              {connections
-                .filter((c) => c.kind === "along_line")
-                .map((e) => {
+                {/* Unmonitored real stops, as dim context dots. */}
+                {network &&
+                  network.stations.map((ns) => {
+                    if (monitoredCodes.has(ns.c)) return null;
+                    const p = geo.byCode[ns.c];
+                    if (!p) return null;
+                    return (
+                      <circle
+                        key={ns.c}
+                        cx={p.x}
+                        cy={p.y}
+                        r={1.8}
+                        fill="#475569"
+                        opacity={selectedCode ? 0.22 : 0.4}
+                      />
+                    );
+                  })}
+
+                {/* Every connection path that is NOT part of the selection:
+                    the "rest of the network", in light view, below. */}
+                {connections.map((e) => {
                   const a = geo.byCode[e.from_code];
                   const b = geo.byCode[e.to_code];
                   const aSt = byCode[e.from_code];
                   const bSt = byCode[e.to_code];
                   if (!a || !b || !aSt || !bSt) return null;
-                  const color = lineColor(edgeTrunk(e.vias, aSt.line) ?? "1/2/3");
                   const active = linksSelected(e.from_code, e.to_code);
-                  // Non-selected links stay legible rather than fading to a
-                  // ghost: the selection should *emphasise* the one-hop
-                  // neighbourhood, not hide the rest of the network the
-                  // reviewer is trying to read it against.
-                  const dim = selectedCode !== "" && !active;
-                  const opacity = dim ? 0.42 : 1;
-                  const strokeWidth = active ? 7 : 3.5;
+                  const style = linkDepth(active, selectedCode !== "", {
+                    kind: e.kind === "transfer" ? "transfer" : "along_line",
+                  });
+                  if (style.plane !== "floor") return null;
+                  const color =
+                    e.kind === "transfer"
+                      ? "#94a3b8"
+                      : lineColor(edgeTrunk(e.vias, aSt.line) ?? "1/2/3");
                   return (
-                    <g key={`${e.from_code}-${e.to_code}`}>
-                      <title>{`${aSt.name} ↔ ${bSt.name} · via ${viaLabel(e.vias)}`}</title>
+                    <line
+                      key={`floor-${e.from_code}-${e.to_code}`}
+                      data-plane="floor"
+                      data-link={`${e.from_code}-${e.to_code}`}
+                      x1={a.x}
+                      y1={a.y}
+                      x2={b.x}
+                      y2={b.y}
+                      stroke={color}
+                      strokeWidth={style.width}
+                      strokeDasharray={e.kind === "transfer" ? "5 6" : undefined}
+                      strokeLinecap="round"
+                      opacity={style.opacity}
+                    />
+                  );
+                })}
+
+                {/* Floor stations, drawn in the same plane as the paths they
+                    sit on so the two read as one recessed layer. */}
+                {floorNodes.map((s) => renderNode(s, "floor"))}
+              </g>
+
+              {/* ---------- RISERS + SPOTLIGHT ---------- */}
+              {exploded && (
+                <>
+                  {/* A pool of light on the floor directly beneath the lift. */}
+                  {(() => {
+                    const sel = geo.byCode[selectedCode];
+                    if (!sel) return null;
+                    return (
+                      <ellipse
+                        cx={sel.x}
+                        cy={sel.y + FLOOR_LIFT * 2.4}
+                        rx={150}
+                        ry={110}
+                        fill="url(#depth-spotlight)"
+                        pointerEvents="none"
+                      />
+                    );
+                  })()}
+
+                  {/* Each lifted node is tied to its own twin on the floor, so
+                      the eye reads "this rose out of that" instead of seeing two
+                      unrelated copies. */}
+                  {stations.map((s) => {
+                    const p = geo.byCode[s.code];
+                    if (!p) return null;
+                    const isSel = s.id === selected;
+                    if (!needsRiser(isSel, neighborsOfSelected.has(s.code), true)) return null;
+                    const d = nodeDepth(isSel, !isSel, true);
+                    return (
+                      <g key={`riser-${s.code}`} data-riser={s.code} pointerEvents="none">
+                        <line
+                          x1={p.x}
+                          y1={p.y + FLOOR_LIFT}
+                          x2={p.x}
+                          y2={p.y}
+                          stroke={congestionColor(liveById[s.id]?.occupancy_pct ?? 0)}
+                          strokeWidth={1}
+                          strokeDasharray="2 3"
+                          opacity={isSel ? 0.5 : 0.28}
+                        />
+                        {/* Footprint where the node meets the floor. */}
+                        <ellipse
+                          cx={p.x}
+                          cy={p.y + FLOOR_LIFT}
+                          rx={d.core}
+                          ry={d.core * 0.42}
+                          fill="none"
+                          stroke={congestionColor(liveById[s.id]?.occupancy_pct ?? 0)}
+                          strokeWidth={1}
+                          opacity={isSel ? 0.45 : 0.2}
+                        />
+                      </g>
+                    );
+                  })}
+                </>
+              )}
+
+              {/* ---------- FOCUS PLANE (z = +1) ---------- */}
+              <g
+                filter={exploded ? "url(#depth-lift)" : undefined}
+                data-plane="focus"
+              >
+                {connections.map((e) => {
+                  const a = geo.byCode[e.from_code];
+                  const b = geo.byCode[e.to_code];
+                  const aSt = byCode[e.from_code];
+                  const bSt = byCode[e.to_code];
+                  if (!a || !b || !aSt || !bSt) return null;
+                  const active = linksSelected(e.from_code, e.to_code);
+                  const style = linkDepth(active, selectedCode !== "", {
+                    kind: e.kind === "transfer" ? "transfer" : "along_line",
+                  });
+                  if (style.plane !== "focus") return null;
+                  const color =
+                    e.kind === "transfer"
+                      ? "#cbd5e1"
+                      : lineColor(edgeTrunk(e.vias, aSt.line) ?? "1/2/3");
+                  return (
+                    <g key={`focus-${e.from_code}-${e.to_code}`} data-plane="focus" data-link={`${e.from_code}-${e.to_code}`}>
+                      <title>{`${aSt.name} ↔ ${bSt.name} · ${
+                        e.kind === "transfer" ? "walking interchange" : `via ${viaLabel(e.vias)}`
+                      }`}</title>
+
+                      {/* Soft skirt: the glow bed the core line sits on. */}
+                      {style.skirt > 0 && (
+                        <line
+                          x1={a.x}
+                          y1={a.y}
+                          x2={b.x}
+                          y2={b.y}
+                          stroke={color}
+                          strokeWidth={style.skirt}
+                          strokeLinecap="round"
+                          opacity={0.22}
+                        />
+                      )}
+
+                      {/* Core line. */}
                       <line
                         x1={a.x}
                         y1={a.y}
                         x2={b.x}
                         y2={b.y}
                         stroke={color}
-                        strokeWidth={strokeWidth}
+                        strokeWidth={style.width}
+                        strokeDasharray={e.kind === "transfer" ? "7 5" : undefined}
                         strokeLinecap="round"
-                        opacity={opacity * 0.3}
-                        filter={active ? "url(#glow-track)" : undefined}
+                        opacity={style.opacity}
+                        filter={style.filter}
                       />
-                      <line
-                        x1={a.x}
-                        y1={a.y}
-                        x2={b.x}
-                        y2={b.y}
-                        stroke={color}
-                        strokeWidth={active ? 4.5 : 3}
-                        strokeLinecap="round"
-                        opacity={opacity}
-                      />
-                      {/* Route chip on each lit link, so the served routes are readable
-                          without a hover. */}
-                      {active && (
-                        <g pointerEvents="none">
+
+                      {/* Animated flow, only on links that belong to the
+                          selection, to read as a live path. */}
+                      {style.flow && (
+                        <line
+                          className="map-flow"
+                          x1={a.x}
+                          y1={a.y}
+                          x2={b.x}
+                          y2={b.y}
+                          stroke="#ffffff"
+                          strokeWidth={Math.max(1, style.width * 0.28)}
+                          strokeDasharray="3 14"
+                          strokeLinecap="round"
+                          opacity={0.85}
+                        />
+                      )}
+
+                      {/* Route chip naming the services. */}
+                      {active && e.kind !== "transfer" && (
+                        <g className="select-none">
                           <rect
-                            x={(a.x + b.x) / 2 - viaLabel(e.vias).length * 2.9 - 4}
-                            y={(a.y + b.y) / 2 - 8}
-                            width={viaLabel(e.vias).length * 5.8 + 8}
-                            height={16}
-                            rx={8}
-                            fill="#0f172a"
+                            x={(a.x + b.x) / 2 - viaLabel(e.vias).length * 2.9 - 5}
+                            y={(a.y + b.y) / 2 - 9}
+                            width={viaLabel(e.vias).length * 5.8 + 10}
+                            height={18}
+                            rx={9}
+                            fill="#020617"
                             stroke={color}
-                            strokeWidth={1}
-                            opacity={0.95}
+                            strokeWidth={1.2}
                           />
                           <text
                             x={(a.x + b.x) / 2}
@@ -482,7 +956,7 @@ export default function MetroMap({
                             fontSize={10}
                             fontWeight={800}
                             fill={color}
-                            className="font-mono select-none"
+                            className="font-mono"
                           >
                             {viaLabel(e.vias)}
                           </text>
@@ -491,36 +965,16 @@ export default function MetroMap({
                     </g>
                   );
                 })}
+              </g>
 
-              {/* Walking interchanges — dashed, and lifted to white when lit. */}
-              {connections
-                .filter((c) => c.kind === "transfer")
-                .map((e) => {
-                  const a = geo.byCode[e.from_code];
-                  const b = geo.byCode[e.to_code];
-                  const aSt = byCode[e.from_code];
-                  const bSt = byCode[e.to_code];
-                  if (!a || !b || !aSt || !bSt) return null;
-                  const active = linksSelected(e.from_code, e.to_code);
-                  const dim = selectedCode !== "" && !active;
-                  const opacity = selectedCode && !active ? 0.45 : 1;
-                  return (
-                    <g key={`${e.from_code}-${e.to_code}`}>
-                      <title>{`${aSt.name} ↔ ${bSt.name} · walking interchange`}</title>
-                      <line
-                        x1={a.x}
-                        y1={a.y}
-                        x2={b.x}
-                        y2={b.y}
-                        stroke={active ? "#e2e8f0" : "#94a3b8"}
-                        strokeWidth={active ? 3.5 : 2}
-                        strokeDasharray="6 5"
-                        strokeLinecap="round"
-                        opacity={dim ? 0.32 : 1}
-                      />
-                    </g>
-                  );
-                })}
+              {/* Lifted stations, painted last so the whole focus plane - nodes,
+                  links, chips - sits in front of the floor and its shadow. */}
+              <g
+        filter={exploded ? "url(#depth-lift)" : undefined}
+        data-plane="focus"
+      >
+                {focusNodes.map((s) => renderNode(s, "focus"))}
+              </g>
             </>
           ) : (
             <>
@@ -632,172 +1086,11 @@ export default function MetroMap({
             </>
           )}
 
-          {/* Station Nodes */}
-          {nodeList.map((s) => {
-            const snap = liveById[s.id];
-            const pct = snap?.occupancy_pct ?? 0;
-            const col = congestionColor(pct);
-            const isSel = selected === s.id;
-            let x: number;
-            let y: number;
-            if (!isSchematic) {
-              const p = geo.byCode[s.code];
-              if (!p) return null;
-              x = p.x;
-              y = p.y;
-            } else {
-              const stops = lines[s.line];
-              const idx = stops.findIndex((st) => st.id === s.id);
-              x = xFor(idx, stops.length);
-              y = trackY[s.line];
-            }
-
-            const inGraph = graphCodes.has(s.code);
-            const onSelectedPath = selectedCode !== "" && neighborsOfSelected.has(s.code);
-            const dimmed = isGeoLike && selectedCode !== "" && !isSel && !onSelectedPath;
-            const showLabel = isSchematic || isConnections || isSel || inGraph;
-            // In the focus view a lit direct neighbour is pulled forward so the
-            // one-to-one link is unmistakable even on a dense stretch of map.
-            const isDirect = isConnections && onSelectedPath;
-            const coreR = isSel ? 9 : isDirect ? 8.5 : 7;
-            const haloR = isSel ? 15 : isDirect ? 13 : 11;
-
-            return (
-              <g
-                key={nodeKey(s)}
-                onClick={() => onSelect && onSelect(s.id)}
-                // Unrelated stations stay visible (not ghosted) so the whole network
-                  // remains readable while one station is selected.
-                  opacity={dimmed ? (isConnections ? 0.55 : 0.45) : 1}
-                className="cursor-pointer group"
-              >
-                <title>{`${s.name} (${s.id}) · Line: ${s.line} · Occupancy: ${pct}% · Congestion: ${snap?.congestion_level || "low"}`}</title>
-
-                {/* Slightly enlarged hit target so small dots stay easy to grab,
-                    kept small enough not to swallow an overlapping neighbour. */}
-                <circle cx={x} cy={y} r={10} fill="transparent" />
-
-                {/* Selection ring (static — no spinning animation). */}
-                {isSel && (
-                  <circle
-                    cx={x}
-                    cy={y}
-                    r={16}
-                    fill="none"
-                    className="map-select-ring"
-                    strokeWidth={2}
-                    strokeDasharray="4 3"
-                    pointerEvents="none"
-                  />
-                )}
-                {/* Neighbour highlight ring on the connection map. */}
-                {isGeoLike && onSelectedPath && (
-                  <circle
-                    cx={x}
-                    cy={y}
-                    r={isDirect ? 13 : 12}
-                    fill="none"
-                    stroke={isDirect ? "#ffffff" : col}
-                    strokeWidth={isDirect ? 2 : 1.5}
-                    opacity={isDirect ? 0.95 : 0.8}
-                    pointerEvents="none"
-                  />
-                )}
-                {/* Pulsing beacon on the selected station's direct links. */}
-                {isDirect && (
-                  <circle
-                    cx={x}
-                    cy={y}
-                    r={13}
-                    fill="none"
-                    stroke={col}
-                    strokeWidth={1}
-                    className="map-select-ring"
-                    opacity={0.6}
-                    pointerEvents="none"
-                  />
-                )}
-
-                {/* Congestion Glow Ring */}
-                <circle
-                  cx={x}
-                  cy={y}
-                  r={haloR}
-                  fill={col}
-                  opacity={isSel || isDirect ? 0.45 : 0.35}
-                  filter="url(#glow-node)"
-                  pointerEvents="none"
-                />
-                {/* Core Station Dot */}
-                <circle
-                  cx={x}
-                  cy={y}
-                  r={coreR}
-                  fill={col}
-                  className="map-node-ring transition-transform group-hover:scale-125"
-                  strokeWidth={isSel ? 3 : 2.5}
-                  stroke={isSel ? "#ffffff" : undefined}
-                />
-
-                {isSchematic ? (
-                  <>
-                    <text
-                      x={x}
-                      y={y - 16}
-                      textAnchor="middle"
-                      fontSize={10}
-                      fontWeight={700}
-                      className="map-label select-none"
-                    >
-                      {fitLabel(s.name, lines[s.line].length)}
-                    </text>
-                    <text
-                      x={x}
-                      y={y + 24}
-                      textAnchor="middle"
-                      fontSize={9.5}
-                      fontWeight={800}
-                      fill={col}
-                      className="font-mono select-none"
-                    >
-                      {pct}%
-                    </text>
-                  </>
-                ) : showLabel ? (
-                  <>
-                    <text
-                      x={x}
-                      y={y - 12}
-                      textAnchor="middle"
-                      fontSize={isSel ? 10.5 : 9}
-                      fontWeight={isSel ? 800 : 600}
-                      fill={isSel ? "#fff" : isDirect ? "#e2e8f0" : undefined}
-                      className="map-label select-none"
-                      pointerEvents="none"
-                    >
-                      {s.name.length > 18 ? s.name.slice(0, 17) + "…" : s.name}
-                    </text>
-                    {/* Live occupancy badge — the focus view is about which link is
-                        busy, so the numbers must be visible, not just coloured. */}
-                    {isConnections && (isSel || isDirect) && (
-                      <text
-                        x={x}
-                        y={y + 24}
-                        textAnchor="middle"
-                        fontSize={9.5}
-                        fontWeight={800}
-                        fill={col}
-                        className="font-mono select-none"
-                        pointerEvents="none"
-                      >
-                        {pct}%
-                      </text>
-                    )}
-                  </>
-                ) : null}
-              </g>
-            );
-          })}
+          {/* Station Nodes - schematic and geographic views render flat;
+              the connections view draws its own nodes inside the two depth
+              planes above, so the lifted layer is not interleaved with the
+              floor. */}
+          {!isConnections && nodeList.map((s) => renderNode(s, "focus"))}
         </svg>
         </div>
 
@@ -831,16 +1124,20 @@ export default function MetroMap({
 ) : isConnections ? (
           <div className="grid gap-2 sm:grid-cols-2">
             <p className="max-w-2xl leading-relaxed">
-              This is the <b className="text-white">same real NYC network at true latitude/longitude</b>, with
-              the rest of the subway pushed back to a whisper so the connections themselves become the
-              subject. Thick coloured links are real train links between monitored stops; the small chip
-              on each lit link names the routes that serve it.
+              This is the <b className="text-white">same real NYC network at true latitude/longitude</b>, stacked as two
+              depth layers. <b className="text-slate-200">The raised layer</b> is the selected station plus every station it
+              links to, drawn at full brightness with route chips and live occupancy badges.{" "}
+              <b className="text-slate-200">The lower layer</b> is the rest of the network — every other station and all
+              its remaining connection paths — pushed down, thinner and slightly soft, so the junction is read in
+              context instead of on an empty canvas. Vertical stems connect each raised station to its own twin
+              on the floor below.{" "}
+              <b className="text-slate-300">Dashed lines</b> are walking interchanges within a complex.
             </p>
             <p className="max-w-2xl leading-relaxed">
-              <b className="text-slate-300">Click any station</b> and everything it is not directly linked to drops
-              to 14% — its own links light up, each connected station gets a white ring and a live occupancy badge,
-              and the panel on the right repeats the same links as a list.{" "}
-              <b className="text-slate-300">Dashed lines</b> are walking interchanges within a complex.
+              <b className="text-slate-300">How to read it:</b> a thick glowing link with flowing dashes is a
+              connection the selection genuinely owns. The faded links below are context, not part of this junction.
+              Only links incident to the selected station are lifted, so a path that merely passes through a
+              neighbour stays on the floor. Straight lines between stops are a simplification of real track geometry.
             </p>
           </div>
         ) : (
@@ -897,19 +1194,32 @@ export default function MetroMap({
             </span>
           )}
           {isConnections && (
-            <span className="inline-flex items-center gap-1.5 font-medium">
-              <svg width="22" height="8" className="h-2">
-                <line x1="0" y1="4" x2="22" y2="4" stroke="#22d3ee" strokeWidth="3" strokeLinecap="round" />
-              </svg>
-              Lit direct link
-            </span>
+            <>
+              <span className="inline-flex items-center gap-1.5 font-medium">
+                <svg width="22" height="8" className="h-2">
+                  <line x1="0" y1="4" x2="22" y2="4" stroke="#22d3ee" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+                Raised layer: the selection&apos;s own links
+              </span>
+              <span className="inline-flex items-center gap-1.5 font-medium">
+                {/* Miniature of the map's own stacking: a riser rising off a
+                    shadowed, thinner base line. */}
+                <svg width="22" height="12" className="h-3">
+                  <line x1="1" y1="10" x2="21" y2="10" stroke="#64748b" strokeWidth="1.5" opacity="0.45" />
+                  <line x1="11" y1="10" x2="11" y2="4" stroke="#94a3b8" strokeWidth="1" strokeDasharray="2 2" opacity="0.5" />
+                  <line x1="4" y1="4" x2="18" y2="4" stroke="#22d3ee" strokeWidth="3" strokeLinecap="round" />
+                  <circle cx="4" cy="4" r="2.4" fill="#22d3ee" />
+                </svg>
+                Floor layer: the rest of the network
+              </span>
+            </>
           )}
         </div>
         <span className="text-[11px] text-slate-400">
           {isSchematic
             ? "Click any station node to open real-time telemetry"
             : isConnections
-              ? "Click a station: every station it links to lights up with the routes that serve it, while the full network stays visible around it"
+              ? "Click a station: it and its direct connections lift onto a raised layer, with the rest of the network left in view below"
               : "Selecting a station highlights its one-hop real-world connections"}
         </span>
       </div>

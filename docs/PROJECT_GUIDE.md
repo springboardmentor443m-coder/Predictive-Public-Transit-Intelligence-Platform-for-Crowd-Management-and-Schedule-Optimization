@@ -300,26 +300,34 @@ anything. None of them alters another — they are three readings of the same GT
 - **Connections view** — the same true lat/lng projection, but stripped back to the *monitored
   graph only* so the one-to-one link structure becomes the subject. Built from
   `/crowd/connections` (25 GTFS-derived edges: 21 along-line plus 4 walking connections between
-  MTA stops). Clicking a station lights its one-hop links with route chips and occupancy badges, but
-  the **rest of the network stays visible** at reduced opacity rather than fading out — you read the
-  selected junction *in the context of* the whole graph, so the surrounding connection paths of
-  every other station remain on screen.
+  MTA stops). Clicking a station **explodes the graph into two depth planes**: the selection and
+  its real connections rise onto a bright, glowing layer with route chips and occupancy badges,
+  while every other station and all of its remaining connection paths drop onto a thinner, blurred
+  floor below — tied to the raised layer by risers, so the junction is read in the context of the
+  whole network instead of on an empty canvas. See §7.2.
 
 Both map views plot real stations in their real positions and connect them in the real order the
 GTFS timetable gives; the line between two stops is drawn straight. See §4.1 for exactly what that
 does and does not mean.
 
-**What the connections view adds.** With nothing selected the whole monitored graph is drawn
-bright. Click any station and that junction is emphasised:
+**What the connections view adds.** With nothing selected the monitored graph is drawn flat and
+even. Click any station and the map **explodes into two depth planes**:
 
-- each link it **does** have is drawn thicker, glows, and carries a chip naming the routes that
-  serve it (e.g. `L`, `4/5`);
-- every connected station gets a white ring plus its own live occupancy badge;
-- a side panel repeats the same links as a one-to-one list, clickable to walk the network;
-- everything **else stays on screen** — unrelated stations at 55% opacity, their links at
-  42–45%, transfers at 32%. The selection reads by emphasis rather than by erasure, so the
-  connection paths of every other station in the network remain visible and you can see the
-  selected junction in its real surroundings instead of on an empty canvas.
+- the **raised plane** is the selection plus every station it genuinely links to — thick, glowing
+  links with animated dashes flowing along them, route chips naming the services (`L`, `4/5`), a
+  white ring on each connected station, and a live occupancy badge under each name;
+- the **floor plane** is everything else — every other station and all of its remaining connection
+  paths — pushed down 16 px, thinned and blurred so it reads as further away;
+- **risers** tie each raised station to its own twin on the floor, and a soft pool of light sits
+  on the floor directly beneath the selection, so the eye reads "this rose out of that" rather
+  than seeing two unrelated copies;
+- a **cast shadow** from the raised layer lands on the floor below it.
+
+With no selection active there is no explode: the whole graph returns to a single flat plane,
+because exploding an unselected map would imply a focus that does not exist. Only links incident
+to the selected station are lifted (the tested `linkTouches` predicate), so a path that merely
+passes through a neighbour stays down on the floor. The plane model lives in
+`frontend/lib/mapDepth.ts` and is covered by unit tests.
 
 Only links genuinely **incident to the selected station** light up — an edge that merely passes
 through one of its neighbours stays dimmed, so you never see a path highlighted that the station
@@ -658,9 +666,11 @@ are model-derived.
   advice. They cover the delay-vocabulary edge cases, deterministic schedule grids, out-of-window
   history synthesis, per-station factor spread (regression against the old 7-value collapse),
   hourly traffic scaling, and every auth/RBAC path.
-- **Front end:** **53 tests** (Vitest) + full TypeScript type-check + ESLint + production build,
+- **Front end:** **72 tests** (Vitest) + full TypeScript type-check + ESLint + production build,
   all green. Includes the `linkTouches` predicate that keeps map highlighting to genuine one-hop
-  links, and the timezone suite proving the NYC/IST clocks stay correct across EDT/EST.
+  links, the `mapDepth` plane model, a render-level suite asserting the connections view really
+  stacks two planes (and flattens again when nothing is selected), and the timezone suite proving
+  the NYC/IST clocks stay correct across EDT/EST.
 - **CI:** on every push/PR a pipeline runs the Python test job and a Docker image build job (the
   `.dockerignore` fix removed the bloated `data/` directory from the broker). Also covered in
   docs: latency budgets and prediction-interval coverage measures.
