@@ -6,7 +6,8 @@ psycopg2-binary
 python-multipart
 python-jose[cryptography]
 passlib
-bcrypt==4.3.0cloudpickle==3.1.2
+bcrypt==4.3.0
+cloudpickle==3.1.2
 joblib==1.6.0
 narwhals==2.26.0
 numpy==2.5.3

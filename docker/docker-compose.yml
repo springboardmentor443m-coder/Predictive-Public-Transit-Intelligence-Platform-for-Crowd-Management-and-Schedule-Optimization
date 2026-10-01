@@ -1,0 +1,27 @@
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    container_name: metroflow-backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg2://srinidhireddyvelma@host.docker.internal/metroflow_db
+      PGHOST: host.docker.internal
+      PGDATABASE: metroflow_db
+      PGUSER: srinidhireddyvelma
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+      args:
+        VITE_API_URL: http://localhost:8000
+    container_name: metroflow-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend

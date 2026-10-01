@@ -536,29 +536,16 @@ function App() {
           <button
             type="button"
             className={
-              activePage === "alerts"
+              activePage === "m2"
                 ? "nav-item active"
                 : "nav-item"
             }
             onClick={() => setActivePage("m2")}
           >
             <span>🤖</span>
-            M2 AI Analytics
+            AI & Operations Analytics
           </button>
 
-
-          <button
-            type="button"
-            className={
-              activePage === "analytics"
-                ? "nav-item active"
-                : "nav-item"
-            }
-            onClick={() => setActivePage("analytics")}
-          >
-            <span>📈</span>
-            Analytics
-          </button>
 
         </nav>
 
@@ -594,85 +581,7 @@ function App() {
 
         {activePage === "m2" && <M2Dashboard />}
 
-        {activePage === "alerts" && (
-          <div className="page-content">
 
-            <div className="page-heading">
-              <div>
-                <p className="eyebrow">
-                  METRO OPERATIONS CENTER
-                </p>
-
-                <h2>Alerts</h2>
-
-                <p>
-                  Overcrowding, delay and emergency alerts.
-                </p>
-              </div>
-
-              <div className="live-badge">
-                <span></span>
-                PLANNED
-              </div>
-            </div>
-
-
-            <div className="panel coming-soon-panel">
-              <div className="coming-soon-icon">
-                🚨
-              </div>
-
-              <h3>Alerts Module</h3>
-
-              <p>
-                Alert management will be implemented in
-                the upcoming milestone.
-              </p>
-            </div>
-
-          </div>
-        )}
-
-
-        {activePage === "analytics" && (
-          <div className="page-content">
-
-            <div className="page-heading">
-              <div>
-                <p className="eyebrow">
-                  AI METROFLOW INTELLIGENCE
-                </p>
-
-                <h2>Analytics</h2>
-
-                <p>
-                  AI-powered metro traffic analytics and
-                  recommendations.
-                </p>
-              </div>
-
-              <div className="live-badge">
-                <span></span>
-                PLANNED
-              </div>
-            </div>
-
-
-            <div className="panel coming-soon-panel">
-              <div className="coming-soon-icon">
-                📈
-              </div>
-
-              <h3>Analytics Module</h3>
-
-              <p>
-                Advanced analytics will be implemented in
-                the upcoming milestone.
-              </p>
-            </div>
-
-          </div>
-        )}
 
       </main>
 
