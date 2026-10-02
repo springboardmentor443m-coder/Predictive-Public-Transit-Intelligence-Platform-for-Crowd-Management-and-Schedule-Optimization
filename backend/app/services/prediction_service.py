@@ -156,10 +156,18 @@ def build_prediction_features(station):
     return {
         "station": station,
         "hour": hour,
-        "day_of_week": int(date.dayofweek),
-        "day_of_month": int(date.day),
-        "month": int(date.month),
-        "is_weekend": int(date.dayofweek >= 5),
+        "day_of_week": int(
+            date.dayofweek
+        ),
+        "day_of_month": int(
+            date.day
+        ),
+        "month": int(
+            date.month
+        ),
+        "is_weekend": int(
+            date.dayofweek >= 5
+        ),
         "is_peak_hour": int(
             hour in [7, 8, 9, 17, 18, 19]
         ),
@@ -172,6 +180,194 @@ def build_prediction_features(station):
         "net_flow": float(
             latest_row["Net_Flow"]
         ),
+        "previous_hour_ridership": previous_hour_ridership,
+        "previous_day_ridership": previous_day_ridership,
+        "rolling_3h_avg": rolling_3h_avg,
+        "previous_hour_exit": previous_hour_exit,
+        "previous_hour_net_flow": previous_hour_net_flow
+    }
+
+
+def build_historical_prediction_features(
+    station,
+    selected_date,
+    selected_hour
+):
+    entries_path = "../data/bmrcl/station-hourly.csv"
+    exits_path = "../data/bmrcl/station-hourly-exits.csv"
+
+    entries_df = pd.read_csv(
+        entries_path,
+        sep=";"
+    )
+
+    exits_df = pd.read_csv(
+        exits_path,
+        sep=";"
+    )
+
+    entries_df["Date"] = pd.to_datetime(
+        entries_df["Date"]
+    )
+
+    exits_df["Date"] = pd.to_datetime(
+        exits_df["Date"]
+    )
+
+    selected_date = pd.to_datetime(
+        selected_date
+    )
+
+    station_entries = entries_df[
+        entries_df["Station"] == station
+    ].copy()
+
+    station_exits = exits_df[
+        exits_df["Station"] == station
+    ].copy()
+
+    if station_entries.empty:
+        return None
+
+    # Current selected hour
+    current_entry = station_entries[
+        (station_entries["Date"] == selected_date)
+        & (station_entries["Hour"] == selected_hour)
+    ]
+
+    if current_entry.empty:
+        return None
+
+    current_entry = current_entry.iloc[0]
+
+    current_exit = station_exits[
+        (station_exits["Date"] == selected_date)
+        & (station_exits["Hour"] == selected_hour)
+    ]
+
+    if current_exit.empty:
+        ridership_exit = 0.0
+    else:
+        ridership_exit = float(
+            current_exit.iloc[0]["Ridership"]
+        )
+
+    ridership_entry = float(
+        current_entry["Ridership"]
+    )
+
+    net_flow = (
+        ridership_entry
+        - ridership_exit
+    )
+
+    # Previous hour
+    if selected_hour > 0:
+        previous_hour = selected_hour - 1
+        previous_hour_date = selected_date
+    else:
+        previous_hour = 23
+        previous_hour_date = (
+            selected_date
+            - pd.Timedelta(days=1)
+        )
+
+    previous_hour_entry = station_entries[
+        (station_entries["Date"] == previous_hour_date)
+        & (station_entries["Hour"] == previous_hour)
+    ]
+
+    previous_hour_exit_data = station_exits[
+        (station_exits["Date"] == previous_hour_date)
+        & (station_exits["Hour"] == previous_hour)
+    ]
+
+    if previous_hour_entry.empty:
+        previous_hour_ridership = ridership_entry
+    else:
+        previous_hour_ridership = float(
+            previous_hour_entry.iloc[0]["Ridership"]
+        )
+
+    if previous_hour_exit_data.empty:
+        previous_hour_exit = ridership_exit
+    else:
+        previous_hour_exit = float(
+            previous_hour_exit_data.iloc[0]["Ridership"]
+        )
+
+    previous_hour_net_flow = (
+        previous_hour_ridership
+        - previous_hour_exit
+    )
+
+    # Previous-day ridership at the same hour
+    previous_day = (
+        selected_date
+        - pd.Timedelta(days=1)
+    )
+
+    previous_day_data = station_entries[
+        (station_entries["Date"] == previous_day)
+        & (station_entries["Hour"] == selected_hour)
+    ]
+
+    if previous_day_data.empty:
+        previous_day_ridership = ridership_entry
+    else:
+        previous_day_ridership = float(
+            previous_day_data.iloc[0]["Ridership"]
+        )
+
+    # Rolling average of previous 3 available hours
+    station_history = station_entries[
+        (
+            station_entries["Date"]
+            + pd.to_timedelta(
+                station_entries["Hour"],
+                unit="h"
+            )
+        )
+        < (
+            selected_date
+            + pd.Timedelta(
+                hours=selected_hour
+            )
+        )
+    ].copy()
+
+    previous_three = station_history.sort_values(
+        ["Date", "Hour"]
+    ).tail(3)
+
+    if previous_three.empty:
+        rolling_3h_avg = ridership_entry
+    else:
+        rolling_3h_avg = float(
+            previous_three["Ridership"].mean()
+        )
+
+    return {
+        "station": station,
+        "hour": int(selected_hour),
+        "day_of_week": int(
+            selected_date.dayofweek
+        ),
+        "day_of_month": int(
+            selected_date.day
+        ),
+        "month": int(
+            selected_date.month
+        ),
+        "is_weekend": int(
+            selected_date.dayofweek >= 5
+        ),
+        "is_peak_hour": int(
+            selected_hour in [7, 8, 9, 17, 18, 19]
+        ),
+        "ridership_entry": ridership_entry,
+        "ridership_exit": ridership_exit,
+        "net_flow": net_flow,
         "previous_hour_ridership": previous_hour_ridership,
         "previous_day_ridership": previous_day_ridership,
         "rolling_3h_avg": rolling_3h_avg,
