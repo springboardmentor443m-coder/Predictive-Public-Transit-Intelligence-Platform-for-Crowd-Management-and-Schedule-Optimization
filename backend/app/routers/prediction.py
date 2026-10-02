@@ -7,6 +7,10 @@ from app.services.prediction_service import (
     predict_from_latest_data
 )
 
+from app.services.demand_forecasting_service import (
+    predict_next_day_demand
+)
+
 
 router = APIRouter(
     prefix="/prediction",
@@ -84,3 +88,12 @@ def predict_latest_crowd(
         "historical BMRCL station data."
     )
 }
+
+
+@router.get("/demand")
+def predict_demand(
+    current_user=Depends(get_current_user)
+):
+    result = predict_next_day_demand()
+
+    return result

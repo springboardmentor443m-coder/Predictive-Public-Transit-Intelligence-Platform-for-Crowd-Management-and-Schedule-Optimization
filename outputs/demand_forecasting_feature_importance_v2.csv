@@ -1,0 +1,11 @@
+Feature,Importance
+Target_Is_Weekend,0.65936154
+Target_Day_of_Week,0.17168528
+Previous_Day_Ridership,0.046737794
+Rolling_3_Change,0.03188888
+Rolling_7_Day_Avg,0.021046707
+Target_Month,0.017231772
+Target_Week_of_Year,0.015624545
+Demand_Change,0.014183903
+Previous_Week_Ridership,0.013174079
+Target_Day_of_Month,0.0090654595
