@@ -4,6 +4,7 @@ from app.database import Base, engine
 from app.models import user
 from app.routers import health, auth, crowd, scheduling, prediction
 from app.routers.monitoring import router as monitoring_router
+from app.routers.alerts import router as alerts_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -21,6 +22,7 @@ app.include_router(crowd.router)
 app.include_router(scheduling.router)
 app.include_router(prediction.router)
 app.include_router(monitoring_router)
+app.include_router(alerts_router)
 
 
 @app.get("/")
