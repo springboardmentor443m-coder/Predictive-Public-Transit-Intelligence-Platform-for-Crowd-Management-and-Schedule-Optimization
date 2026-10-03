@@ -13,6 +13,11 @@ from app.services.scheduling_service import (
     is_trip_active_on_date
 )
 
+from app.services.scheduling_intelligence_service import (
+    get_station_scheduling_recommendation,
+    get_network_scheduling_recommendations
+)
+
 
 router = APIRouter(
     prefix="/scheduling",
@@ -128,3 +133,32 @@ def trip_active_on_date(
             date
         )
     }
+
+
+
+@router.get("/intelligence/stations/{station}")
+def station_scheduling_intelligence(
+    station: str,
+    current_user=Depends(get_current_user)
+):
+    recommendation = (
+        get_station_scheduling_recommendation(
+            station
+        )
+    )
+
+    if recommendation is None:
+        return {
+            "station": station,
+            "message": "No scheduling analysis found for this station."
+        }
+
+    return recommendation
+
+
+
+@router.get("/intelligence/summary")
+def scheduling_intelligence_summary(
+    current_user=Depends(get_current_user)
+):
+    return get_network_scheduling_recommendations()
