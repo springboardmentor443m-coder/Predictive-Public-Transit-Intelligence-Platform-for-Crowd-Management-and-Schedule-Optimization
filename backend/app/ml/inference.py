@@ -1,6 +1,5 @@
 import os
 import joblib
-import torch
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta, timezone
@@ -13,7 +12,8 @@ SAVED_MODELS_DIR = os.path.join(os.path.dirname(__file__), "saved_models")
 class MLInferenceEngine:
     def __init__(self):
         self.demand_model_data = None
-        self.crowd_clf_data = None
+        self.iso_forest = None
+        self.station_clusters = None
         self.load_models()
 
     def load_models(self):
@@ -24,12 +24,19 @@ class MLInferenceEngine:
             except Exception as e:
                 print(f"Error loading demand model: {e}")
 
-        crowd_path = os.path.join(SAVED_MODELS_DIR, "crowd_classifier.joblib")
-        if os.path.exists(crowd_path):
+        iso_path = os.path.join(SAVED_MODELS_DIR, "isolation_forest.joblib")
+        if os.path.exists(iso_path):
             try:
-                self.crowd_clf_data = joblib.load(crowd_path)
+                self.iso_forest = joblib.load(iso_path)
             except Exception as e:
-                print(f"Error loading crowd classifier model: {e}")
+                print(f"Error loading isolation forest: {e}")
+
+        cluster_path = os.path.join(SAVED_MODELS_DIR, "station_clusters.joblib")
+        if os.path.exists(cluster_path):
+            try:
+                self.station_clusters = joblib.load(cluster_path)
+            except Exception as e:
+                print(f"Error loading station clusters: {e}")
 
     def forecast_station_demand(
         self, 
@@ -42,43 +49,49 @@ class MLInferenceEngine:
         now = datetime.now(timezone.utc)
         station_info = next((s for s in STATION_METADATA if s["id"] == station_id), STATION_METADATA[0])
         
-        # Build feature vector
+        # Build feature vector matching XGBoost training features:
+        # ['station_id', 'hour', 'day_of_week', 'is_weekend', 'lag_1h', 'lag_2h', 'rolling_mean_3h', 'rolling_max_3h']
+        lag1 = float(max(0, current_inflow))
+        lag2 = float(max(0, int(current_inflow * 0.95)))
         features = pd.DataFrame([{
             "station_id": station_id,
             "hour": now.hour,
-            "minute": now.minute,
             "day_of_week": now.weekday(),
             "is_weekend": int(now.weekday() >= 5),
-            "capacity": station_info["capacity"],
-            "inflow_ppm": current_inflow,
-            "outflow_ppm": current_outflow,
-            "line_delay_min": 0,
-            "density_pct": current_density,
+            "lag_1h": lag1,
+            "lag_2h": lag2,
+            "rolling_mean_3h": lag1,
+            "rolling_max_3h": lag1 * 1.05,
         }])
 
         predicted_inflow = current_inflow
         if self.demand_model_data:
-            m_key = f"model_{horizon_minutes}" if horizon_minutes in (15, 30, 60) else "model_30"
-            model = self.demand_model_data.get(m_key)
+            if horizon_minutes <= 60:
+                model = self.demand_model_data.get("model_1h")
+            elif horizon_minutes <= 120:
+                model = self.demand_model_data.get("model_2h")
+            else:
+                model = self.demand_model_data.get("model_4h")
+
             if model:
                 try:
                     pred = model.predict(features)[0]
                     predicted_inflow = max(10, int(pred))
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"Prediction inference error: {e}")
 
         # Generate future time-series points
         forecast_points = []
-        steps = horizon_minutes // 5 if horizon_minutes >= 15 else 3
+        steps = max(2, horizon_minutes // 15)
         for i in range(1, steps + 1):
-            future_time = now + timedelta(minutes=i * 5)
-            trend_factor = 1.0 + (0.05 * (1 if now.hour in (8, 9, 17, 18) else -0.02) * i)
-            pt_inflow = max(10, int(predicted_inflow * trend_factor))
-            pt_outflow = max(8, int(current_outflow * trend_factor * 0.95))
+            future_time = now + timedelta(minutes=i * 15)
+            step_factor = 1.0 + (0.02 * (1 if now.hour in (8, 9, 17, 18) else -0.01) * i)
+            pt_inflow = max(10, int(predicted_inflow * step_factor))
+            pt_outflow = max(8, int(current_outflow * step_factor * 0.96))
             
             lower_bound = max(5, int(pt_inflow * 0.88))
             upper_bound = int(pt_inflow * 1.12)
-            surge_prob = min(0.98, max(0.05, (current_density / 100.0) * trend_factor))
+            surge_prob = min(0.98, max(0.05, (current_density / 100.0) * step_factor))
 
             forecast_points.append({
                 "timestamp": future_time.strftime("%H:%M"),
@@ -90,7 +103,7 @@ class MLInferenceEngine:
             })
 
         predicted_peak_density = min(99.0, round(current_density * (1.1 if now.hour in (8, 9, 17, 18) else 0.95), 1))
-        risk_level = "CRITICAL" if predicted_peak_density > 80 else ("MODERATE" if predicted_peak_density > 60 else "LOW")
+        risk_level = "CRITICAL" if predicted_peak_density > 80 else ("MODERATE" if predicted_peak_density > 50 else "LOW")
 
         return {
             "station_id": station_id,
@@ -106,3 +119,4 @@ class MLInferenceEngine:
 
 
 ml_inference = MLInferenceEngine()
+

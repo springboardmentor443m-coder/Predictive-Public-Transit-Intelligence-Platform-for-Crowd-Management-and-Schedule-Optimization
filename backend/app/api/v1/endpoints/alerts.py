@@ -6,6 +6,7 @@ from app.schemas.alert_schema import AlertItem, PABroadcastRequest, BroadcastRes
 router = APIRouter()
 
 
+@router.get("", response_model=List[AlertItem])
 @router.get("/", response_model=List[AlertItem])
 async def get_active_alerts():
     return await alert_service.get_active_alerts()

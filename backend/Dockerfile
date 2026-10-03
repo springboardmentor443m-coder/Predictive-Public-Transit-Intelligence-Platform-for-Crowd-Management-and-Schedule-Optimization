@@ -14,8 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt email-validator
 COPY . .
 
 # Train initial baseline ML models inside docker build step
-RUN PYTHONPATH=. python app/ml/train_demand_model.py
-RUN PYTHONPATH=. python app/ml/train_crowd_model.py
+RUN PYTHONPATH=. python app/ml/train_bmrcl_models.py
 
 EXPOSE 8000
 

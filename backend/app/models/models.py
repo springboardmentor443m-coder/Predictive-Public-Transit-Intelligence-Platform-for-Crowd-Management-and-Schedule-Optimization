@@ -99,3 +99,32 @@ class AuditLog(Base):
     target = Column(String(255), nullable=False)
     details = Column(Text, nullable=True)
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class PassengerCount(Base):
+    """Normalized real BMRCL hourly passenger counts table (August + September 2025)."""
+    __tablename__ = "passenger_counts"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    station_code = Column(String(20), index=True, nullable=False)
+    station_id = Column(Integer, ForeignKey("stations.id"), nullable=True, index=True)
+    timestamp = Column(DateTime, index=True, nullable=False)
+    entries = Column(Integer, default=0, nullable=False)
+    exits = Column(Integer, default=0, nullable=False)
+    net_flow = Column(Integer, default=0, nullable=False)
+    source_file = Column(String(100), nullable=False)
+
+
+class StationMapping(Base):
+    """Reconciliation mapping table connecting ridership raw station codes to GTFS stations."""
+    __tablename__ = "station_mappings"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    ridership_station_code = Column(String(20), index=True, nullable=True)
+    ridership_station_name = Column(String(255), nullable=False)
+    gtfs_station_id = Column(String(50), nullable=True)
+    gtfs_station_name = Column(String(255), nullable=True)
+    match_method = Column(String(50), nullable=False)
+    match_score = Column(Float, nullable=False)
+    status = Column(String(50), nullable=False)  # RESOLVED, FUZZY_REVIEW, UNMATCHED, MANUAL_CONFIRMED
+    review_required = Column(Boolean, default=False)

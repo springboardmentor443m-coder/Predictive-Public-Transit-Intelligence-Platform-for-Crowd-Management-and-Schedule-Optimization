@@ -1,86 +1,72 @@
-import random
 from datetime import datetime, timezone
-from typing import List, Dict
+from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
-from app.models.models import Station
 from app.schemas.crowd_schema import StationDensity, CrowdSummaryResponse
-from app.ml.data_generator import STATION_METADATA, get_rush_hour_multiplier
+from app.services.realtime_passenger_service import realtime_passenger_service
+from app.ml.data_generator import STATION_METADATA
 
-# Live in-memory cache for fast density metrics access
-live_station_state: Dict[int, dict] = {}
+# Global state dictionary for real BMRCL station density data
+live_station_state: Dict[int, Dict[str, Any]] = {}
 
-
-def initialize_live_station_states():
+def _init_live_station_state():
     now = datetime.now(timezone.utc)
-    hour = now.hour
-    minute = now.minute
-    is_weekend = now.weekday() >= 5
-    multiplier = get_rush_hour_multiplier(hour, minute, is_weekend)
-
     for st in STATION_METADATA:
-        base_inflow = random.randint(45, 90) if not st["interchange"] else random.randint(90, 180)
-        base_outflow = random.randint(40, 80) if not st["interchange"] else random.randint(80, 160)
-        
-        inflow = int(base_inflow * multiplier)
-        outflow = int(base_outflow * multiplier * 0.9)
-
-        # Formula: (Inflow - Outflow)/Capacity * 100 (scaled to realistic platform occupancy)
-        net_occupancy = max(50, int((inflow - outflow) * 15 + st["capacity"] * 0.35 * multiplier))
-        density_pct = round(min(98.5, max(5.0, (net_occupancy / st["capacity"]) * 100.0)), 1)
-        
-        status = "CRITICAL" if density_pct >= 80.0 else ("MODERATE" if density_pct >= 60.0 else "NORMAL")
-
         live_station_state[st["id"]] = {
             "station_id": st["id"],
             "station_code": st["code"],
             "station_name": st["name"],
             "line_name": st["line"],
-            "inflow_rate_ppm": inflow,
-            "outflow_rate_ppm": outflow,
-            "current_occupancy": net_occupancy,
+            "density_percentage": 42.0,
+            "inflow_rate_ppm": 250,
+            "outflow_rate_ppm": 220,
+            "current_occupancy": 250,
             "platform_capacity": st["capacity"],
-            "density_percentage": density_pct,
-            "status": status,
+            "status": "NORMAL",
             "latitude": st["lat"],
             "longitude": st["lng"],
             "is_interchange": st["interchange"],
             "last_updated": now,
         }
 
-
-# Initialize on import
-initialize_live_station_states()
+_init_live_station_state()
 
 
 class CrowdService:
+    """
+    BMRCL Crowd Telemetry Service.
+    Derives real crowd densities directly from genuine historical RTI observations.
+    Categorization: MetroFlow Derived Demand Classification (NORMAL <50%, MODERATE 50-80%, CRITICAL >=80%).
+    """
+
     @staticmethod
     async def get_all_station_densities(db: AsyncSession = None) -> List[StationDensity]:
-        now = datetime.now(timezone.utc)
-        results = []
-        
-        # Slightly fluctuate values to simulate real-time live transit updates
-        for st_id, data in live_station_state.items():
-            noise_in = random.randint(-3, 3)
-            noise_out = random.randint(-3, 3)
-            data["inflow_rate_ppm"] = max(5, data["inflow_rate_ppm"] + noise_in)
-            data["outflow_rate_ppm"] = max(5, data["outflow_rate_ppm"] + noise_out)
-            
-            # Recalculate density
-            capacity = data["platform_capacity"]
-            delta = (data["inflow_rate_ppm"] - data["outflow_rate_ppm"]) * 0.2
-            new_occ = max(30, int(data["current_occupancy"] + delta))
-            density_pct = round(min(99.0, max(5.0, (new_occ / capacity) * 100.0)), 1)
-            
-            data["current_occupancy"] = new_occ
-            data["density_percentage"] = density_pct
-            data["status"] = "CRITICAL" if density_pct >= 80.0 else ("MODERATE" if density_pct >= 60.0 else "NORMAL")
-            data["last_updated"] = now
+        cached = realtime_passenger_service.get_cached_station_densities()
+        if not cached:
+            # Fetch telemetry frame from real historical replay
+            await realtime_passenger_service.get_live_telemetry()
+            cached = realtime_passenger_service.get_cached_station_densities()
 
-            results.append(StationDensity(**data))
+        # Update live_station_state dict with latest observations
+        for d in cached:
+            live_station_state[d.station_id] = {
+                "station_id": d.station_id,
+                "station_code": d.station_code,
+                "station_name": d.station_name,
+                "line_name": d.line_name,
+                "density_percentage": d.density_percentage,
+                "inflow_rate_ppm": d.inflow_rate_ppm,
+                "outflow_rate_ppm": d.outflow_rate_ppm,
+                "current_occupancy": d.current_occupancy,
+                "platform_capacity": d.platform_capacity,
+                "status": d.status,
+                "latitude": d.latitude,
+                "longitude": d.longitude,
+                "is_interchange": d.is_interchange,
+                "last_updated": d.last_updated,
+            }
 
-        return results
+        return cached
 
     @staticmethod
     async def get_crowd_summary() -> CrowdSummaryResponse:
@@ -103,3 +89,4 @@ class CrowdService:
 
 
 crowd_service = CrowdService()
+

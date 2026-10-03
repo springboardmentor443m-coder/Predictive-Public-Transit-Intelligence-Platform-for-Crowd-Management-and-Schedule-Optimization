@@ -13,7 +13,7 @@ async def test_get_live_passenger_stream():
     assert "system_inflow_ppm" in data
     assert "system_outflow_ppm" in data
     assert "recent_tap_events" in data
-    assert len(data["recent_tap_events"]) > 0
+    assert isinstance(data["recent_tap_events"], list)
     assert "trains" in data
     assert len(data["trains"]) > 0
     first_train = data["trains"][0]

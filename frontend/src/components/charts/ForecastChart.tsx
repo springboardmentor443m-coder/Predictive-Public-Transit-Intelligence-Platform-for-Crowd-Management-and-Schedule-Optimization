@@ -65,7 +65,7 @@ export function ForecastChart({ forecast }: ForecastChartProps) {
             />
             <Legend wrapperStyle={{ fontSize: "12px", color: "#cbd5e1" }} />
             <Area type="monotone" dataKey="upper_bound" name="Upper Confidence Bound" stroke="#818cf8" fillOpacity={1} fill="url(#colorUpper)" />
-            <Area type="monotone" dataKey="predicted_inflow" name="Predicted Inflow (ppm)" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorPredicted)" />
+            <Area type="monotone" dataKey="predicted_inflow" name="Predicted Demand (pax/hr)" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorPredicted)" />
           </AreaChart>
         </ResponsiveContainer>
       </div>

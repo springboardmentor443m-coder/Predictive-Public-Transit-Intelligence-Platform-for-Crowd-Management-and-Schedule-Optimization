@@ -21,7 +21,7 @@ export function DensityChart({ stations }: DensityChartProps) {
   return (
     <div className="w-full h-[320px] bg-[#0d1424] border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
       <div className="flex items-center justify-between mb-2">
-        <h4 className="text-sm font-bold text-white">Live Station Inflow vs. Outflow (Passengers / Min)</h4>
+        <h4 className="text-sm font-bold text-white">Live Station Inflow vs. Outflow (pax/hr)</h4>
         <span className="text-xs text-slate-400 font-mono">Top 10 High-Traffic Nodes</span>
       </div>
 
@@ -35,8 +35,8 @@ export function DensityChart({ stations }: DensityChartProps) {
               contentStyle={{ backgroundColor: "#0f172a", borderColor: "#334155", borderRadius: "8px", color: "#fff", fontSize: "12px" }}
             />
             <Legend wrapperStyle={{ fontSize: "12px", color: "#cbd5e1" }} />
-            <Bar dataKey="inflow" name="Inflow Rate (ppm)" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="outflow" name="Outflow Rate (ppm)" fill="#10b981" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="inflow" name="Inflow Rate (pax/hr)" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="outflow" name="Outflow Rate (pax/hr)" fill="#10b981" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

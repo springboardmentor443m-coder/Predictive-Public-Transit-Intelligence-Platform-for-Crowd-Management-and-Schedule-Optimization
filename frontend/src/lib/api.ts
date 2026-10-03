@@ -92,6 +92,13 @@ export const api = {
 
   // Real-World Datasets & Retraining
   getDatasetStats: async () => fetchJson<DatasetStats>("/datasets/stats"),
+  getDataSources: async () => fetchJson<any>("/data/sources"),
+  predictDemand: async (stationId: number, horizonHours = 1) => {
+    return fetchJson<any>("/predict/demand", {
+      method: "POST",
+      body: JSON.stringify({ station_id: stationId, horizon_hours: horizonHours }),
+    });
+  },
   ingestDatasets: async () => fetchJson<{ status: string; message: string }>("/datasets/ingest", { method: "POST" }),
   retrainModels: async () => fetchJson<{ status: string; message: string; metrics: any; dataset_rows?: number }>("/datasets/retrain", { method: "POST" }),
 };

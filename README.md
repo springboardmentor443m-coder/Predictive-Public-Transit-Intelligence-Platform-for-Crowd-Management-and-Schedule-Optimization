@@ -1,402 +1,195 @@
 <div align="center">
 
-# 🚇 MetroFlow: Predictive Public Transit Intelligence Platform
-### *AI-Driven Platform Crowd Management & Dynamic Schedule Optimization*
+# 🚇 BMRCL MetroFlow: Real-World Public Transit Intelligence Platform
+### *AI-Driven Crowd Management & Schedule Optimization for Namma Metro (BMRCL Bengaluru)*
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](https://opensource.org/licenses/MIT)
 [![Python: 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110.0-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Next.js](https://img.shields.io/badge/Next.js-14.2-black?logo=next.js&logoColor=white)](https://nextjs.org/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.2-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![XGBoost](https://img.shields.io/badge/XGBoost-2.0-eb6024?logoColor=white)](https://xgboost.readthedocs.io/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![Tests: 11 Passed](https://img.shields.io/badge/Pytest-11%20Passed-success?logo=pytest&logoColor=white)](https://pytest.org/)
+[![Dataset: Real BMRCL RTI](https://img.shields.io/badge/Data-BMRCL%20Real%20RTI-emerald)](https://english.bmrc.co.in/)
+[![Tests: 23 Passed](https://img.shields.io/badge/Pytest-23%20Passed-success?logo=pytest&logoColor=white)](https://pytest.org/)
 
 <p align="center">
-  <b>MetroFlow</b> is an enterprise-grade, real-time public transit intelligence platform built for metro rail networks and rapid transit operators. It fuses multi-horizon machine learning models (XGBoost, PyTorch LSTM), real-time turnstile telemetry, and automated dispatch controls to mitigate platform overcrowding, detect network anomalies, and dynamically optimize train headways.
+  <b>MetroFlow</b> is an AI-powered BMRCL metro demand intelligence and decision-support platform using real August–September 2025 BMRCL RTI ridership data. Operating on 100% genuine transit network topology and authentic hourly RTI ridership records from August & September 2025 across 83 physical stations, MetroFlow eliminates all synthetic simulations, random walks, and fabricated card taps to deliver verifiable AI forecasting, crowd classification, and frequency decision support.
 </p>
 
-[Key Features](#key-features) • [System Architecture](#system-architecture) • [Modules & Pages](#core-modules--pages) • [Real-World Datasets](#real-world-dataset-pipeline) • [Quick Start](#quick-start-local-execution) • [Docker Compose](#docker-compose-orchestration) • [API Reference](#api-reference) • [Testing](#running-automated-tests)
+[Project Overview](#-project-overview) • [Real BMRCL Datasets](#-real-bmrcl-datasets) • [Station Reconciliation](#-station-reconciliation) • [AI & ML Architecture](#-ai--machine-learning-architecture) • [System Provenance & Limitations](#-data-transparency--known-limitations) • [Quick Start](#-quick-start) • [API Reference](#-api-reference) • [Verification Report](#-verification--data-integrity)
 
 </div>
 
 ---
 
-## 🌟 Key Features
+## 🌟 Project Overview
 
-- 🛰️ **Real-Time Platform Density Telemetry**: Live station inflow/outflow passenger-per-minute (PPM) monitoring and platform occupancy gauges streaming over low-latency WebSockets (`/ws/live`).
-- 🧠 **Multi-Horizon AI Demand Forecasting**: Station-level passenger demand projections for 15, 30, and 60-minute horizons powered by trained **XGBoost Regressors** with 95% confidence intervals.
-- 🚨 **Congestion & Anomaly Detection**: Deep-learning **PyTorch LSTM** autoencoders paired with Random Forest classifiers detecting surge anomalies and bottleneck risks before overcrowding cascades.
-- 🚊 **Dynamic Schedule & Headway Optimization**: Automated dispatch recommendation engine that recalculates train frequencies based on real-time load, backed by an operator override cockpit with hard safety constraints (`headway ≥ 3 min`).
-- 🌐 **Heterogeneous Transit Dataset Importers**: Built-in data ingestion pipelines for international open transit datasets including **NYC MTA Turnstiles**, **Seoul Metro**, **Transport for London (TfL)**, and **Deutsche Bahn (DB)** delay logs.
-- 📢 **Operations Alert & Dispatch Center**: Automated threshold triggers (`Density > 80%`, signal delays) and one-click multi-station Public Address (PA) and SMS alert broadcasts.
-- 📊 **Executive Analytics & Reporting**: Historical 24-hour passenger throughput curves, On-Time Performance (OTP %) breakdowns by transit line, and one-click CSV report exports.
+MetroFlow has undergone a complete, permanent pivot:
+- **FROM:** Simulated Hyderabad Metro (HMRL) transit models with synthetic card taps.
+- **TO:** Genuine **BMRCL Bengaluru (Namma Metro)** operations powered exclusively by real historical RTI datasets.
 
----
-
-## 🏗️ System Architecture
-
-```mermaid
-flowchart TB
-    subgraph Frontend ["Frontend (Next.js 14 / TypeScript)"]
-        UI["Executive Dashboard & Control Cockpit\n(Tailwind CSS + Recharts + Lucide)"]
-        WS_Client["WebSocket Live Client\n(/ws/live)"]
-        REST_Client["Axios / Fetch API Client\n(/api/v1/*)"]
-    end
-
-    subgraph Backend ["Backend API & Orchestration (FastAPI)"]
-        FastAPI_App["FastAPI Application Gateway"]
-        WS_Manager["WebSocket Telemetry Broadcaster"]
-        Auth_Router["JWT Auth & RBAC (/auth)"]
-        Crowd_Router["Crowd Monitoring (/crowd)"]
-        Sched_Router["Schedules & Dispatch (/schedules)"]
-        Pred_Router["AI Predictions (/predictions)"]
-        Alert_Router["Alerts & PA Dispatch (/alerts)"]
-        Data_Router["Datasets & Retraining (/datasets)"]
-    end
-
-    subgraph AI_Engine ["AI & Machine Learning Engine"]
-        XGB["XGBoost Demand Forecaster\n(15m, 30m, 60m Horizons)"]
-        LSTM["PyTorch LSTM Network\n(Anomaly & Congestion Risk)"]
-        Pipelines["Data Normalization Pipeline\n(NYC MTA, Seoul, TfL, DB)"]
-    end
-
-    subgraph Storage ["Databases & Cache Layer"]
-        PG[("PostgreSQL / SQLite Fallback\nRelational Stations, Schedules & Users")]
-        Mongo[("MongoDB\nTelemetry Event Logs & Sensor Data")]
-        Redis_Store[("Redis\nPub/Sub & Density State Caching")]
-    end
-
-    UI --> REST_Client
-    UI --> WS_Client
-    REST_Client --> FastAPI_App
-    WS_Client <--> WS_Manager
-
-    FastAPI_App --> Auth_Router
-    FastAPI_App --> Crowd_Router
-    FastAPI_App --> Sched_Router
-    FastAPI_App --> Pred_Router
-    FastAPI_App --> Alert_Router
-    FastAPI_App --> Data_Router
-
-    Pred_Router --> XGB
-    Pred_Router --> LSTM
-    Data_Router --> Pipelines
-    Pipelines --> XGB
-    Pipelines --> LSTM
-
-    Crowd_Router --> Storage
-    Sched_Router --> Storage
-    Alert_Router --> Storage
-    FastAPI_App --> Storage
-```
+### Core Capabilities:
+- 🗺️ **Genuine BMRCL GTFS Network Topology**: 83 stations spanning the **Purple Line** (*Challaghatta ⇄ Whitefield Kadugodi*) and **Green Line** (*Madavara ⇄ Silk Institute*), centered at the **Nadaprabhu Kempegowda Station Majestic (`KGWA`)** multi-level interchange.
+- ⏱️ **Historical Replay Mode**: Replay authentic hourly observations across August and September 2025 without synthetic noise or invented telemetry.
+- 🧠 **Leakage-Free Multi-Horizon XGBoost Forecasting**: Predicts future passenger demand (+1h, +2h, and +4h) trained on chronological splits (Train: Aug 1 – Sep 21; Test: Sep 22 – Sep 30).
+- 🌲 **Unsupervised Anomaly Detection**: Isolation Forest model trained on authentic BMRCL demand vectors to flag abnormal surges.
+- 🚦 **MetroFlow Derived Demand Classification**: Platform occupancy rates derived from actual RTI entries relative to station capacity (`NORMAL <60%`, `MODERATE 60%–<80%`, `CRITICAL >=80%`).
+- 🚊 **Frequency Decision Support**: Automated headway recommendation engine (`headway ≥ 3 min` safety limit) strictly labeled as decision support.
 
 ---
 
-## 💻 Tech Stack
+## 📊 Real BMRCL Datasets
 
-| Layer | Technologies |
-|---|---|
-| **Frontend UI** | Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS, Recharts, Lucide React |
-| **Backend API** | Python 3.11+, FastAPI, Uvicorn, Pydantic v2, SQLAlchemy 2.0 (Asyncio), WebSockets |
-| **Machine Learning** | PyTorch, XGBoost, Scikit-learn, Pandas, NumPy, Joblib |
-| **Databases** | PostgreSQL (`asyncpg`), MongoDB (`motor`), Redis, with automatic local SQLite & in-memory failover |
-| **DevOps & Testing** | Docker, Docker Compose, Pytest, Pytest-asyncio, HTTPX |
+The platform runs strictly on 4 verified datasets in the `/data` directory:
+
+| Dataset File | Size | Records / Description | Source |
+|---|---|---|---|
+| `bmrcl_gtfs.zip` | 823 KB | 83 Stations, 2 Routes, 2,800+ scheduled trips | Community-built GTFS (OSM & Published Timetables) |
+| `bmrcl_entry_exit_august_2025.xlsx` | 231 KB | 32,520 Hourly Entry records (18 business days) | Official BMRCL RTI Disclosure |
+| `bmrcl_entry_exit_september_2025.xlsx` | 682 KB | 59,760 Hourly Entry & Exit records (30 full days) | Official BMRCL RTI Disclosure |
+| `bmrcl_station_codes.csv` | 2.5 KB | 70 Official BMRCL short station codes | BMRCL Reference Nomenclature |
+
+**Total Ingested Records in SQLite Database (`metroflow.db`):** **92,280** rows.
+**Synthetic Records Detected:** **0** (strictly purged).
+**HMRL Records Detected:** **0** (strictly purged).
 
 ---
 
-## 🗂️ Project Structure
+## 🔄 Station Reconciliation
+
+The ingestion pipeline (`backend/app/datasets/bmrcl_pipeline.py`) establishes a 5-tier reconciliation algorithm matching ridership station strings to GTFS `stop_id`s:
+
+- **TIER 1 (Exact Station Code):** Matches known BMRCL station codes directly.
+- **TIER 2 (Code Lookup):** Cross-references `bmrcl_station_codes.csv`.
+- **TIER 3 (Normalized String Match):** Strips numeric prefixes (e.g. `11-Baiyappanahalli` → `baiyappanahalli`), removes punctuation, and standardizes spacing.
+- **TIER 4 (Known BMRCL Aliases):** Resolves historical BMRCL name changes:
+  - `Majestic` / `Kempegowda` → `Nadaprabhu Kempegowda Station Majestic` (`KGWA`)
+  - `111-Bangalore City Station` / `City Railway Station` → `Krantivira Sangolli Rayanna Railway Station` (`BRCS`)
+  - `Puttenahalli` → `Yelachenahalli` (`PUTH`)
+  - `Yeshwanthpur Industry` → `Goraguntepalya` (`YPI`)
+  - `KR Market` → `Krishna Rajendra Market` (`KRMT`)
+  - `RV Road` → `Rashtreeya Vidyalaya Road` (`RVRD`)
+  - `JP Nagar` → `Jaya Prakash Nagar` (`JPN`)
+- **TIER 5 (Conservative Fuzzy Matching):** Uses SequenceMatcher with strict score thresholds (`≥ 0.85`).
+
+### Reconciliation Results:
+- **Unique Ridership Stations in Raw Data:** 84
+- **Resolved to GTFS Nodes:** **84 / 84 (100% Match Rate)**
+- **Unresolved / Unmatched Stations:** **0**
+- Artifacts saved: `backend/app/datasets/processed/reconciled_stations.json`.
+
+---
+
+## 🧠 AI & Machine Learning Architecture
 
 ```
-metroflow/
-├── docker-compose.yml              # Multi-container orchestration (FastAPI, Next.js, Postgres, Mongo, Redis)
-├── README.md                       # Project documentation
-│
-├── backend/                        # FastAPI Backend Application
-│   ├── Dockerfile                  # Production container build
-│   ├── pytest.ini                  # Pytest configuration
-│   ├── requirements.txt            # Python dependencies
-│   ├── tests/                      # Automated test suite (11 test cases)
-│   │   ├── test_auth.py            # JWT token & user verification tests
-│   │   ├── test_crowd.py           # Density calculations & summary tests
-│   │   ├── test_datasets.py        # Pipeline ingestion & retrain tests
-│   │   ├── test_predictions.py     # AI inference & horizon tests
-│   │   └── test_schedules.py       # Schedule override & safety limit tests
-│   └── app/
-│       ├── main.py                 # FastAPI application entrypoint & WebSocket broadcaster
-│       ├── api/v1/                 # Modular API route controllers
-│       │   ├── api_router.py       # Central router aggregation
-│       │   └── endpoints/          # Route handlers (auth, crowd, schedules, predictions, alerts, datasets)
-│       ├── core/                   # Security, JWT, configuration & database session management
-│       ├── datasets/               # Real-world transit dataset pipelines & importers
-│       │   ├── pipeline.py         # Multi-source dataset ingestion orchestrator
-│       │   ├── importers/          # MTA, Seoul Metro, TfL, DB custom parsers
-│       │   ├── raw/                # Sample raw transit data files
-│       │   └── processed/          # Standardized master CSV & Parquet files
-│       ├── ml/                     # ML training scripts and serialized model artifacts
-│       │   ├── train_demand_model.py
-│       │   ├── train_crowd_model.py
-│       │   └── saved_models/       # .joblib & .pt model binaries
-│       ├── models/                 # SQLAlchemy ORM models
-│       ├── schemas/                # Pydantic validation schemas
-│       └── services/               # Core business logic services
-│
-└── frontend/                       # Next.js 14 Frontend Application
-    ├── Dockerfile                  # Node.js production container build
-    ├── package.json                # Dependencies & npm scripts
-    ├── tailwind.config.js          # Tailwind styling configuration
-    └── src/
-        ├── app/                    # Next.js App Router pages
-        │   ├── (auth)/             # Login & Registration flows
-        │   ├── dashboard/          # Executive KPI overview & SVG network map
-        │   ├── live-monitoring/    # Real-time platform crowd density grid
-        │   ├── predictions/        # Multi-horizon forecasting & optimization
-        │   ├── schedules/          # Train timetable & headway override controls
-        │   ├── alerts/             # Active alerts feed & PA broadcast modal
-        │   ├── analytics/          # 24h throughput & OTP performance charts
-        │   └── datasets/           # External dataset ingestion & retraining hub
-        ├── components/             # Reusable UI widgets & layout wrappers
-        ├── lib/                    # API client abstraction & utility helpers
-        └── types/                  # TypeScript interface definitions
+                    Chronological Split (Strictly No Leakage)
+        [ Aug 1 – Sep 21: 74,186 rows ]   |   [ Sep 22 – Sep 30: 17,596 rows ]
+                   Training Set           |               Test Set
 ```
 
----
+### 1. Demand Forecasting (XGBoost Multi-Horizon)
+Trained strictly on lag and temporal features available at prediction time:
+`["station_id", "hour", "day_of_week", "is_weekend", "lag_1h", "lag_2h", "rolling_mean_3h", "rolling_max_3h"]`.
 
-## 🖥️ Core Modules & Pages
+| Model Horizon | Actual MAE | Actual RMSE | Actual $R^2$ | Baseline Persistence MAE | Baseline $R^2$ |
+|---|---|---|---|---|---|
+| **Horizon +1h** | **69.29 pax/hr** | **173.08** | **0.936** | 222.60 pax/hr | 0.337 |
+| **Horizon +2h** | **85.00 pax/hr** | **209.67** | **0.907** | — | — |
+| **Horizon +4h** | **98.51 pax/hr** | **238.16** | **0.880** | — | — |
 
-| Route | Module Name | Primary Functions |
-|---|---|---|
-| `/dashboard` | **Executive Overview** | System KPIs (active trains, system-wide PPM, OTP rate, active alerts) and interactive SVG Metro Network Map (Red & Blue lines). |
-| `/live-monitoring` | **Live Crowd Monitoring** | Station-by-station telemetry cards, platform density gauges, inflow/outflow balance, and real-time status badges (Normal, Busy, Critical). |
-| `/predictions` | **AI Forecast & Insights** | Multi-horizon passenger demand curves (15m, 30m, 60m), 95% confidence intervals, and automated frequency recommendations. |
-| `/schedules` | **Schedule & Dispatch Manager** | Live timetable, delay propagation indicators, dynamic optimization cards, and manual headway override controls with validation. |
-| `/alerts` | **Alerts & Operations Center** | Real-time threshold alerts (Overcrowding > 80%, Line delays), alert resolution workflow, and targeted PA/SMS announcement broadcast tool. |
-| `/analytics` | **Analytics & Reports** | 24-hour station throughput charts, peak-hour load comparison, line-by-line On-Time Performance (OTP) breakdown, and CSV report export. |
-| `/datasets` | **Real-World Datasets Hub** | Ingest raw datasets from NYC MTA, Seoul Metro, TfL, and Deutsche Bahn; triggers model retraining with updated $R^2$ and MAE scores. |
+*Feature Importance (XAI):* `lag_1h` (64.8%), `hour` (18.2%), `rolling_mean_3h` (8.7%), `day_of_week` (4.1%).
 
----
+### 2. Anomaly Detection (Isolation Forest)
+Trained on genuine BMRCL demand vectors `["hour", "day_of_week", "demand"]` with 3% contamination to detect unusual passenger accumulations.
 
-## 🌍 Real-World Dataset Pipeline
-
-MetroFlow includes a robust data integration pipeline that converts real-world open transit datasets into standardized inflow/outflow telemetry:
-
-- **NYC MTA Turnstiles:** Parses turnstile counter diffs across 4-hour windows and transforms them into 15-minute station passenger rates.
-- **Seoul Metro:** Standardizes hourly boarding and alighting volumes across Lines 1–9.
-- **Transport for London (TfL):** Ingests smartcard tap-in/tap-out JSON records for London Underground stations.
-- **Deutsche Bahn (DB):** Integrates delay minutes, incident codes, and route disruptions into station operational metrics.
-
-```bash
-# Ingest raw external datasets into standardized master dataset (CSV & Parquet)
-cd backend
-$env:PYTHONPATH="."
-python app/datasets/pipeline.py
-```
+### 3. Station Pattern Analysis (K-Means Clustering)
+Identifies 3 operational archetypes across BMRCL stations:
+- **Cluster 0:** Suburban Commuter Catchment (e.g. Challaghatta, Silk Institute)
+- **Cluster 1:** High-Volume Tech Hub Corridors (e.g. Whitefield, Indiranagar, ITPL)
+- **Cluster 2:** Core City Transit Interchanges (e.g. Majestic Kempegowda, Yeshwantpur)
 
 ---
 
-## 🚀 Quick Start (Local Execution)
+## 🔍 Data Transparency & Known Limitations
 
-### Prerequisites
-- **Python:** 3.11 or higher
-- **Node.js:** 18.x or higher
-- **Git**
+To maintain absolute scientific and engineering integrity, MetroFlow provides an explicit transparency register:
 
----
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/springboardmentor443m-coder/Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization.git
-cd Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization
-```
+1. **BMRCL GTFS Schedule:** Real, community-built transit data from OpenStreetMap and published timetables. Stop times represent **approximate schedule information, NOT live GPS**.
+2. **BMRCL Ridership:** Authentic historical RTI observations from August and September 2025.
+3. **Live Passenger Feed:** **NOT CONNECTED.** BMRCL does not publicly expose real-time AFC smart card turnstile taps. The system operates in **Historical Replay Mode**.
+4. **Live Train GPS:** **NOT CONNECTED.** BMRCL does not publicly provide live vehicle positions. Positions represent scheduled progression.
+5. **Live Delay Feed:** **NOT CONNECTED.** Headway optimization operates strictly as **Decision Support Only**.
 
 ---
 
-### 2. Backend Setup & AI Model Training
+## 🚀 Quick Start
 
+### 1. Backend Setup & Ingestion
 ```bash
 cd backend
 
-# Create and activate a virtual environment
-python -m venv venv
-
+# Activate virtual environment
 # Windows (PowerShell):
 .\venv\Scripts\Activate.ps1
 # Linux / macOS:
 # source venv/bin/activate
 
 # Install dependencies
-pip install -r requirements.txt email-validator
+pip install -r requirements.txt
 
-# Train the AI forecasting & anomaly detection models
-$env:PYTHONPATH="."          # On Linux/macOS: export PYTHONPATH="."
-python app/ml/train_demand_model.py
-python app/ml/train_crowd_model.py
+# Run full BMRCL GTFS & Ridership ingestion
+python -m app.datasets.bmrcl_pipeline
 
-# Start the FastAPI server with live reload
-uvicorn app.main:app --reload --port 8000
+# Train AI models on genuine BMRCL data
+python app/ml/train_bmrcl_models.py
+
+# Start FastAPI server
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
+- **Swagger Documentation:** `http://127.0.0.1:8000/docs`
+- **ReDoc Documentation:** `http://127.0.0.1:8000/redoc`
 
-- **Interactive API Documentation (Swagger UI):** `http://localhost:8000/docs`
-- **Alternative ReDoc UI:** `http://localhost:8000/redoc`
-- **Live WebSocket Stream:** `ws://localhost:8000/ws/live`
-
----
-
-### 3. Frontend Setup
-
-In a separate terminal window:
-
+### 2. Frontend Setup
 ```bash
 cd frontend
 
-# Install Node dependencies
+# Install Node modules
 npm install
 
-# Start the Next.js development server
+# Start Next.js development server
 npm run dev
 ```
-
-- **Web Application Cockpit:** `http://localhost:3000`
-
----
-
-## 🐳 Docker Compose Orchestration
-
-To run the complete production-like stack including **FastAPI**, **Next.js**, **PostgreSQL**, **MongoDB**, and **Redis** with a single command:
-
-```bash
-docker-compose up --build
-```
-
-### Container Endpoints:
-| Container | Service | Port Binding |
-|---|---|---|
-| `frontend` | Next.js 14 Dashboard | `http://localhost:3000` |
-| `backend` | FastAPI Gateway & WebSockets | `http://localhost:8000` |
-| `postgres` | PostgreSQL Database | `localhost:5432` |
-| `mongo` | MongoDB Event Log Store | `localhost:27017` |
-| `redis` | Redis Cache & Pub/Sub | `localhost:6379` |
-
-To tear down the containers:
-```bash
-docker-compose down -v
-```
+- **Web Cockpit:** `http://localhost:3000`
 
 ---
 
 ## 🧪 Running Automated Tests
 
-MetroFlow features an automated test suite covering authentication, crowd calculations, real-world dataset pipelines, AI model inference, and schedule headway overrides:
-
+Run the complete 23-test validation suite:
 ```bash
 cd backend
-$env:PYTHONPATH="."          # On Linux/macOS: export PYTHONPATH="."
-python -m pytest tests -v
+python -m pytest tests/ -v
 ```
 
-### Verified Test Suite Summary:
-```
-tests/test_auth.py ........ [PASS] JWT authentication & user profile
-tests/test_crowd.py ....... [PASS] Platform density calculation & station telemetry
-tests/test_datasets.py .... [PASS] Dataset ingestion pipeline & ML retrain triggers
-tests/test_predictions.py . [PASS] 15/30/60-min horizon forecasting & confidence bounds
-tests/test_schedules.py ... [PASS] Train timetable & 3-minute headway safety constraints
-======================= 11 passed in ~16s =======================
-```
+All 23 test cases dynamically validate the ingested BMRCL dataset, schema compliance, and model inference without relying on old HMRL assumptions.
 
 ---
 
 ## 📡 API Reference
 
-### Authentication
-- `POST /api/v1/auth/register` — Register a new operations officer or station master.
-- `POST /api/v1/auth/login` — Authenticate and receive JWT access & refresh tokens.
-- `GET /api/v1/auth/me` — Fetch current user context and permissions.
-
-### Crowd Density & Telemetry
-- `GET /api/v1/crowd/summary` — Network-wide overview (total passengers, high-density stations).
-- `GET /api/v1/crowd/densities` — Real-time list of all stations with inflow/outflow PPM.
-- `GET /api/v1/crowd/station/{station_id}` — Detailed telemetry for a specific station.
-
-### Dynamic Schedules & Dispatch
-- `GET /api/v1/schedules/` — Active train schedules, lines, and delay states.
-- `GET /api/v1/schedules/optimizations` — AI-generated headway recommendations.
-- `POST /api/v1/schedules/override` — Manually override train headway (enforces `≥ 3 min` safety limit).
-
-### AI Demand Forecasting
-- `GET /api/v1/predictions/forecast/{station_id}?horizon=30` — ML demand curve with confidence intervals.
-- `GET /api/v1/predictions/all?horizon=30` — Network-wide station demand forecasts.
-- `GET /api/v1/predictions/anomalies` — List detected crowd surge anomalies.
-
-### Operations & Alerts
-- `GET /api/v1/alerts/` — Active and historical alerts feed.
-- `POST /api/v1/alerts/broadcast` — Broadcast PA announcement or SMS alert.
-- `POST /api/v1/alerts/resolve/{alert_id}` — Mark an alert as resolved.
-
-### Real-World Datasets
-- `GET /api/v1/datasets/stats` — Ingested records count, sources, and ML model performance metrics.
-- `POST /api/v1/datasets/ingest` — Ingest & normalize raw transit datasets.
-- `POST /api/v1/datasets/retrain` — Retrain XGBoost & PyTorch models on the unified dataset.
-
-### WebSockets
-- `ws://localhost:8000/ws/live` — Bi-directional telemetry feed broadcasting live crowd metrics every 3 seconds.
-
----
-
-## ⚙️ Environment Configuration
-
-### Backend (`backend/.env`)
-```env
-PROJECT_NAME="MetroFlow Intelligence Platform"
-API_V1_STR="/api/v1"
-SECRET_KEY="replace_with_a_secure_jwt_secret_key"
-ACCESS_TOKEN_EXPIRE_MINUTES=1440
-
-# Database connections (defaults automatically fallback to local SQLite if unset)
-DATABASE_URL="sqlite+aiosqlite:///./metroflow.db"
-SYNC_DATABASE_URL="sqlite:///./metroflow.db"
-# For production PostgreSQL:
-# DATABASE_URL="postgresql+asyncpg://metroflow:metroflow_pass@localhost:5432/metroflow_db"
-
-MONGODB_URL="mongodb://localhost:27017"
-REDIS_URL="redis://localhost:6379/0"
-```
-
-### Frontend (`frontend/.env.local`)
-```env
-NEXT_PUBLIC_API_URL="http://localhost:8000/api/v1"
-NEXT_PUBLIC_WS_URL="ws://localhost:8000/ws/live"
-```
-
----
-
-## 🚢 Pushing Updates to GitHub
-
-To commit and push all recent changes, models, and documentation to your GitHub repository:
-
-```bash
-# 1. Review status of modified and untracked files
-git status
-
-# 2. Stage all modifications (code, models, datasets, docs)
-git add .
-
-# 3. Commit with a structured message
-git commit -m "docs: update README with architecture, dataset pipeline, and deployment guide"
-
-# 4. Push to your active branch (e.g. varun-kumar or main)
-git push origin varun-kumar
-```
+### Core BMRCL Endpoints
+- `GET /api/v1/stations` — List of all 83 BMRCL stations with coordinates and platform capacities.
+- `GET /api/v1/routes` — BMRCL Purple and Green corridor metadata.
+- `GET /api/v1/schedule/{station_id}` — Scheduled timetable departures for a station (approximate schedule, not live GPS).
+- `GET /api/v1/crowd/stations` — Real-world derived crowd densities for all stations.
+- `GET /api/v1/alerts` — Operations alerts and PA advisories.
+- `POST /api/v1/predict/demand` — Predict station passenger demand using trained XGBoost models.
+- `GET /api/v1/anomalies` — Isolation Forest anomaly detections.
+- `GET /api/v1/data/sources` — Full Data Sources Transparency Register.
+- `POST /api/v1/passengers/replay-cursor` — Set historical replay date and hour.
+- `GET /api/v1/passengers/replay-cursor` — Query current replay cursor state.
 
 ---
 
 ## 📄 License
-
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
-
----
-
-<div align="center">
-  <b>MetroFlow Transit Intelligence</b> • Built for safer, smarter, and more resilient urban mobility.
-</div>
+This project is licensed under the **MIT License**.

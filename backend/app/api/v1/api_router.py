@@ -1,9 +1,12 @@
 from fastapi import APIRouter
 from app.api.v1.endpoints import (
-    auth, crowd, schedules, predictions, alerts, analytics, datasets, passengers
+    auth, crowd, schedules, predictions, alerts, analytics, datasets, passengers, bmrcl_endpoints
 )
 
 api_router = APIRouter()
+
+# Core BMRCL Direct Endpoints (GET /stations, GET /routes, GET /schedule/{id}, GET /crowd/stations, POST /predict/demand, GET /anomalies, GET /data/sources)
+api_router.include_router(bmrcl_endpoints.router, tags=["BMRCL Core Endpoints & Data Transparency"])
 
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(passengers.router, prefix="/passengers", tags=["Real-Time Passenger Data & GTFS-RT"])
@@ -13,3 +16,4 @@ api_router.include_router(predictions.router, prefix="/predictions", tags=["AI D
 api_router.include_router(alerts.router, prefix="/alerts", tags=["Alerts & PA Broadcasts"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["Analytics & Reports"])
 api_router.include_router(datasets.router, prefix="/datasets", tags=["Real-World Datasets & Model Retraining"])
+

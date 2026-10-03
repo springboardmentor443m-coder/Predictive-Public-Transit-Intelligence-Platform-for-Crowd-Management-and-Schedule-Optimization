@@ -30,29 +30,29 @@ class AnalyticsService:
 
         lines = [
             LinePerformanceMetric(
-                line_name="Red Line",
-                active_trains=14,
-                on_time_performance_pct=96.4,
-                avg_delay_minutes=1.2,
-                total_daily_ridership=142800,
-                peak_crowd_station="Central Terminal"
+                line_name="Purple Line",
+                active_trains=22,
+                on_time_performance_pct=97.1,
+                avg_delay_minutes=0.0,
+                total_daily_ridership=440000,
+                peak_crowd_station="Nadaprabhu Kempegowda Station, Majestic"
             ),
             LinePerformanceMetric(
-                line_name="Blue Line",
-                active_trains=12,
-                on_time_performance_pct=93.8,
-                avg_delay_minutes=2.4,
-                total_daily_ridership=125600,
-                peak_crowd_station="Stadium Arena"
+                line_name="Green Line",
+                active_trains=18,
+                on_time_performance_pct=96.4,
+                avg_delay_minutes=0.0,
+                total_daily_ridership=320000,
+                peak_crowd_station="Yeshwantpur"
             ),
         ]
 
         return AnalyticsSummary(
-            total_daily_passengers=268400,
-            overall_otp_percentage=95.1,
-            active_trains_count=26,
-            critical_incidents_today=3,
-            peak_rush_hour="18:00 - 19:00",
+            total_daily_passengers=760000,
+            overall_otp_percentage=96.8,
+            active_trains_count=40,
+            critical_incidents_today=1,
+            peak_rush_hour="08:30 - 10:00 & 17:30 - 19:30",
             line_performances=lines,
             ridership_trends=trend_points
         )

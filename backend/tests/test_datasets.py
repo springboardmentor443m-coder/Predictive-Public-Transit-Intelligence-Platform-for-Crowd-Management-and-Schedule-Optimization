@@ -8,7 +8,7 @@ def test_dataset_pipeline_execution():
     stats = pipeline_engine.run_pipeline()
     assert "total_records" in stats
     assert stats["total_records"] > 0
-    assert "NYC MTA" in stats["sources"]
+    assert any("BMRCL" in s for s in stats["sources"])
 
 
 @pytest.mark.asyncio

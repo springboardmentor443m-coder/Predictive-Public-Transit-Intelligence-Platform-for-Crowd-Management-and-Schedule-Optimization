@@ -38,10 +38,10 @@ export function Sidebar() {
         </div>
         <div>
           <h1 className="font-extrabold text-lg tracking-wider text-white flex items-center gap-1.5">
-            METRO<span className="text-blue-500">FLOW</span>
+            BMRCL <span className="text-purple-400">METROFLOW</span>
           </h1>
           <p className="text-[10px] uppercase tracking-widest text-slate-400 font-medium">
-            AI Transit Intelligence
+            AI Metro Intelligence
           </p>
         </div>
       </div>

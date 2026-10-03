@@ -11,14 +11,16 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 1 day
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
 
+    BASE_DIR: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    
     # Databases
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL", 
-        "sqlite+aiosqlite:///./metroflow.db"
+        f"sqlite+aiosqlite:///{os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'metroflow.db')).replace(os.sep, '/')}"
     )
     SYNC_DATABASE_URL: str = os.getenv(
         "SYNC_DATABASE_URL", 
-        "sqlite:///./metroflow.db"
+        f"sqlite:///{os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'metroflow.db')).replace(os.sep, '/')}"
     )
     MONGODB_URL: str = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
     MONGODB_DB_NAME: str = os.getenv("MONGODB_DB_NAME", "metroflow_events")

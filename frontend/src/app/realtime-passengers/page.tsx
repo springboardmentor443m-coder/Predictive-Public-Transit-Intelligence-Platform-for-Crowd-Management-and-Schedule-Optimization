@@ -55,22 +55,16 @@ export default function RealtimePassengersPage() {
 
   const PRESET_FEEDS = [
     {
+      name: "MBTA Rapid Transit Live (Active Feed)",
+      url: "https://cdn.mbta.com/realtime/VehiclePositions.json",
+      key: "",
+      desc: "Public live GTFS-RT feed with 800+ real vehicles & carriage passenger occupancy",
+    },
+    {
       name: "BART Live Telemetry (San Francisco)",
       url: "https://api.bart.gov/gtfsrt/trips.aspx",
       key: "",
       desc: "Bay Area Rapid Transit GTFS-RT Trip Updates",
-    },
-    {
-      name: "MTA NY Subway Live GTFS-RT",
-      url: "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs",
-      key: "",
-      desc: "New York City Transit Subway realtime feed",
-    },
-    {
-      name: "MBTA Rapid Transit (Boston)",
-      url: "https://cdn.mbta.com/realtime/VehiclePositions.json",
-      key: "",
-      desc: "Massachusetts Bay Transportation Authority Vehicle Positions",
     },
   ];
 
@@ -188,72 +182,55 @@ export default function RealtimePassengersPage() {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-5">
         <div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-              <Users className="w-5 h-5 text-cyan-400" />
+            <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400">
+              <Users className="w-5 h-5 text-purple-400" />
             </div>
             <div>
               <h1 className="text-2xl font-black text-white flex items-center gap-2.5">
-                Real-Time Passenger Data & Telemetry
-                <span className="flex h-2.5 w-2.5 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                BMRCL Historical Passenger Replay
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 uppercase font-mono font-bold">
+                  HISTORICAL DATA REPLAY
                 </span>
               </h1>
               <p className="text-xs text-slate-400 mt-0.5">
-                Live Automated Fare Collection (AFC turnstile taps), carriage-level passenger loads (APC), and GTFS-RT feed ingestion
+                Authentic RTI hourly passenger entries and exits (August & September 2025) • Zero synthetic simulation
               </p>
             </div>
           </div>
         </div>
 
-        {/* Global Controls & GTFS-RT Status Pill */}
+        {/* Global Controls & Mode Status Pill */}
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
-              gtfsStatus?.is_active
-                ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/20"
-                : "bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-800 hover:border-cyan-500/50"
-            }`}
-          >
-            {gtfsStatus?.is_active ? (
-              <Wifi className="w-4 h-4 text-emerald-400" />
-            ) : (
-              <Radio className="w-4 h-4 text-cyan-400" />
-            )}
-            <span>
-              {gtfsStatus?.is_active ? "GTFS-RT Connected" : "GTFS-RT Connector"}
-            </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400">
-              Configure
-            </span>
-          </button>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-purple-500/30 bg-purple-950/30 text-xs font-semibold text-purple-300">
+            <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+            <span>REAL BMRCL RTI DATA</span>
+          </div>
 
           {/* Line Filter */}
           <div className="flex items-center gap-1 bg-[#0d1424] border border-slate-800 p-1 rounded-lg text-xs">
             <button
               onClick={() => setSelectedLine("ALL")}
               className={`px-3 py-1 rounded font-medium transition-all ${
-                selectedLine === "ALL" ? "bg-cyan-600 text-white" : "text-slate-400 hover:text-white"
+                selectedLine === "ALL" ? "bg-purple-600 text-white font-bold" : "text-slate-400 hover:text-white"
               }`}
             >
               All Lines
             </button>
             <button
-              onClick={() => setSelectedLine("Red Line")}
+              onClick={() => setSelectedLine("Purple Line")}
               className={`px-3 py-1 rounded font-medium transition-all ${
-                selectedLine === "Red Line" ? "bg-rose-600 text-white" : "text-slate-400 hover:text-white"
+                selectedLine === "Purple Line" ? "bg-purple-600 text-white font-bold" : "text-slate-400 hover:text-purple-300"
               }`}
             >
-              Red Line
+              Purple Line
             </button>
             <button
-              onClick={() => setSelectedLine("Blue Line")}
+              onClick={() => setSelectedLine("Green Line")}
               className={`px-3 py-1 rounded font-medium transition-all ${
-                selectedLine === "Blue Line" ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white"
+                selectedLine === "Green Line" ? "bg-emerald-600 text-white font-bold" : "text-slate-400 hover:text-emerald-300"
               }`}
             >
-              Blue Line
+              Green Line
             </button>
           </div>
         </div>
@@ -286,7 +263,7 @@ export default function RealtimePassengersPage() {
               System Inflow (Tap-Ins)
             </p>
             <p className="text-2xl font-black text-emerald-400 mt-1">
-              {systemInflow.toLocaleString()} <span className="text-xs font-normal text-slate-400">PPM</span>
+              {systemInflow.toLocaleString()} <span className="text-xs font-normal text-slate-400">pax/hr</span>
             </p>
             <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
               <ArrowUpRight className="w-3 h-3 text-emerald-400" /> Platform entries
@@ -304,7 +281,7 @@ export default function RealtimePassengersPage() {
               System Outflow (Tap-Outs)
             </p>
             <p className="text-2xl font-black text-amber-400 mt-1">
-              {systemOutflow.toLocaleString()} <span className="text-xs font-normal text-slate-400">PPM</span>
+              {systemOutflow.toLocaleString()} <span className="text-xs font-normal text-slate-400">pax/hr</span>
             </p>
             <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
               <ArrowDownRight className="w-3 h-3 text-amber-400" /> Turnstile exits
@@ -469,8 +446,8 @@ export default function RealtimePassengersPage() {
                   <tr className="border-b border-slate-800 text-slate-400 font-semibold uppercase text-[10px]">
                     <th className="py-2.5 px-3">Station</th>
                     <th className="py-2.5 px-3">Line</th>
-                    <th className="py-2.5 px-3 text-right">Inflow (PPM)</th>
-                    <th className="py-2.5 px-3 text-right">Outflow (PPM)</th>
+                    <th className="py-2.5 px-3 text-right">Inflow (pax/hr)</th>
+                    <th className="py-2.5 px-3 text-right">Outflow (pax/hr)</th>
                     <th className="py-2.5 px-3 text-right">Net Flux</th>
                     <th className="py-2.5 px-3 text-right">Platform Crowd</th>
                     <th className="py-2.5 px-3 text-center">Status</th>

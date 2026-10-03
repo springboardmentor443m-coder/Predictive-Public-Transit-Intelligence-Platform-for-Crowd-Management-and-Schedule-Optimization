@@ -36,18 +36,24 @@ export function Navbar() {
     <header className="h-16 bg-[#0d1424]/90 backdrop-blur border-b border-slate-800 px-6 flex items-center justify-between sticky top-0 z-20">
       {/* Telemetry Status Indicator */}
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700 text-xs font-mono text-slate-300">
-          <Radio className={`w-3.5 h-3.5 ${isConnected ? "text-emerald-400 animate-pulse" : "text-amber-400"}`} />
-          <span>LIVE TELEMETRY</span>
+        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/80 border border-purple-500/30 text-xs font-mono text-slate-300">
+          <span className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse shadow-[0_0_8px_#a855f7]" />
+          <span className="text-purple-300 font-bold">DATA MODE: HISTORICAL REPLAY</span>
+          <span className="text-slate-500">|</span>
+          <span className="text-emerald-400 font-semibold">REAL BMRCL RTI DATA</span>
           <span className="text-slate-500">|</span>
           <span className="text-blue-400 font-semibold">{timeStr}</span>
         </div>
 
-        <div className="hidden md:flex items-center gap-2 text-xs text-slate-400">
-          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span>Red Line: Operational</span>
-          <span className="w-2 h-2 rounded-full bg-blue-500 ml-2"></span>
-          <span>Blue Line: Operational</span>
+        <div className="hidden md:flex items-center gap-3 text-xs text-slate-400 font-medium">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_6px_#a855f7]" />
+            <span className="text-purple-300 font-semibold">Purple Line: Active</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]" />
+            <span className="text-emerald-300 font-semibold">Green Line: Active</span>
+          </div>
         </div>
       </div>
 
