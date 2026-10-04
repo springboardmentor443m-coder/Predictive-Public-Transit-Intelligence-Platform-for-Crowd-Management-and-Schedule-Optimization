@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
+import ErrorBoundary from './components/ErrorBoundary';
+import LiveOpsDashboard from './components/LiveOpsDashboard';
+import DelaySimulator from './components/DelaySimulator';
+import MLInsights from './components/MLInsights';
 import PredictionCalculator from './components/PredictionCalculator';
 import ScheduleAdvisoryTable from './components/ScheduleAdvisoryTable';
 import NetworkAnalytics from './components/NetworkAnalytics';
@@ -16,7 +20,7 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('prediction');
+  const [activeTab, setActiveTab] = useState('ml');
   const [backendStatus, setBackendStatus] = useState(null);
   const [metadata, setMetadata] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(new Date().toLocaleTimeString());
@@ -69,22 +73,53 @@ export default function App() {
           </div>
         )}
 
-        {/* Dynamic Tab Rendering */}
+        {/* Dynamic Tab Rendering — every tab is wrapped so one broken view
+            cannot unmount the whole app and leave a blank page. */}
+        {activeTab === 'live' && (
+          <section aria-label="Live Crowd Operations">
+            <ErrorBoundary key="live">
+              <LiveOpsDashboard />
+            </ErrorBoundary>
+          </section>
+        )}
+
+        {activeTab === 'schedule' && (
+          <section aria-label="Train Schedule & Delay Propagation">
+            <ErrorBoundary key="schedule">
+              <DelaySimulator />
+            </ErrorBoundary>
+          </section>
+        )}
+
+        {activeTab === 'ml' && (
+          <section aria-label="ML Model Evaluation">
+            <ErrorBoundary key="ml">
+              <MLInsights />
+            </ErrorBoundary>
+          </section>
+        )}
+
         {activeTab === 'prediction' && (
           <section aria-label="Live Crowd Prediction">
-            <PredictionCalculator />
+            <ErrorBoundary key="prediction">
+              <PredictionCalculator />
+            </ErrorBoundary>
           </section>
         )}
 
         {activeTab === 'advisory' && (
           <section aria-label="Fleet Schedule Advisory">
-            <ScheduleAdvisoryTable />
+            <ErrorBoundary key="advisory">
+              <ScheduleAdvisoryTable />
+            </ErrorBoundary>
           </section>
         )}
 
         {activeTab === 'analytics' && (
           <section aria-label="Network Analytics & Model Evaluation">
-            <NetworkAnalytics />
+            <ErrorBoundary key="analytics">
+              <NetworkAnalytics />
+            </ErrorBoundary>
           </section>
         )}
 
@@ -104,6 +139,10 @@ export default function App() {
           <div className="flex items-center space-x-4">
             <span className="text-slate-400">
               Dataset: <span className="text-cyan-400">AI_MetroFlow_Master_Dataset.xlsx</span>
+            </span>
+            <span>•</span>
+            <span className="text-slate-400">
+              5 stations · 4 lines
             </span>
             <span>•</span>
             <span className="text-emerald-400 flex items-center gap-1">

@@ -1,12 +1,14 @@
-from fastapi import FastAPI, HTTPException, Depends, APIRouter
+from fastapi import FastAPI, HTTPException, Depends, APIRouter, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional, Union, List, Dict, Any
+import asyncio
 import pandas as pd
 import numpy as np
 import xgboost as xgb
 import traceback
 import os
+from datetime import datetime
 from pydantic import BaseModel, Field
 
 # Auth & Database
@@ -15,6 +17,9 @@ from auth import (
     authenticate_user, ensure_default_admin, get_user_by_username, create_user
 )
 from database import init_db, save_prediction, PredictionRecord, User
+
+# Live operations engine (historical replay, timetable, delay propagation, ML metrics)
+import live_ops
 
 router = APIRouter()
 security = HTTPBearer(auto_error=False)
@@ -91,21 +96,22 @@ async def login(data: LoginRequest):
 @router.post("/api/auth/register")
 async def register(data: RegisterRequest):
     """Register a new user."""
-    from database import async_session, get_user_by_username, create_user as db_create_user
+    from database import create_user as db_create_user
     existing = await get_user_by_username(data.username)
     if existing:
         raise HTTPException(status_code=400, detail="Username already exists")
-    async with async_session() as session:
-        await db_create_user(data.username, hash_password(data.password), data.role, session)
+    await db_create_user(data.username, hash_password(data.password), data.role)
     return {"message": f"User '{data.username}' registered successfully!"}
 
 @router.get("/api/auth/me")
 async def get_me(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Get current user profile."""
+    if credentials is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     payload = decode_token(credentials.credentials)
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid token")
-    user = await db_get_user(payload.get("sub"))
+    user = await get_user_by_username(payload.get("sub"))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return {"username": user.username, "role": user.role, "is_active": user.is_active}
@@ -143,10 +149,22 @@ DAY_INDEX_TO_NAME = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Sa
 # 2. LOAD NATIVE JSON MODEL & DATASET
 # ==========================================
 xgb_model = None
+crowd_model = None
 df = None
+
+# Live operations engines (populated once the dataset + models are available)
+replay = None
+timetable = None
+live_engine = None
+ml_metrics = None
+
+# Hold-out metrics require refitting the booster, so the result is cached.
+_ml_metrics_cache = None
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 model_path = os.path.join(BASE_DIR, 'metroflow_xgboost_model.json')
+crowd_model_path = os.path.join(BASE_DIR, 'metroflow_crowd_model.json')
+crowd_metrics_path = os.path.join(BASE_DIR, 'metroflow_crowd_metrics.json')
 dataset_path = os.path.join(BASE_DIR, 'AI_MetroFlow_Master_Dataset.xlsx')
 
 try:
@@ -156,6 +174,12 @@ try:
         print("Pre-trained XGBoost model successfully loaded via native JSON format!")
     else:
         print(f"Model file not found at {model_path}")
+    if os.path.exists(crowd_model_path):
+        crowd_model = xgb.XGBRegressor()
+        crowd_model.load_model(crowd_model_path)
+        print("Platform-crowd XGBoost model loaded!")
+    else:
+        print(f"Crowd model not found at {crowd_model_path} - run train_crowd_model.py")
     if os.path.exists(dataset_path):
         df = pd.read_excel(dataset_path)
         print("Dataset successfully loaded into FastAPI backend!")
@@ -165,6 +189,26 @@ except Exception as e:
     print("Detailed Error loading model or dataset:")
     traceback.print_exc()
     xgb_model = None
+
+# Hand the boosters to the live engine so forecasts use the very same models
+live_ops.set_model(xgb_model)
+live_ops.set_crowd_model(crowd_model)
+
+# Build the live-ops engines once the dataset is in memory
+try:
+    if df is not None:
+        replay = live_ops.HistoricalReplay(df)
+        timetable = live_ops.TimetableEngine(replay, datetime.now())
+        live_engine = live_ops.LiveCrowdEngine(replay)
+        ml_metrics = live_ops.MLMetrics(df)
+        print(
+            f"Live ops ready: {len(timetable.trains)} services scheduled today, "
+            f"{len(live_ops.STATIONS)} stations on {len(live_ops.LINES)} lines"
+        )
+except Exception as e:
+    print("Failed to initialise live operations engine:")
+    traceback.print_exc()
+    replay = timetable = live_engine = ml_metrics = None
 
 # ==========================================
 # 3. PYDANTIC REQUEST SCHEMAS
@@ -445,4 +489,301 @@ def get_analytics():
 # ==========================================
 # /api/auth/history and /api/auth/stats endpoints removed per mentor's requirement
 # Predictions are still saved to database via save_prediction() but not exposed via API
+
+
+# ==========================================
+# 7. LIVE OPERATIONS - crowd streaming, timetable, delay propagation, ML metrics
+# ==========================================
+
+# how fast the simulated clock runs relative to wall-clock time.
+# 1 real second advances 1 simulated minute, so figures visibly change every tick.
+SIM_MINUTES_PER_TICK = 1
+WEBSOCKET_PUSH_SECONDS = 2.0
+
+
+class DelayRequest(BaseModel):
+    train_id: str = Field(..., description="Train service identifier, e.g. BLU-0001")
+    station: str = Field(..., description="Station where the delay originates")
+    minutes: int = Field(..., ge=1, le=60, description="Minutes of delay to inject")
+
+
+def _require_live_ops():
+    """Guard so live endpoints fail loudly instead of returning empty shells."""
+    if live_engine is None or timetable is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Live operations engine unavailable - dataset failed to load",
+        )
+
+
+@app.get("/api/live/network")
+def live_network():
+    """Static description of the simulated network (lines, routes, service window)."""
+    return {
+        "stations": [
+            {
+                "name": s,
+                "id": live_ops.STATION_INDEX[s],
+                "lines": live_ops.lines_for_station(s),
+            }
+            for s in live_ops.STATIONS
+        ],
+        "lines": [
+            {"name": ln, "id": live_ops.LINE_INDEX[ln], "route": seq}
+            for ln, seq in live_ops.NETWORK.items()
+        ],
+        "service_window": {
+            "start_hour": live_ops.SERVICE_START_HOUR,
+            "end_hour": live_ops.SERVICE_END_HOUR,
+        },
+        "replay": {
+            "source_dataset": "AI_MetroFlow_Master_Dataset.xlsx",
+            "source_span": "2023-01-01 .. 2023-12-31",
+            "technique": (
+                "Historical rows are re-dated onto the present calendar "
+                "(same month-day, same time-of-day) so the live feed is real "
+                "observed history, not invented noise."
+            ),
+        },
+    }
+
+
+@app.get("/api/live/snapshot")
+def live_snapshot(advance: bool = Query(True, description="Advance the simulated clock")):
+    """One frame of live state: crowd vs forecast per station, plus warnings."""
+    _require_live_ops()
+    if advance:
+        live_engine.advance(SIM_MINUTES_PER_TICK)
+    return live_engine.snapshot(timetable)
+
+
+@app.get("/api/live/station/{station}")
+def live_station(station: str):
+    """Deep dive on a single station: live crowd, forecast, delay state."""
+    _require_live_ops()
+    snap = live_engine.snapshot(timetable)
+    match = next((s for s in snap["stations"] if s["station"] == station), None)
+    if match is None:
+        raise HTTPException(status_code=404, detail=f"Unknown station '{station}'")
+    match["all_delays"] = timetable.station_delay_state(station)
+    match["pressure"] = timetable.delay_pressure(station)
+    return match
+
+
+@app.get("/api/schedule/timetable")
+def get_timetable(line: Optional[str] = Query(None, description="Filter by line name"),
+                  limit: int = Query(300, ge=1, le=1656)):
+    """The day's train schedule, ordered by scheduled departure time."""
+    _require_live_ops()
+    if line and line not in live_ops.NETWORK:
+        raise HTTPException(status_code=404, detail=f"Unknown line '{line}'")
+    return {
+        "line": line,
+        "count": len(timetable.timetable(line, limit=limit)),
+        "services": timetable.timetable(line, limit=limit),
+        "total_trains": len(timetable.trains),
+    }
+
+
+@app.get("/api/schedule/delays")
+def get_delays(limit: int = Query(200, ge=1, le=1656)):
+    """Every late train, sorted by scheduled departure time."""
+    _require_live_ops()
+    rows = timetable.delay_table(limit=limit)
+    late = [t for t in timetable.trains.values() if t.total_delay() > 0]
+    by_sev = {"SEVERE": 0, "MODERATE": 0, "MINOR": 0}
+    for t in late:
+        d = t.total_delay()
+        key = "SEVERE" if d > 9 else "MODERATE" if d > 4 else "MINOR"
+        by_sev[key] += 1
+    return {
+        "rows": rows,
+        "count": len(rows),
+        "late_trains": len(late),
+        "total_trains": len(timetable.trains),
+        "on_time_pct": round(100 * (len(timetable.trains) - len(late)) / max(1, len(timetable.trains)), 1),
+        "severity_breakdown": by_sev,
+        "mean_delay_min": round(
+            sum(t.total_delay() for t in late) / max(1, len(late)), 2),
+    }
+
+
+@app.get("/api/schedule/station/{station}")
+def station_delays(station: str):
+    """Per-train delay state at one station, ordered by scheduled call time."""
+    _require_live_ops()
+    if station not in live_ops.STATIONS:
+        raise HTTPException(status_code=404, detail=f"Unknown station '{station}'")
+    rows = timetable.station_delay_state(station)
+    return {
+        "station": station,
+        "lines": live_ops.lines_for_station(station),
+        "pressure": timetable.delay_pressure(station),
+        "calls": rows,
+        "count": len(rows),
+    }
+
+
+@app.post("/api/schedule/inject-delay")
+def inject_delay(req: DelayRequest):
+    """Cause a delay at one station; every downstream station inherits it."""
+    _require_live_ops()
+    try:
+        run = timetable.inject_delay(req.train_id, req.station, req.minutes)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return {
+        "message": (
+            f"{req.minutes} min delay injected at {req.station} for {req.train_id}"
+        ),
+        "run": run,
+        "downstream_impact": [
+            {"station": s["station"], "delay_min": s["delay_min"]}
+            for s in run["stops"]
+        ],
+        "network": live_engine.snapshot(timetable)["network_totals"],
+    }
+
+
+@app.post("/api/schedule/clear-delay/{train_id}")
+def clear_delay(train_id: str):
+    """Withdraw injected delays for one train, restoring its natural baseline."""
+    _require_live_ops()
+    try:
+        run = timetable.clear_delay(train_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return {"message": f"Injected delays cleared for {train_id}", "run": run}
+
+
+@app.post("/api/schedule/reset")
+def reset_delays():
+    """Clear every injected delay across the whole network."""
+    _require_live_ops()
+    cleared = 0
+    for run in timetable.trains.values():
+        if any(run.injected):
+            run.injected = [0] * len(run.stations)
+            timetable._recompute(run)
+            cleared += 1
+    snap = live_engine.snapshot(timetable)
+    return {
+        "message": f"Reset {cleared} train(s) to baseline timetable",
+        "cleared": cleared,
+        "warnings": snap["warnings"],
+        "network_totals": snap["network_totals"],
+    }
+
+
+@app.post("/api/schedule/simulate")
+def simulate_clock(minutes: int = Query(60, ge=1, le=1440)):
+    """Fast-forward the simulated clock to see how crowd evolves."""
+    _require_live_ops()
+    steps = []
+    for _ in range(min(24, max(1, minutes // SIM_MINUTES_PER_TICK))):
+        live_engine.advance(SIM_MINUTES_PER_TICK)
+        s = live_engine.snapshot(timetable)
+        steps.append({
+            "time": s["sim_time_label"],
+            "live": s["network_totals"]["live_crowd"],
+            "predicted": s["network_totals"]["predicted_crowd"],
+            "peak_station": s["network_totals"]["peak_station"],
+            "warnings": len(s["warnings"]),
+        })
+    return {"steps": steps, "now": live_engine.snapshot(timetable)}
+
+
+@app.get("/api/ml/metrics")
+def ml_metrics_endpoint(refresh: bool = Query(False, description="Recompute instead of using the cache")):
+    """Genuine evaluation of both shipped models on a chronological hold-out.
+
+    The occupancy metrics require refitting the booster on the 80% training
+    split, which costs ~5s. The result is deterministic, so it is computed once
+    and cached; pass ?refresh=true to force a recompute.
+    """
+    global _ml_metrics_cache
+    if ml_metrics is None:
+        raise HTTPException(status_code=503, detail="ML metrics unavailable - dataset not loaded")
+
+    if refresh or _ml_metrics_cache is None:
+        payload: Dict[str, Any] = {
+            "occupancy_model": ml_metrics.evaluate(),
+            "crowd_model": None,
+        }
+
+        # the crowd model's metrics were computed once at training time
+        if os.path.exists(crowd_metrics_path):
+            import json
+            with open(crowd_metrics_path, "r", encoding="utf-8") as fh:
+                payload["crowd_model"] = json.load(fh)
+
+        payload["features"] = ml_metrics.FEATURES
+        payload["note"] = (
+            "Both models are evaluated on the final 20% of the dataset in time order. "
+            "Occupancy model is refit here on the 80% training split; the crowd model's "
+            "figures come from train_crowd_model.py, which uses an identical protocol."
+        )
+        _ml_metrics_cache = payload
+
+    return _ml_metrics_cache
+
+
+@app.get("/api/ml/importances")
+def ml_importances():
+    """Gain-based feature importances straight from the trained boosters."""
+    out = {}
+    if xgb_model is not None:
+        try:
+            imp = xgb_model.get_booster().get_score(importance_type="gain")
+            mapped = {k: round(float(v), 4) for k, v in imp.items()}
+            total = sum(mapped.values()) or 1.0
+            out["occupancy_model"] = sorted(
+                [{"feature": k, "gain": v, "share_pct": round(100 * v / total, 2)}
+                 for k, v in mapped.items()],
+                key=lambda x: -x["gain"])
+        except Exception as exc:
+            out["occupancy_model_error"] = str(exc)
+    if crowd_model is not None:
+        try:
+            imp = crowd_model.get_booster().get_score(importance_type="gain")
+            mapped = {k: round(float(v), 4) for k, v in imp.items()}
+            total = sum(mapped.values()) or 1.0
+            out["crowd_model"] = sorted(
+                [{"feature": k, "gain": v, "share_pct": round(100 * v / total, 2)}
+                 for k, v in mapped.items()],
+                key=lambda x: -x["gain"])
+        except Exception as exc:
+            out["crowd_model_error"] = str(exc)
+    return out
+
+
+@app.websocket("/ws/live")
+async def websocket_live(websocket: WebSocket):
+    """Push a fresh live snapshot to the dashboard on a fixed cadence.
+
+    The simulated clock advances one minute per push, so the numbers on screen
+    genuinely move. Clients may send {"advance_minutes": n} to fast-forward.
+    """
+    await websocket.accept()
+    if live_engine is None or timetable is None:
+        await websocket.send_json({
+            "error": "Live operations engine unavailable",
+            "sim_time": None,
+        })
+        await websocket.close()
+        return
+
+    try:
+        while True:
+            live_engine.advance(SIM_MINUTES_PER_TICK)
+            try:
+                await websocket.send_json(live_engine.snapshot(timetable))
+            except Exception as exc:
+                traceback.print_exc()
+                await websocket.send_json({"error": f"snapshot failed: {exc}"})
+            await asyncio.sleep(WEBSOCKET_PUSH_SECONDS)
+    except WebSocketDisconnect:
+        print("Live dashboard disconnected")
+    except Exception as exc:
+        print(f"WebSocket error: {exc}")
 

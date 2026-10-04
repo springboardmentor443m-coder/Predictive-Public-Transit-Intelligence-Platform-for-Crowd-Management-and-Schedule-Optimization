@@ -1,4 +1,21 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const WS_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/^http/, 'ws');
+
+async function request(path, options = {}) {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
+export function liveSocketUrl() {
+  return `${WS_BASE_URL}/ws/live`;
+}
 
 export async function checkBackendHealth() {
   try {
@@ -117,4 +134,67 @@ export async function fetchAnalytics() {
     console.warn("Analytics fetch failed, using calculated metrics:", err);
     return null;
   }
+}
+
+/* ------------------------------------------------------------------ *
+ * Live operations: crowd streaming, timetable, delay propagation, ML
+ * ------------------------------------------------------------------ */
+
+export async function fetchLiveNetwork() {
+  return request('/api/live/network');
+}
+
+export async function fetchLiveSnapshot() {
+  return request('/api/live/snapshot');
+}
+
+export async function fetchLiveStation(station) {
+  return request(`/api/live/station/${encodeURIComponent(station)}`);
+}
+
+export async function fetchTimetable(line, limit = 200) {
+  const q = new URLSearchParams({ limit: String(limit) });
+  if (line) q.append('line', line);
+  return request(`/api/schedule/timetable?${q}`);
+}
+
+export async function fetchDelayTable(limit = 200) {
+  return request(`/api/schedule/delays?limit=${limit}`);
+}
+
+export async function fetchStationDelays(station) {
+  return request(`/api/schedule/station/${encodeURIComponent(station)}`);
+}
+
+export async function injectDelay(trainId, station, minutes) {
+  return request('/api/schedule/inject-delay', {
+    method: 'POST',
+    body: JSON.stringify({
+      train_id: trainId,
+      station,
+      minutes: Number(minutes),
+    }),
+  });
+}
+
+export async function clearDelay(trainId) {
+  return request(`/api/schedule/clear-delay/${encodeURIComponent(trainId)}`, {
+    method: 'POST',
+  });
+}
+
+export async function resetDelays() {
+  return request('/api/schedule/reset', { method: 'POST' });
+}
+
+export async function simulateClock(minutes = 60) {
+  return request(`/api/schedule/simulate?minutes=${minutes}`, { method: 'POST' });
+}
+
+export async function fetchMLMetrics() {
+  return request('/api/ml/metrics');
+}
+
+export async function fetchMLImportances() {
+  return request('/api/ml/importances');
 }

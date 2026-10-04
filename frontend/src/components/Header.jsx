@@ -15,18 +15,21 @@ export default function Header({ activeTab, setActiveTab, backendStatus, lastUpd
   const isOnline = backendStatus?.status === "Online";
 
   const navItems = [
-    { id: 'prediction', label: 'Live Prediction Calculator', icon: Zap },
-    { id: 'advisory', label: 'Fleet Schedule Advisory', icon: CalendarClock },
-    { id: 'analytics', label: 'Network Analytics & Model', icon: BarChart3 },
+    { id: 'ml', label: 'ML Model Evaluation', short: 'ML', icon: Cpu },
+    { id: 'live', label: 'Live Crowd Ops', short: 'Live', icon: Radio },
+    { id: 'schedule', label: 'Train Schedule & Delays', short: 'Delays', icon: CalendarClock },
+    { id: 'prediction', label: 'Live Prediction Calculator', short: 'Predict', icon: Zap },
+    { id: 'advisory', label: 'Fleet Schedule Advisory', short: 'Advisory', icon: CalendarClock },
+    { id: 'analytics', label: 'Network Analytics & Model', short: 'Analytics', icon: BarChart3 },
   ];
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-[#090d16]/90 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between gap-3 h-20">
           
           {/* Logo & Platform Name */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 shrink-0">
             <div className="relative flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 shadow-lg shadow-cyan-500/20 border border-cyan-400/30">
               <Train className="w-6 h-6 text-white" />
               <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-[#090d16] flex items-center justify-center">
@@ -43,14 +46,15 @@ export default function Header({ activeTab, setActiveTab, backendStatus, lastUpd
                   AI Transit v1.0
                 </span>
               </div>
-              <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
+              <p className="text-xs text-slate-400 items-center gap-1.5 mt-0.5 hidden xl:flex">
                 <span>Predictive Crowd Monitoring & Intelligent Train Scheduling</span>
               </p>
             </div>
           </div>
 
-          {/* Center Navigation Tabs */}
-          <nav className="hidden md:flex items-center p-1.5 rounded-xl bg-slate-900/90 border border-slate-800 shadow-inner">
+          {/* Center Navigation Tabs — shrink-0 + scroll guard so the last tab (ML)
+              can never be squeezed out of reach on a narrow window. */}
+          <nav className="hidden lg:flex items-center gap-1 p-1.5 rounded-xl bg-slate-900/90 border border-slate-800 shadow-inner shrink-0 overflow-x-auto max-w-full">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -58,22 +62,24 @@ export default function Header({ activeTab, setActiveTab, backendStatus, lastUpd
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                  title={item.label}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`flex shrink-0 items-center space-x-1.5 px-2.5 py-2 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all duration-200 ${
                     isActive
                       ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/25 border border-cyan-400/30'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                  <span>{item.label}</span>
+                  <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                  <span className="whitespace-nowrap">{item.short || item.label}</span>
                 </button>
               );
             })}
           </nav>
 
           {/* Right Status Badge */}
-          <div className="flex items-center space-x-3">
-            <div className="hidden lg:flex flex-col items-end text-right">
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="hidden 2xl:flex flex-col items-end text-right">
               <div className="flex items-center space-x-1.5">
                 <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400 radar-pulse' : 'bg-amber-400'}`}></div>
                 <span className="text-xs font-medium text-slate-300">
@@ -85,7 +91,7 @@ export default function Header({ activeTab, setActiveTab, backendStatus, lastUpd
               </span>
             </div>
 
-            <div className="flex items-center px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-slate-300 text-xs font-mono">
+            <div className="hidden xl:flex items-center px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-slate-300 text-xs font-mono">
               <Cpu className="w-3.5 h-3.5 mr-1.5 text-cyan-400" />
               <span>XGBoost 95% R²</span>
             </div>
@@ -94,7 +100,7 @@ export default function Header({ activeTab, setActiveTab, backendStatus, lastUpd
         </div>
 
         {/* Mobile Navigation Bar */}
-        <div className="flex md:hidden items-center justify-around py-2.5 border-t border-slate-800/60">
+        <div className="flex md:hidden items-center justify-around py-2.5 border-t border-slate-800/60 overflow-x-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -102,12 +108,12 @@ export default function Header({ activeTab, setActiveTab, backendStatus, lastUpd
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex flex-col items-center py-1 px-2 rounded-lg text-[11px] font-medium ${
+                className={`flex flex-col items-center py-1 px-2 rounded-lg text-[11px] font-medium shrink-0 ${
                   isActive ? 'text-cyan-400' : 'text-slate-400'
                 }`}
               >
                 <Icon className="w-4 h-4 mb-0.5" />
-                <span>{item.label.split(' ')[0]}</span>
+                <span>{item.short || item.label.split(' ')[0]}</span>
               </button>
             );
           })}

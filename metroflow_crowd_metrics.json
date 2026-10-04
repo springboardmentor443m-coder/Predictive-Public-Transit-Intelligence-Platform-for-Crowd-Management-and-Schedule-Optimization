@@ -1,0 +1,13 @@
+{
+  "target": "Platform_Crowd_Density",
+  "rows_total": 5000,
+  "rows_train": 4000,
+  "rows_test": 1000,
+  "split_strategy": "Chronological 80/20 (no shuffling - respects time order)",
+  "r2": 0.8895,
+  "mae": 91.11,
+  "rmse": 118.49,
+  "mape": 22.13,
+  "bias": -2.08,
+  "within_10pct": 28.6
+}
