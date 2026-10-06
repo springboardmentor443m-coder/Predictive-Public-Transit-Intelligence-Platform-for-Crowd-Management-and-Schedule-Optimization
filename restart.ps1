@@ -35,8 +35,16 @@ function Write-Err($msg)   { Write-Host "    XX  $msg" -ForegroundColor Red }
 Write-Step 'Checking Docker engine...'
 $dockerUp = $false
 for ($i = 0; $i -lt 40; $i++) {
-    $v = docker info --format '{{.ServerVersion}}' 2>&1
-    if ($LASTEXITCODE -eq 0 -and $v -match '^\d+\.\d+') {
+    # docker writes its "cannot connect" message to stderr; with
+    # $ErrorActionPreference = 'Stop' that becomes a terminating error, so the
+    # probe must run with error handling relaxed.
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    $v = (docker info --format '{{.ServerVersion}}' 2>$null)
+    $rc = $LASTEXITCODE
+    $ErrorActionPreference = $prevEap
+
+    if ($rc -eq 0 -and $v -match '^\d+\.\d+') {
         Write-Ok "Docker engine $v"
         $dockerUp = $true
         break
@@ -56,8 +64,13 @@ if ($Rebuild)  { $composeArgs += '--build' }
 if ($Restart)  { $composeArgs += '--force-recreate' }
 
 Write-Step ("Starting containers: docker " + ($composeArgs -join ' '))
+# compose reports progress on stderr, which is not a failure
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
 & docker @composeArgs
-if ($LASTEXITCODE -ne 0) { Write-Err 'docker compose up failed'; exit 1 }
+$composeRc = $LASTEXITCODE
+$ErrorActionPreference = $prevEap
+if ($composeRc -ne 0) { Write-Err 'docker compose up failed'; exit 1 }
 
 # ---------------------------------------------------------------- Wait: backend
 Write-Step 'Waiting for the backend to load its models...'
@@ -92,7 +105,10 @@ if (-not $frontReady) { Write-Err "Frontend not serving within ${TimeoutSeconds}
 # ---------------------------------------------------------------- Report
 Write-Host ''
 Write-Step 'Container status'
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
 docker compose ps
+$ErrorActionPreference = $prevEap
 
 Write-Host ''
 if ($backendReady -and $frontReady) {
