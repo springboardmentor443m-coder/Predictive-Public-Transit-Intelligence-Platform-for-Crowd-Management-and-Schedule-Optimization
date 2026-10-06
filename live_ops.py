@@ -823,13 +823,28 @@ class MLMetrics:
                     row.append({
                         "mae": round(float(np.mean(np.abs(resid[m]))), 1),
                         "bias": round(float(np.mean(resid[m])), 1),
+                        "actual": round(float(y_te[m].mean()), 1),
+                        "predicted": round(float(pred[m].mean()), 1),
                         "n": int(m.sum()),
                     })
-            heatmap.append({"station": st, "cells": row})
+            # per-station roll-up so the table can show actual / predicted / n
+            m_all = st_te == st
+            n_all = int(m_all.sum())
+            heatmap.append({
+                "station": st,
+                "cells": row,
+                "mae": round(float(np.mean(np.abs(resid[m_all]))), 1) if n_all else None,
+                "bias": round(float(np.mean(resid[m_all])), 1) if n_all else None,
+                "actual": round(float(y_te[m_all].mean()), 1) if n_all else None,
+                "predicted": round(float(pred[m_all].mean()), 1) if n_all else None,
+                "samples": n_all,
+                "hours_covered": sum(1 for c in row if c is not None),
+            })
         metrics["heatmap"] = {
             "rows": heatmap,
             "hours": [int(h) for h in hours],
             "metric": "MAE (mean absolute error, passengers)",
+            "total_samples": int(len(y_te)),
         }
 
         # station ranking: which station is hardest to predict

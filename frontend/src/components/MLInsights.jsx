@@ -37,18 +37,7 @@ function ModelBlock({ title, model, tone }) {
     );
   }
 
-  // peak vs off-peak mean error, so the hourly chart reads at a glance.
-  // Computed here because this is the scope that actually has the data.
-  const byHour = model.by_hour || [];
-  const maxMae = byHour.length ? Math.max(...byHour.map((h) => h.mae)) || 1 : 1;
-  const meanOf = (arr) =>
-    arr.length ? (arr.reduce((s, x) => s + x.mae, 0) / arr.length).toFixed(0) : '—';
-  const peakMae = meanOf(byHour.filter((h) => h.hour >= 8 && h.hour <= 11));
-  const offPeakMae = meanOf(byHour.filter((h) => !(h.hour >= 8 && h.hour <= 11)));
-  const worstHour = byHour.length
-    ? byHour.reduce((a, b) => (b.mae > a.mae ? b : a))
-    : null;
-  const worstMae = worstHour ? worstHour.mae.toFixed(0) : '--';
+  // the most influential feature, used in the importance explainer
   const topFeature = model.feature_importance?.length
     ? model.feature_importance[0]
     : null;
@@ -174,111 +163,6 @@ function ModelBlock({ title, model, tone }) {
               train capacity all sit at ~0%, which means in this dataset they add
               almost nothing beyond time of day. Swapping Dwarka Sec 21 for Hauz
               Khas barely moves the forecast - the hour dominates completely.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {model.by_hour?.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-slate-800/70">
-          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-            Error by hour of day
-          </p>
-          <p className="text-[10px] text-slate-500 font-mono mb-3">
-            MAE = average passengers the model gets wrong in that hour. Taller bar
-            = harder to predict. Numbers above each bar are the MAE.
-          </p>
-
-          {/* h-full on each column is required: the bar's percentage height
-              resolves against this element, and without an explicit height it
-              collapses to zero and renders nothing. */}
-          <div className="flex items-end gap-1 h-28">
-            {model.by_hour.map((h) => {
-              const isPeak = h.hour >= 8 && h.hour <= 11;
-              // scale from 0 so bar heights are honest - no truncated axis
-              const pct = (h.mae / maxMae) * 100;
-              return (
-                <div
-                  key={h.hour}
-                  className="flex-1 h-full flex flex-col items-center justify-end group"
-                  title={`${String(h.hour).padStart(2, '0')}:00\nactual ${h.mean_actual} pax\npredicted ${h.mean_predicted} pax\nMAE ${h.mae}  bias ${h.bias}`}
-                >
-                  <span
-                    className={`text-[9px] font-mono font-bold tabular-nums mb-1 transition-colors ${
-                      isPeak ? 'text-amber-300' : 'text-sky-300'
-                    }`}
-                  >
-                    {h.mae.toFixed(0)}
-                  </span>
-                  <div
-                    className={`w-full rounded-t-md border-t-2 transition-all ${
-                      isPeak
-                        ? 'bg-gradient-to-t from-amber-600 to-amber-400 border-amber-300 group-hover:from-amber-500 group-hover:to-amber-300'
-                        : 'bg-gradient-to-t from-sky-700 to-sky-400 border-sky-200 group-hover:from-sky-600 group-hover:to-sky-300'
-                    }`}
-                    style={{ height: `${pct}%` }}
-                  />
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="flex gap-1 mt-1.5">
-            {model.by_hour.map((h) => (
-              <span
-                key={h.hour}
-                className={`flex-1 text-center text-[9px] font-mono font-semibold ${
-                  h.hour >= 8 && h.hour <= 11 ? 'text-amber-300' : 'text-slate-400'
-                }`}
-              >
-                {String(h.hour).padStart(2, '0')}
-              </span>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-4 mt-2.5 text-[9px] font-mono text-slate-400 flex-wrap">
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-2.5 rounded-sm bg-gradient-to-t from-sky-700 to-sky-400 border-t-2 border-sky-200" />
-              off-peak
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3 h-2.5 rounded-sm bg-gradient-to-t from-amber-600 to-amber-400 border-t-2 border-amber-300" />
-              peak (08:00-11:00)
-            </span>
-            <span>bar height = MAE (passengers)</span>
-          </div>
-
-          {/* plain-English reading of the chart */}
-          <div className="mt-3 p-3 rounded-xl bg-slate-900/70 border border-slate-800 text-[10px] text-slate-400 leading-relaxed space-y-1.5">
-            <p className="text-slate-300 font-semibold text-[10px] uppercase tracking-wider">
-              How to read this
-            </p>
-            <p>
-              <span className="text-sky-300 font-semibold">Blue bars (off-peak)</span>{' '}
-              average <span className="text-sky-200 font-mono">{offPeakMae}</span>{' '}
-              passengers of error. These hours are easy: only a few hundred people
-              are on board, and volume barely changes hour to hour, so the model
-              has little to get wrong.
-            </p>
-            <p>
-              <span className="text-amber-300 font-semibold">Amber bars (peak)</span>{' '}
-              average <span className="text-amber-200 font-mono">{peakMae}</span>.
-              Crowds roughly double or triple here, so the same absolute mistake
-              matters more - but they are still among the <em>more</em> accurate
-              hours, because the pattern is so regular the model locks onto it.
-            </p>
-            <p>
-              <span className="text-red-300 font-semibold">The tall bars are the
-              midday gap (12:00-16:00)</span>, peaking at{' '}
-              <span className="text-red-200 font-mono">
-                {worstHour ? `${String(worstHour.hour).padStart(2, '0')}:00` : '--'}
-              </span>{' '}
-              with MAE <span className="text-red-200 font-mono">{worstMae}</span>.
-              This is the model's real blind spot. Midday demand is both high{' '}
-              <em>and</em> volatile - school runs, shift changes and office
-              turnover all land in the same window - so there is no stable pattern
-              to learn. If you had to improve one thing, this band is where extra
-              training data would pay off most.
             </p>
           </div>
         </div>
