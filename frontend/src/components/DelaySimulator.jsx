@@ -6,10 +6,12 @@ import {
   Zap,
   ChevronRight,
   Filter,
+  Users,
 } from 'lucide-react';
 import {
   fetchTimetable,
   fetchDelayTable,
+  fetchLiveStation,
   injectDelay,
   clearDelay,
   resetDelays,
@@ -43,6 +45,26 @@ export default function DelaySimulator() {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);
   const [view, setView] = useState('delays'); // delays | timetable
+  const [stationLive, setStationLive] = useState(null); // live vs ML for origin
+
+  // Show the chosen origin station's live crowd against its ML forecast, so the
+  // effect of an injected delay can be judged against a number.
+  const refreshStationLive = useCallback(async (station) => {
+    if (!station) {
+      setStationLive(null);
+      return;
+    }
+    try {
+      const d = await fetchLiveStation(station);
+      setStationLive(d);
+    } catch {
+      setStationLive(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshStationLive(injectStation);
+  }, [injectStation, refreshStationLive]);
 
   // Resolve the chosen service id into a full stop list so the origin-station
   // dropdown can offer exactly the stations that service calls at.
@@ -111,6 +133,8 @@ export default function DelaySimulator() {
       flash('ok', `${res.message}\n${chain}`);
       setSelectedTrainId('');
       refresh();
+      // the injected delay changes crowd pressure, so pull fresh numbers
+      refreshStationLive(injectStation);
     } catch (err) {
       flash('error', err.message);
     } finally {
@@ -124,6 +148,7 @@ export default function DelaySimulator() {
       const res = await resetDelays();
       flash('ok', res.message);
       refresh();
+      refreshStationLive(injectStation);
     } catch (err) {
       flash('error', err.message);
     } finally {
@@ -366,6 +391,78 @@ export default function DelaySimulator() {
             Reset all
           </button>
         </div>
+
+        {/* live crowd vs ML forecast at the chosen origin station */}
+        {stationLive && (
+          <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900/60 p-3.5">
+            <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-cyan-400" />
+                {injectStation} - live crowd vs ML forecast
+              </p>
+              <span className="text-[9px] font-mono text-slate-500">
+                refreshes after every injection
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="rounded-lg bg-slate-950/60 border border-cyan-500/20 p-2.5">
+                <p className="text-[9px] font-mono text-cyan-400 uppercase">Live crowd</p>
+                <p className="text-lg font-black text-white font-display tabular-nums">
+                  {stationLive.live_platform_crowd.toLocaleString()}
+                </p>
+                <p className="text-[9px] font-mono text-slate-500">waiting on platform</p>
+              </div>
+
+              <div className="rounded-lg bg-slate-950/60 border border-slate-700 p-2.5">
+                <p className="text-[9px] font-mono text-slate-400 uppercase">ML forecast</p>
+                <p className="text-lg font-black text-slate-200 font-display tabular-nums">
+                  {stationLive.predicted_crowd.toLocaleString()}
+                </p>
+                <p className="text-[9px] font-mono text-slate-500">crowd model</p>
+              </div>
+
+              <div
+                className={`rounded-lg p-2.5 border ${
+                  stationLive.is_anomaly
+                    ? 'bg-red-500/10 border-red-500/40'
+                    : 'bg-slate-950/60 border-slate-700'
+                }`}
+              >
+                <p className="text-[9px] font-mono text-slate-400 uppercase">Deviation</p>
+                <p
+                  className={`text-lg font-black font-display tabular-nums ${
+                    stationLive.is_anomaly ? 'text-red-400' : 'text-emerald-400'
+                  }`}
+                >
+                  {stationLive.deviation_pct >= 0 ? '+' : ''}
+                  {stationLive.deviation_pct.toFixed(1)}%
+                </p>
+                <p className="text-[9px] font-mono text-slate-500">
+                  {stationLive.is_anomaly ? 'ALERT' : 'within tolerance'}
+                </p>
+              </div>
+
+              <div className="rounded-lg bg-slate-950/60 border border-slate-700 p-2.5">
+                <p className="text-[9px] font-mono text-slate-400 uppercase">Delay pressure</p>
+                <p className="text-lg font-black text-amber-300 font-display tabular-nums">
+                  x{stationLive.delay_pressure.crowd_multiplier.toFixed(2)}
+                </p>
+                <p className="text-[9px] font-mono text-slate-500">
+                  {stationLive.delay_pressure.late_trains}/
+                  {stationLive.delay_pressure.total_trains} late
+                </p>
+              </div>
+            </div>
+
+            {stationLive.is_anomaly && (
+              <p className="mt-2.5 text-[10px] font-mono text-red-300 bg-red-500/10 border border-red-500/30 rounded-lg px-2.5 py-1.5">
+                Live crowd is {stationLive.deviation_pct.toFixed(1)}% above the ML forecast
+                - passengers are accumulating because services are running late.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ---- view switcher ---- */}

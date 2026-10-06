@@ -608,6 +608,69 @@ def get_delays(limit: int = Query(200, ge=1, le=1656)):
     }
 
 
+@app.get("/api/schedule/resolve")
+def resolve_service(from_station: str = Query(...),
+                    to_station: str = Query(...),
+                    line: Optional[str] = Query(None),
+                    hour: Optional[int] = Query(None, ge=0, le=23)):
+    """Find the actual scheduled service matching a prediction scenario.
+
+    The prediction endpoint forecasts a (station, station, line, hour) tuple but
+    does not name a train. This resolves that tuple against today's timetable so
+    the UI can show which physical service the forecast refers to.
+    """
+    _require_live_ops()
+
+    if from_station not in live_ops.STATIONS or to_station not in live_ops.STATIONS:
+        raise HTTPException(status_code=404, detail="Unknown station in request")
+    if line and line not in live_ops.NETWORK:
+        raise HTTPException(status_code=404, detail=f"Unknown line '{line}'")
+
+    candidates = []
+    for run in timetable.trains.values():
+        if line and run.line != line:
+            continue
+        stations = run.stations
+        if from_station not in stations or to_station not in stations:
+            continue
+        i, j = stations.index(from_station), stations.index(to_station)
+        if j <= i:
+            continue  # the service must actually travel from -> to
+        dep = run.sched_times[i]
+        candidates.append((abs(dep.hour - hour) if hour is not None else 0, dep, run, i, j))
+
+    if not candidates:
+        return {"found": False, "reason": "No scheduled service matches that route"}
+
+    candidates.sort(key=lambda c: (c[0], c[1]))
+    _, dep, run, i, j = candidates[0]
+
+    legs = []
+    for k in range(i, j + 1):
+        legs.append({
+            "station": run.stations[k],
+            "scheduled": run.sched_times[k].strftime("%H:%M"),
+            "actual": run.actual_time(k).strftime("%H:%M"),
+            "delay_min": run.delay_at(k),
+        })
+
+    return {
+        "found": True,
+        "train_id": run.train_id,
+        "line": run.line,
+        "direction": run.direction,
+        "capacity": run.capacity,
+        "scheduled_departure": dep.strftime("%H:%M"),
+        "scheduled_arrival": run.sched_times[j].strftime("%H:%M"),
+        "current_delay_min": run.delay_at(i),
+        "total_delay_min": run.total_delay(),
+        "from_station": from_station,
+        "to_station": to_station,
+        "legs": legs,
+        "candidates_today": len(candidates),
+    }
+
+
 @app.get("/api/schedule/station/{station}")
 def station_delays(station: str):
     """Per-train delay state at one station, ordered by scheduled call time."""

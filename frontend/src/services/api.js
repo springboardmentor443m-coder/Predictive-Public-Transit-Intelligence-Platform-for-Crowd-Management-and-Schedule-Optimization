@@ -166,6 +166,20 @@ export async function fetchStationDelays(station) {
   return request(`/api/schedule/station/${encodeURIComponent(station)}`);
 }
 
+/**
+ * Resolves a prediction scenario (from, to, line, hour) to the actual scheduled
+ * service on today's timetable, so the UI can name the train the forecast is for.
+ */
+export async function resolveService({ fromStation, toStation, line, hour }) {
+  const q = new URLSearchParams({
+    from_station: fromStation,
+    to_station: toStation,
+  });
+  if (line) q.append('line', line);
+  if (hour !== undefined && hour !== null) q.append('hour', String(hour));
+  return request(`/api/schedule/resolve?${q}`);
+}
+
 export async function injectDelay(trainId, station, minutes) {
   return request('/api/schedule/inject-delay', {
     method: 'POST',

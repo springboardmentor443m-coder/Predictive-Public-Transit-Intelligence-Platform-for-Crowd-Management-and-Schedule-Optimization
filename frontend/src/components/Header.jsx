@@ -15,11 +15,11 @@ export default function Header({ activeTab, setActiveTab, backendStatus, lastUpd
   const isOnline = backendStatus?.status === "Online";
 
   const navItems = [
-    { id: 'ml', label: 'ML Model Evaluation', short: 'ML', icon: Cpu },
     { id: 'live', label: 'Live Crowd Ops', short: 'Live', icon: Radio },
     { id: 'schedule', label: 'Train Schedule & Delays', short: 'Delays', icon: CalendarClock },
     { id: 'prediction', label: 'Live Prediction Calculator', short: 'Predict', icon: Zap },
     { id: 'advisory', label: 'Fleet Schedule Advisory', short: 'Advisory', icon: CalendarClock },
+    { id: 'ml', label: 'ML Model Evaluation', short: 'ML', icon: Cpu },
     { id: 'analytics', label: 'Network Analytics & Model', short: 'Analytics', icon: BarChart3 },
   ];
 

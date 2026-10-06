@@ -9,6 +9,7 @@ import { predictOccupancy } from '../services/api';
 import OccupancyGauge from './OccupancyGauge';
 import AlertBanner from './AlertBanner';
 import QuickPresets from './QuickPresets';
+import ServiceDetails from './ServiceDetails';
 import { 
   ArrowLeftRight, 
   Sliders, 
@@ -290,6 +291,17 @@ export default function PredictionCalculator() {
               <Info className="w-3.5 h-3.5 text-cyan-400" />
               Active Route: <span className="text-slate-200 font-semibold">{selectedFromStation?.name}</span> ➔ <span className="text-slate-200 font-semibold">{selectedToStation?.name}</span>
             </p>
+
+            {/* Which physical train does this forecast refer to? */}
+            <div className="pt-1">
+              <ServiceDetails
+                fromStation={selectedFromStation?.name}
+                toStation={selectedToStation?.name}
+                lineName={selectedLine?.name}
+                hour={formData.entry_hour}
+                compact
+              />
+            </div>
           </div>
 
           {/* Line Color Selector */}
@@ -402,9 +414,9 @@ export default function PredictionCalculator() {
             {/* Time markers bar */}
             <div className="flex justify-between text-[11px] font-mono text-slate-400 px-1 pt-1">
               <span>00:00</span>
-              <span className="text-red-400 font-semibold">08:00–11:00 (AM Peak)</span>
+              <span className="text-red-400 font-semibold">08:00–11:00</span>
               <span>12:00</span>
-              <span className="text-red-400 font-semibold">17:00–20:00 (PM Peak)</span>
+              <span className="text-red-400 font-semibold">17:00–20:00</span>
               <span>23:00</span>
             </div>
           </div>
