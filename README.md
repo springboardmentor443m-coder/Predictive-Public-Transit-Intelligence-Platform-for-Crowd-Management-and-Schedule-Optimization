@@ -4,7 +4,6 @@ MetroFlow is a full-stack transit intelligence system that **streams live statio
 
 Two gradient-boosted regressors run side by side — one for passengers *on board*, one for passengers *waiting* — and both are scored on a chronological hold-out split that is never shuffled, so no future information leaks into training.
 
-> **🔗 Dataset Link:** [Download Master Dataset (Excel Format)](https://docs.google.com/spreadsheets/d/1msXUYKOQ5EbkESvQkFJLWeE7W8WjB6KU/export?format=xlsx)
 
 ---
 
