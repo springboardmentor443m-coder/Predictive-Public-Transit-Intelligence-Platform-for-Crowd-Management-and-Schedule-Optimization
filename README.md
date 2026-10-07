@@ -182,7 +182,7 @@ move while remaining reproducible.
 A recurring daily timetable (≈1,650 services and trains across 4 lines, both directions)
 built from the dataset's own observed travel times.
 
-**Network topology** — each line traverses all 5 stations in a different order:
+**Network topology** — each line traverses all 5 stations in a different order - Example :
 
 | Line | Route |
 |---|---|
