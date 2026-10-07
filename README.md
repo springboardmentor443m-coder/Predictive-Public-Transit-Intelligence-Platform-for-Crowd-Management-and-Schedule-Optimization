@@ -1,12 +1,39 @@
 # 🚇 MetroFlow: AI-Powered Predictive Crowd Management & Smart Transit Scheduling Platform
 
-MetroFlow is a full-stack transit intelligence system combining an **XGBoost Machine Learning Regressor** with an automated **Smart Scheduling & Overcrowding Alert Engine** and a modern **ReactJS + Vite + Tailwind CSS Frontend** to forecast passenger loads and dispatch optimal train headways in real-time.
+MetroFlow is a full-stack transit intelligence system that **streams live station crowd over a WebSocket** and compares it, second by second, against an **XGBoost** forecast. Where reality outruns the prediction it raises a warning; where trains run late it shows the lateness cascading downstream through a simulated timetable and the crowd compounding on the platform as passengers cannot board.
+
+Two gradient-boosted regressors run side by side — one for passengers *on board*, one for passengers *waiting* — and both are scored on a chronological hold-out split that is never shuffled, so no future information leaks into training.
 
 > **🔗 Dataset Link:** [Download Master Dataset (Excel Format)](https://docs.google.com/spreadsheets/d/1msXUYKOQ5EbkESvQkFJLWeE7W8WjB6KU/export?format=xlsx)
 
 ---
 
 ## 🚀 Quick Start Guide
+
+### Option A: One Command (Windows)
+
+```powershell
+.\restart.ps1
+```
+
+Brings up all three containers, waits for the backend to finish loading its
+models and for the frontend to respond, then prints the URLs. It launches
+Docker Desktop automatically if the engine is not running, and is safe to run
+repeatedly. Variants:
+
+```powershell
+.\restart.ps1 -Restart   # force-recreate the containers
+.\restart.ps1 -Rebuild   # rebuild images first (slow: ~2GB of downloads)
+```
+
+| Service | URL |
+|---|---|
+| **App** | http://localhost:5173 |
+| API | http://localhost:8000 |
+| Swagger docs | http://localhost:8000/docs |
+| PostgreSQL | `localhost:5432` (`postgres`/`postgres`, db `metroflow`) |
+
+---
 
 ### Option A: Local Development (No Docker)
 
@@ -61,31 +88,64 @@ docker-compose down
 
 ## 🏗️ System Architecture
 
+Three containers, orchestrated by Docker Compose. The backend is the only
+stateful component: it owns the timetable, both models and the simulated clock,
+and pushes live frames to the browser over a WebSocket.
+
 ```
-┌────────────────────────────────────────────────────────┐
-│                   ReactJS Frontend                     │
-│  (Vite + Tailwind CSS + Lucide + Glassmorphism UI)     │
-└──────────────────────────┬─────────────────────────────┘
-                           │ REST API / CORS
-┌──────────────────────────▼─────────────────────────────┐
-│                 FastAPI Backend Server                 │
-│              (Port 8000 • CORS Configured)             │
-├──────────────────────────┬─────────────────────────────┤
-│                          │                             │
-│   ┌──────────────────────▼─────────────────────┐       │
-│   │   Pre-trained XGBoost Regressor (JSON IO)   │      │
-│   │   • 9 Feature Matrix + Cyclical Sin/Cos     │      │
-│   │   • 95.06% R² Variance Explanation          │      │
-│   └────────────────────────────────────────────┘       │
-│                          │                             │
-│   ┌──────────────────────▼─────────────────────┐       │
-│   │     Automated Rule-Based Scheduling        │       │
-│   │   • 🔴 Severe Rush (≥1500 pax) -> 3 Min   │        │
-│   │   • 🟡 Moderate (800-1499 pax) -> 6 Min   │        │
-│   │   • 🟢 Off-Peak (<800 pax)    -> 10 Min   │        │
-│   └────────────────────────────────────────────┘       │
-└────────────────────────────────────────────────────────┘
+                    ┌──────────────────────────────────────┐
+                    │        Browser  (React 19 + Vite)     │
+                    │  6 tabs, each wrapped in ErrorBoundary│
+                    └───────┬──────────────────────┬───────┘
+                   REST/CORS│                      │ WebSocket
+                    (poll fallback)          ws://…/ws/live
+                            │                      │
+┌───────────────────────────▼──────────────────────▼───────────────────────┐
+│                     FastAPI Backend  (port 8000)                       │
+│                                                                       │
+│  ┌─── live_ops.py ──────────────────────────────────────────────────┐  │
+│  │ HistoricalReplay   re-dates the 2023 dataset onto today's       │  │
+│  │                    calendar  (same month-day + time-of-day)     │  │
+│  │                                                                    │  │
+│  │ LiveCrowdEngine    live crowd per station + ML forecast +         │  │
+│  │                    deviation warnings; sim clock +1 min/frame     │  │
+│  │                                                                    │  │
+│  │ TimetableEngine    ~1,650 services/day, 4 lines × 2 directions;   │  │
+│  │                    delay injected at one station cascades         │  │
+│  │                    downstream, decaying 1 min per leg              │  │
+│  │                                                                    │  │
+│  │ MLMetrics          chronological 80/20 hold-out evaluation        │  │
+│  └────────────────────────────────────────────────────────────────────┘  │
+│                            │                        │                    │
+│  ┌─────────────────────────▼─────────┐  ┌───────────▼────────────────┐  │
+│  │ XGBRegressor #1  (shipped)        │  │ XGBRegressor #2 (dashboard)│  │
+│  │ metroflow_xgboost_model.json      │  │ metroflow_crowd_model.json │  │
+│  │ target: Train_Occupancy_Count     │  │ target:                    │  │
+│  │ "passengers ON BOARD"   R² 0.946  │  │ Platform_Crowd_Density     │  │
+│  │                                   │  │ "passengers WAITING"       │  │
+│  │ 9 features: Entry_Hour,           │  │ R² 0.890                   │  │
+│  │ Day_of_Week, Is_Peak_Hour,        │  │                            │  │
+│  │ Hour_Sin, Hour_Cos,               │  │                            │  │
+│  │ From/To_Station,                   │  │                            │  │
+│  │ Line_Color, Train_Capacity         │  │                            │  │
+│  └───────────────┬───────────────────┘  └───────────┬────────────────┘  │
+│                  │                                  │                   │
+│  ┌───────────────▼──────────────────────────────────▼────────────────┐  │
+│  │  Headway rule engine:  ≥1500 pax → 3 min │ ≥800 → 6 min │ else 10  │  │
+│  └────────────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────┬───────────────────────────────────────┘
+                                │ async SQLAlchemy (asyncpg)
+                    ┌───────────▼────────────┐
+                    │  PostgreSQL 16-alpine   │
+                    │  users · predictions    │
+                    │  (volume: postgres_data)│
+                    └────────────────────────┘
 ```
+
+**Why two models?** The original regressor predicts passengers *on board*. The
+live dashboard measures passengers *waiting on the platform*. Comparing one
+against the other is meaningless — it produced +95% false alarms. Each live
+figure is therefore compared against a forecast of the **same quantity**.
 
 ---
 
@@ -207,6 +267,7 @@ python train_crowd_model.py
 | `GET /api/schedule/timetable?line=` | Day's services, ordered by departure |
 | `GET /api/schedule/delays` | Delay register sorted by time |
 | `GET /api/schedule/station/{name}` | Per-train delay at one station |
+| `GET /api/schedule/resolve?from_station=&to_station=&line=&hour=` | Resolve a forecast to the actual scheduled service (train id, rake, times, delay chain) |
 | `POST /api/schedule/inject-delay` | Cause a delay; watch it propagate |
 | `POST /api/schedule/clear-delay/{id}` | Withdraw one train's injections |
 | `POST /api/schedule/reset` | Restore the whole network to baseline |
@@ -229,27 +290,46 @@ python train_crowd_model.py
 2. **Train Schedule & Delays (`DelaySimulator.jsx`)**:
    - Delay register for every late service, sorted by scheduled departure.
    - Full timetable view with per-stop scheduled vs actual times.
+   - Target-service picker with a **live route preview** showing which stations
+     will inherit the delay before you commit to it.
+   - **Live crowd vs ML forecast for the chosen origin station**, with deviation
+     and delay-pressure multiplier, refreshed after every injection.
    - Inject a delay at any station and watch it cascade downstream.
    - One-click reset of the entire network to baseline.
 
-3. **ML Model Evaluation (`MLInsights.jsx`)**:
-   - Hold-out metrics for both regressors, feature importances, residual
-     breakdowns by hour and station, and documented methodology.
+3. **ML Model Evaluation (`MLInsights.jsx` + `ErrorHeatmap.jsx`)**:
+   - Hold-out metrics for the shipped occupancy model on a chronological split.
+   - Feature-importance bars with a plain-English explainer of what gain means,
+     why `Is_Peak_Hour` dominates, and why the near-zero features are a genuine
+     finding rather than a bug.
+   - **Station x hour error heatmap** with per-station `Actual`, `Predicted` and
+     `Samples` roll-up columns, so error figures can be sanity-checked against
+     the volumes they came from. Cells with too few samples are hatched out
+     rather than shown as a misleading zero.
+   - Documented methodology.
 
-4. **Live Prediction Calculator (`PredictionCalculator.jsx`)**:
+4. **Live Prediction Calculator (`PredictionCalculator.jsx` + `ServiceDetails.jsx`)**:
    - Origin & Destination Station Pickers with instant swap.
    - Metro Line Corridor selector.
    - 24-Hour Slider with automatic peak hour indicator.
    - Train Capacity selector.
    - Visual Radial Occupancy Gauge with safety tier color coding.
    - Operational Overcrowding Alert Banner.
-   - 1-Click Simulation Scenarios.
+   - 1-Click Simulation Scenarios, each revealing the scheduled service it maps to.
+   - **Service resolution** - `GET /api/schedule/resolve` matches the chosen
+     (origin, destination, line, hour) against today's timetable and names the
+     actual train, rake size, scheduled times and delay chain, so it is never
+     ambiguous which service a forecast refers to.
 
-5. **Fleet Schedule Advisory Table (`ScheduleAdvisoryTable.jsx`)**:
+5. **Error Boundary (`ErrorBoundary.jsx`)**:
+   - Wraps every tab so a single failing view cannot unmount the whole app and
+     leave the user staring at a blank page. The navigation stays usable.
+
+6. **Fleet Schedule Advisory Table (`ScheduleAdvisoryTable.jsx`)**:
    - Live schedule directives generated by XGBoost predictions.
    - Real-time search and filtering by traffic tier and lines.
 
-6. **Network Analytics & Model Evaluation (`NetworkAnalytics.jsx`)**:
+7. **Network Analytics & Model Evaluation (`NetworkAnalytics.jsx`)**:
    - 24-Hour hourly average crowd curve with critical thresholds.
    - Station congestion rankings and line volume breakdown.
    - ML pipeline validation metrics.
@@ -264,10 +344,24 @@ python train_crowd_model.py
 - **Categorical Encodings:** Label encoded station IDs, lines, and days of week.
 
 ### 🤖 Model Training & Accuracy (XGBoost Regressor)
-Chronological split (80% Train / 20% Test):
-- **$R^2$ Score:** `0.9506` (explains ~95% of passenger count variance).
-- **Mean Absolute Error (MAE):** `111.33 passengers` (±9.4% mean deviation, **90.6% precision**).
-- **Root Mean Squared Error (RMSE):** `140.60 passengers`.
+
+Both models are scored on the **final 20% of the dataset taken in time order** -
+the split is never shuffled, so no future information leaks into training.
+These are the figures `/api/ml/metrics` actually returns from a live refit on
+the 80% training split:
+
+| Model | Target | $R^2$ | MAE | RMSE | MAPE |
+|---|---|---|---|---|---|
+| Occupancy (shipped) | `Train_Occupancy_Count` | **0.9457** | 116.09 | 147.40 | 15.26% |
+| Platform crowd (dashboard) | `Platform_Crowd_Density` | **0.8895** | 91.11 | 118.49 | 22.13% |
+
+- **$R^2$ Score:** `0.9457` - explains ~95% of passenger-count variance.
+- **Mean Absolute Error:** `116.09 passengers`; **52.9%** of predictions land
+  within ±10% of the true figure.
+- **Root Mean Squared Error:** `147.40 passengers`.
+- **Bias:** `-2.2` passengers, i.e. essentially unbiased overall.
+
+Retrain the dashboard model with `python train_crowd_model.py`.
 
 ---
 
@@ -301,15 +395,19 @@ MetroFlow/
 ├── auth.py              # JWT auth with bcrypt password hashing
 ├── requirements.txt     # All Python dependencies
 ├── Dockerfile           # Backend Docker image
-├── docker-compose.yml   # Multi-container orchestration
-├── .env                 # Environment configuration
+├── docker-compose.yml   # Multi-container orchestration (db + backend + frontend)
+├── restart.ps1          # One-command start / restart helper
+├── .env                 # Environment configuration (git-ignored)
 ├── frontend/            # React + Vite + Tailwind frontend
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── LiveOpsDashboard.jsx   # Live vs forecast + alerts (default view)
 │   │   │   ├── StationCrowdCard.jsx   # Per-station comparison bars
 │   │   │   ├── DelaySimulator.jsx     # Timetable, delay register, injection
-│   │   │   └── MLInsights.jsx         # Model evaluation dashboard
+│   │   │   ├── MLInsights.jsx         # Model evaluation dashboard
+│   │   │   ├── ErrorHeatmap.jsx       # Station x hour error heatmap
+│   │   │   ├── ServiceDetails.jsx     # Which train a forecast refers to
+│   │   │   └── ErrorBoundary.jsx      # Contains a failing view to one panel
 │   │   ├── hooks/useLiveSocket.js     # WebSocket + polling fallback
 │   │   ├── services/    # API service layer
 │   │   └── App.jsx      # Main App component
