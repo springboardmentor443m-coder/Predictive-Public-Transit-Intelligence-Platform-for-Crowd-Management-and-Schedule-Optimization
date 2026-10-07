@@ -179,7 +179,7 @@ move while remaining reproducible.
 
 ## 🚆 Train Schedule & Delay Propagation
 
-A recurring daily timetable (≈1,650 services across 4 lines, both directions)
+A recurring daily timetable (≈1,650 services and trains across 4 lines, both directions)
 built from the dataset's own observed travel times.
 
 **Network topology** — each line traverses all 5 stations in a different order:
