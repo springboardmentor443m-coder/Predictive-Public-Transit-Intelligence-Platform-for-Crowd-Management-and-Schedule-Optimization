@@ -335,6 +335,115 @@ python train_crowd_model.py
 
 ---
 
+## 📊 Dataset Overview & Station Metrics
+
+All figures below are computed directly from
+`AI_MetroFlow_Master_Dataset.xlsx` (5,000 trip records covering the full year
+of 2023) and re-verified against the file.
+
+### 🚉 Passenger Movement by Station
+
+| Station Name | Total Onboarded Passengers | Avg Onboarded per Trip | Total Alighted Passengers | Avg Alighted per Trip |
+|---|---:|---:|---:|---:|
+| Kashmere Gate | 1,193,511 | ~1,119 | 1,082,973 | ~1,079 |
+| Rajiv Chowk | 1,107,892 | ~1,092 | 1,056,008 | ~1,086 |
+| Botanical Garden | 1,094,988 | ~1,120 | 1,134,549 | ~1,106 |
+| Dwarka Sec 21 | 1,087,041 | ~1,098 | 1,188,686 | ~1,144 |
+| Hauz Khas | 1,040,074 | ~1,095 | 1,061,290 | ~1,107 |
+
+- **Highest Onboarding Station:** Kashmere Gate with **1,193,511** passengers.
+- **Highest Alighting Station:** Dwarka Sec 21 with **1,188,686** passengers.
+- **System Total:** **5,523,506** total passenger movements recorded across all
+  trips (the onboarding column and the alighting column each sum to this figure,
+  because every trip contributes one boarding and one alighting).
+
+### 1. Max Platform Crowd
+
+The maximum platform crowd recorded in this dataset is **1,199** passengers.
+
+### 2. Max Train Capacity
+
+The maximum train capacity recorded in this dataset is **2,400** passengers.
+
+### 3. Why Only 5,000 Trips & Time Gaps (Headway) Between Trains
+
+**Dataset Scope:** The dataset contains exactly **5,000 total trip records**
+logged over a full year (2023). Every trip in the dataset passes through,
+starts at, or ends at these stations, making the combined activity count across
+the system equal to 5,000 train trips.
+
+**Time Gap (Headway Interval):**
+
+| Metric | Value |
+|---|---|
+| Average Time Gap | ~4.96 minutes (approx. 5 minutes) |
+| Minimum Time Gap | 2 minutes (during peak operational hours) |
+| Maximum Time Gap | 14 minutes (during off-peak hours) |
+
+### 4. Why All Stations Appear on Magenta, Red, Blue and Yellow Lines
+
+In this synthetic/simulated dataset, all 4 line colours (Red Line, Blue Line,
+Yellow Line and Magenta Line) are assigned across all stations almost equally
+(**~1,236 to 1,275 trips per line**).
+
+In real-world geography (Delhi Metro), these stations serve as major
+multi-line interchange hubs:
+
+| Station | Real Delhi Metro Lines |
+|---|---|
+| Kashmere Gate | Red, Yellow and Violet Lines |
+| Rajiv Chowk | Blue and Yellow Lines |
+| Hauz Khas | Yellow and Magenta Lines |
+| Botanical Garden | Blue and Magenta Lines |
+| Dwarka Sec 21 | Blue Line and Airport Express |
+
+In this dataset's simplified data model, **every station is modelled as a major
+hub capable of connecting all four lines.**
+
+### 5. Station Connections & Interlink Between Dwarka Sec 21 and Botanical Garden
+
+**Layout Structure:** The 5 stations are modelled as a connected network where
+trips occur directly between all station pairs in both directions (Up Line and
+Down Line).
+
+**Dwarka Sec 21 ↔ Botanical Garden Interlink:** Yes, there are direct routes
+between Dwarka Sec 21 and Botanical Garden:
+
+| Direction | Trips |
+|---|---:|
+| Dwarka Sec 21 → Botanical Garden | 194 |
+| Botanical Garden → Dwarka Sec 21 | 188 |
+
+### 6. Dataset Breakdown & Station Metrics
+
+**Station Summary** — there are **5 unique stations** in total in this dataset:
+
+- Botanical Garden
+- Dwarka Sec 21
+- Hauz Khas
+- Kashmere Gate
+- Rajiv Chowk
+
+**Total Trains in Dataset**
+
+| Metric | Value |
+|---|---|
+| Total Trip Records | 5,000 trips |
+| Unique Train IDs (`Train_ID`) | 3,829 distinct trains |
+
+**Station-Wise Train Operations (Going & Coming Back)**
+
+| Station Name | Departing Trips (`From_Station`) | Arriving Trips (`To_Station`) | Internal Loop Trips (`From = To`) |
+|---|---:|---:|---:|
+| Kashmere Gate | 1,067 | 1,004 | 219 |
+| Rajiv Chowk | 1,015 | 972 | 204 |
+| Dwarka Sec 21 | 990 | 1,039 | 223 |
+| Botanical Garden | 978 | 1,026 | 193 |
+| Hauz Khas | 950 | 959 | 183 |
+| **Total** | **5,000** | **5,000** | **1,022** |
+
+---
+
 ## 🧹 Data Cleaning, Feature Engineering & ML Pipeline
 
 ### ⚙️ Feature Engineering
