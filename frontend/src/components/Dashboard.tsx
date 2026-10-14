@@ -10,6 +10,7 @@ import {
   Radio,
   CheckCircle2
 } from 'lucide-react';
+import { NetworkMap } from './NetworkMap';
 
 interface DashboardData {
   network_status: string;
@@ -75,11 +76,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
   }
 
   return (
-    <div className="min-h-screen bg-[#030712] text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen w-full bg-[#030712] text-slate-100 flex flex-col font-sans">
       {/* Top Operations Header */}
-      <header className="border-b border-slate-800/80 bg-slate-900/40 backdrop-blur-md px-6 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-50 border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md px-6 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-cyan-500/10 border border-cyan-400/30 rounded-xl text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
+          <div className="p-2 bg-cyan-500/10 border border-cyan-400/30 rounded-xl text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
             <Activity className="w-5 h-5 animate-pulse" />
           </div>
           <div>
@@ -105,7 +106,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
           </button>
           <button
             onClick={onLogout}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 rounded-xl transition"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 rounded-xl transition"
           >
             <LogOut className="w-3.5 h-3.5" />
             Disconnect
@@ -113,12 +114,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
         </div>
       </header>
 
-      {/* Metric Telemetry Cards */}
+      {/* Main Command Center Body */}
       <main className="p-6 space-y-6 flex-1 max-w-7xl w-full mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        
+        {/* Metric Telemetry Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Total Passengers */}
-          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-md">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
+          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 backdrop-blur-md">
+            <div className="flex items-center justify-between text-slate-400 mb-1.5">
               <span className="text-[11px] font-mono tracking-wider uppercase">Network Footfall</span>
               <Users className="w-4 h-4 text-cyan-400" />
             </div>
@@ -131,8 +134,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
           </div>
 
           {/* Active Stations */}
-          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-md">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
+          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 backdrop-blur-md">
+            <div className="flex items-center justify-between text-slate-400 mb-1.5">
               <span className="text-[11px] font-mono tracking-wider uppercase">Active Stations</span>
               <GitBranch className="w-4 h-4 text-blue-400" />
             </div>
@@ -143,8 +146,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
           </div>
 
           {/* Congestion Avg */}
-          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-md">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
+          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 backdrop-blur-md">
+            <div className="flex items-center justify-between text-slate-400 mb-1.5">
               <span className="text-[11px] font-mono tracking-wider uppercase">Avg Congestion</span>
               <Gauge className="w-4 h-4 text-amber-400" />
             </div>
@@ -155,8 +158,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
           </div>
 
           {/* Active Alerts */}
-          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-md">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
+          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 backdrop-blur-md">
+            <div className="flex items-center justify-between text-slate-400 mb-1.5">
               <span className="text-[11px] font-mono tracking-wider uppercase">Active Incidents</span>
               <AlertTriangle className="w-4 h-4 text-rose-400" />
             </div>
@@ -167,22 +170,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
           </div>
         </div>
 
-        {/* Detailed Monitoring Split */}
+        {/* Interactive Metro Network Map (Full Width) */}
+        <div>
+          <NetworkMap />
+        </div>
+
+        {/* Detailed Feeds (Congestion & Alerts) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Station Congestion Level */}
-          <div className="lg:col-span-2 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md">
-            <h2 className="text-xs font-mono font-bold tracking-wider uppercase mb-5 text-slate-300">
-              Station Crowd Congestion Feed
+          {/* Station Quick Status */}
+          <div className="lg:col-span-2 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-md">
+            <h2 className="text-xs font-mono font-bold tracking-wider uppercase mb-4 text-slate-300">
+              Station Quick Capacity Overview
             </h2>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {data?.station_quick_status.map((st) => (
-                <div key={st.id} className="p-4 bg-slate-950/70 border border-slate-800/80 rounded-xl">
-                  <div className="flex items-center justify-between mb-2.5">
+                <div key={st.id} className="p-3 bg-slate-950/70 border border-slate-800/80 rounded-xl">
+                  <div className="flex items-center justify-between mb-2">
                     <div>
                       <span className="font-semibold text-sm text-slate-200">{st.name}</span>
-                      <span className="text-xs font-mono text-slate-500 ml-2">Line: {st.line}</span>
+                      <span className="text-xs font-mono text-slate-500 ml-2">({st.line} Line)</span>
                     </div>
-                    <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-md ${
+                    <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md ${
                       st.status === 'CRITICAL' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
                       st.status === 'ELEVATED' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
                       'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
@@ -190,7 +198,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                       {st.congestion}% Capacity
                     </span>
                   </div>
-                  <div className="w-full bg-slate-800/80 h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
                     <div 
                       className={`h-full rounded-full transition-all duration-500 ${
                         st.congestion > 80 ? 'bg-rose-500' :
@@ -205,23 +213,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
           </div>
 
           {/* Live Incident Alerts */}
-          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 backdrop-blur-md flex flex-col">
-            <h2 className="text-xs font-mono font-bold tracking-wider uppercase mb-5 text-slate-300">
-              Live Telemetry Alerts
+          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 backdrop-blur-md flex flex-col">
+            <h2 className="text-xs font-mono font-bold tracking-wider uppercase mb-4 text-slate-300">
+              Live Operations Feed
             </h2>
-            <div className="space-y-3.5 flex-1">
+            <div className="space-y-3 flex-1">
               {data?.critical_alerts.map((alt) => (
-                <div key={alt.id} className="p-4 bg-slate-950/80 border border-slate-800/80 rounded-xl border-l-4 border-l-rose-500">
+                <div key={alt.id} className="p-3.5 bg-slate-950/80 border border-slate-800/80 rounded-xl border-l-4 border-l-rose-500">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-bold text-slate-200">{alt.station}</span>
                     <span className="text-[10px] text-slate-500 font-mono">{alt.time}</span>
                   </div>
-                  <p className="text-xs text-slate-400 mt-1">{alt.type}</p>
+                  <p className="text-xs text-slate-400">{alt.type}</p>
                 </div>
               ))}
             </div>
           </div>
         </div>
+
       </main>
     </div>
   );

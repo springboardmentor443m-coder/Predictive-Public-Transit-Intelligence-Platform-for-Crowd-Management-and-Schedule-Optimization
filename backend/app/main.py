@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.auth import router as auth_router
 from app.api.dashboard import router as dashboard_router
+from app.api.network import router as network_router
 
 app = FastAPI(title="MetroFlow Transit Engine", version="1.0")
 
@@ -15,6 +16,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(dashboard_router)
+app.include_router(network_router)
 
 @app.get("/api/health")
 def health():
