@@ -1,3 +1,6 @@
+import { ScheduleOptimizer } from './ScheduleOptimizer';
+import { CrowdIntelligence } from './CrowdIntelligence';
+import { IncidentManager } from './IncidentManager';
 import React, { useEffect, useState } from 'react';
 import { 
   Activity, 
@@ -174,7 +177,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
         <div>
           <NetworkMap />
         </div>
-
+          {/* Step 4: Live Crowd Intelligence */}
+           <CrowdIntelligence />
+           {/* Step 5: Predictive Scheduling & Fleet Optimization */}
+            <ScheduleOptimizer />
+           
+{/* Step 6: Surge Containment & Emergency Incident Protocols */}
+<IncidentManager />
         {/* Detailed Feeds (Congestion & Alerts) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Station Quick Status */}
