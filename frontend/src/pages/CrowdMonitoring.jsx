@@ -36,6 +36,16 @@ export default function CrowdMonitoring({
   const [selectedCongestion, setSelectedCongestion] = useState('All');
   const [selectedStructure, setSelectedStructure] = useState('All');
   const [mapCenter, setMapCenter] = useState(null);
+  const [basemapKey, setBasemapKey] = useState('esri');
+  const [basemapError, setBasemapError] = useState(false);
+
+  const handleTileError = () => {
+    if (basemapKey === 'esri') {
+      console.warn('Esri dark tiles encountered an issue; falling back to OpenStreetMap.');
+      setBasemapError(true);
+      setBasemapKey('osm');
+    }
+  };
 
   // Available boroughs & structures
   const boroughs = ['All', 'Manhattan', 'Brooklyn', 'Queens', 'Bronx'];
@@ -198,16 +208,75 @@ export default function CrowdMonitoring({
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* Interactive Leaflet Map (3 cols) */}
         <div className="lg:col-span-3 ops-panel overflow-hidden relative" style={{ height: '580px' }}>
+          {/* Basemap Switcher Overlay */}
+          <div className="absolute top-3 right-3 z-[1000] flex items-center gap-1.5 bg-slate-900/90 backdrop-blur-sm p-1 rounded-md border border-slate-700 shadow-lg text-xs">
+            <Layers size={13} className="text-[#00D4AA] ml-1.5" />
+            <button
+              type="button"
+              onClick={() => {
+                setBasemapError(false);
+                setBasemapKey('esri');
+              }}
+              className={`px-2 py-0.5 rounded text-[11px] font-medium transition ${
+                basemapKey === 'esri'
+                  ? 'bg-[#00D4AA] text-[#0B1220] font-bold shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+              title="Esri World Dark Gray Basemap (No API key required)"
+            >
+              🌙 Dark Ops
+            </button>
+            <button
+              type="button"
+              onClick={() => setBasemapKey('osm')}
+              className={`px-2 py-0.5 rounded text-[11px] font-medium transition ${
+                basemapKey === 'osm'
+                  ? 'bg-[#00D4AA] text-[#0B1220] font-bold shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+              title="OpenStreetMap Standard Basemap (Public fallback)"
+            >
+              🗺️ OpenStreetMap
+            </button>
+          </div>
+
+          {basemapError && (
+            <div className="absolute top-12 right-3 z-[1000] bg-amber-950/90 border border-amber-600 text-amber-200 text-[11px] px-2.5 py-1 rounded flex items-center gap-1.5 shadow">
+              <AlertTriangle size={12} className="text-amber-400" />
+              <span>Network fallback: switched to OpenStreetMap</span>
+            </div>
+          )}
+
           <MapContainer
             center={[40.7580, -73.9855]} // Times Square / Manhattan Center
             zoom={12}
             scrollWheelZoom={true}
             style={{ height: '100%', width: '100%', background: '#0B1220' }}
           >
-            <TileLayer
-              attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            />
+            {basemapKey === 'esri' ? (
+              <>
+                <TileLayer
+                  attribution='Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
+                  url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+                  maxNativeZoom={16}
+                  maxZoom={18}
+                  eventHandlers={{
+                    tileerror: handleTileError,
+                  }}
+                />
+                <TileLayer
+                  url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}"
+                  maxNativeZoom={16}
+                  maxZoom={18}
+                />
+              </>
+            ) : (
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                maxZoom={19}
+              />
+            )}
 
             {mapCenter && <MapRecenter center={mapCenter} />}
 

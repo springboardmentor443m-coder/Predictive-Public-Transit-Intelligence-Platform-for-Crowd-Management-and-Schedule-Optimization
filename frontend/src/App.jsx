@@ -74,8 +74,31 @@ const INITIAL_ALERTS = [
   },
 ];
 
+const MODULE_TITLES = {
+  overview: 'Operations Console & KPI Overview',
+  'crowd-monitoring': 'Subway Crowd Monitoring & Geospatial Heatmap',
+  'train-tracking': 'Live Subway Train Tracking & Kinematics',
+  'schedule-management': 'Operations Scheduling & Timetable Optimization',
+  'alerts-center': 'Alerts, Incident Log & Emergency Dispatch',
+  'real-time-prediction': 'Real-Time Crowd Congestion Inference',
+  'demand-forecasting': 'Passenger Demand Multi-Horizon Forecasting',
+  'model-comparison': 'Model Comparison & Benchmarking Leaderboard',
+  'dataset-analytics': 'Dataset Analytics & Exploratory Data Analysis (EDA)',
+};
+
+function getInitialModule() {
+  if (typeof window !== 'undefined') {
+    const hash = window.location.hash.replace(/^#\/?/, '').trim();
+    if (hash && MODULE_TITLES[hash]) return hash;
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab && MODULE_TITLES[tab]) return tab;
+  }
+  return 'overview';
+}
+
 export default function App() {
-  const [activeModule, setActiveModule] = useState('overview');
+  const [activeModule, setActiveModule] = useState(getInitialModule);
   const [apiHealth, setApiHealth] = useState(null);
   const [stationsData, setStationsData] = useState(null);
   const [trainsData, setTrainsData] = useState(null);
@@ -163,24 +186,27 @@ export default function App() {
   // Navigate helper
   const handleNavigate = (moduleId, extraState = {}) => {
     setActiveModule(moduleId);
+    if (typeof window !== 'undefined') {
+      window.location.hash = moduleId;
+    }
     if (extraState.scheduleLevel) {
       setScheduleTargetLevel(extraState.scheduleLevel);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Compute active module title
-  const moduleTitles = {
-    overview: 'Operations Console & KPI Overview',
-    'crowd-monitoring': 'Subway Crowd Monitoring & Geospatial Heatmap',
-    'train-tracking': 'Live Subway Train Tracking & Kinematics',
-    'schedule-management': 'Operations Scheduling & Timetable Optimization',
-    'alerts-center': 'Alerts, Incident Log & Emergency Dispatch',
-    'real-time-prediction': 'Real-Time Crowd Congestion Inference',
-    'demand-forecasting': 'Passenger Demand Multi-Horizon Forecasting',
-    'model-comparison': 'Model Comparison & Benchmarking Leaderboard',
-    'dataset-analytics': 'Dataset Analytics & Exploratory Data Analysis (EDA)',
-  };
+  useEffect(() => {
+    const onHashChange = () => {
+      const hash = window.location.hash.replace(/^#\/?/, '').trim();
+      if (hash && MODULE_TITLES[hash]) {
+        setActiveModule(hash);
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  const moduleTitles = MODULE_TITLES;
 
   const activeAlertsCount = alerts.filter(
     (a) => (a.severity === 'High' || a.level === 'High') && a.status !== 'Resolved'

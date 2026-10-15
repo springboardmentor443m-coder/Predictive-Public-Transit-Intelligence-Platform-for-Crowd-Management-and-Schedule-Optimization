@@ -140,6 +140,25 @@ html, body {
   line-height: 1.4 !important;
 }
 
+.leaflet-control-attribution {
+  background: rgba(17, 24, 39, 0.85) !important;
+  color: #94A3B8 !important;
+  font-size: 10px !important;
+  padding: 3px 8px !important;
+  border-radius: 4px !important;
+  margin: 6px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.leaflet-control-attribution a {
+  color: #38BDF8 !important;
+  text-decoration: none !important;
+}
+
+.leaflet-control-attribution a:hover {
+  text-decoration: underline !important;
+}
+
 /* Custom Table Styles */
 .ops-table {
   width: 100%;
