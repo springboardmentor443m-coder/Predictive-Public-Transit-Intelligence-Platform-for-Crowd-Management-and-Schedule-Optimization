@@ -1,4 +1,4 @@
-# 🚇 MetroFlow – Real-Time AI Transit Monitoring & Dynamic Dispatch Platform
+# 🚇 MetroFlow –  AI Platform for Metro Crowd Management and Scheduling
 
 MetroFlow is an enterprise-grade applied ML transit management platform engineered for high-density metro operations. Built on a **Zero-CCTV, Privacy-First Architecture**, MetroFlow processes live turnstile sensor telemetry to eliminate bottlenecks via automated headway optimization and predictive fleet dispatch.
 
