@@ -50,7 +50,7 @@ export default function Header({ apiHealth, onRefresh, isRefreshing, activeModul
           />
           <span className="text-slate-400">FastAPI Backend:</span>
           <span className={`font-mono font-semibold ${isHealthy ? 'text-emerald-400' : 'text-rose-400'}`}>
-            {isHealthy ? 'ONLINE (Port 8000)' : 'CONNECTING...'}
+            {isHealthy ? 'ONLINE (Port 8001)' : 'CONNECTING...'}
           </span>
         </div>
 
@@ -86,7 +86,7 @@ export default function Header({ apiHealth, onRefresh, isRefreshing, activeModul
 
         {/* API Docs Link */}
         <a
-          href="http://127.0.0.1:8000/docs"
+          href="http://127.0.0.1:8001/docs"
           target="_blank"
           rel="noopener noreferrer"
           className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
