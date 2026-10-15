@@ -7,10 +7,8 @@ import {
   AlertTriangle,
   Sparkles,
   TrendingUp,
-  BarChart3,
   Database,
   Radio,
-  Cpu,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -21,7 +19,6 @@ const NAV_ITEMS = [
   { id: 'alerts-center', label: 'Alerts & Incident Center', icon: AlertTriangle, tag: 'ALERTS' },
   { id: 'real-time-prediction', label: 'Real-Time Prediction', icon: Sparkles, tag: 'INFER' },
   { id: 'demand-forecasting', label: 'Demand Forecasting', icon: TrendingUp, tag: 'FORECAST' },
-  { id: 'model-comparison', label: 'Model Leaderboard', icon: BarChart3, tag: 'ML' },
   { id: 'dataset-analytics', label: 'Dataset Analytics & EDA', icon: Database, tag: 'DATA' },
 ];
 

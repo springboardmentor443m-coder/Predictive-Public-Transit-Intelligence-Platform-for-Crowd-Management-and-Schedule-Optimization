@@ -11,7 +11,6 @@ import ScheduleManagement from './pages/ScheduleManagement';
 import AlertsCenter from './pages/AlertsCenter';
 import RealTimePrediction from './pages/RealTimePrediction';
 import DemandForecasting from './pages/DemandForecasting';
-import ModelComparison from './pages/ModelComparison';
 import DatasetAnalytics from './pages/DatasetAnalytics';
 
 import { api } from './api/client';
@@ -82,16 +81,22 @@ const MODULE_TITLES = {
   'alerts-center': 'Alerts, Incident Log & Emergency Dispatch',
   'real-time-prediction': 'Real-Time Crowd Congestion Inference',
   'demand-forecasting': 'Passenger Demand Multi-Horizon Forecasting',
-  'model-comparison': 'Model Comparison & Benchmarking Leaderboard',
   'dataset-analytics': 'Dataset Analytics & Exploratory Data Analysis (EDA)',
 };
 
 function getInitialModule() {
   if (typeof window !== 'undefined') {
     const hash = window.location.hash.replace(/^#\/?/, '').trim();
+    if (hash === 'model-comparison') {
+      window.location.hash = 'overview';
+      return 'overview';
+    }
     if (hash && MODULE_TITLES[hash]) return hash;
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
+    if (tab === 'model-comparison') {
+      return 'overview';
+    }
     if (tab && MODULE_TITLES[tab]) return tab;
   }
   return 'overview';
@@ -198,6 +203,11 @@ export default function App() {
   useEffect(() => {
     const onHashChange = () => {
       const hash = window.location.hash.replace(/^#\/?/, '').trim();
+      if (hash === 'model-comparison') {
+        window.location.hash = 'overview';
+        setActiveModule('overview');
+        return;
+      }
       if (hash && MODULE_TITLES[hash]) {
         setActiveModule(hash);
       }
@@ -288,8 +298,6 @@ export default function App() {
               onNavigate={handleNavigate}
             />
           )}
-
-          {activeModule === 'model-comparison' && <ModelComparison />}
 
           {activeModule === 'dataset-analytics' && <DatasetAnalytics />}
         </main>
