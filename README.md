@@ -1,583 +1,218 @@
-## Contributing Guidelines (For Interns / Collaborators)
+AI MetroFlow
+Predictive Public Transit Intelligence Platform for Crowd Management and Schedule Optimization
+AI MetroFlow is a prototype that combines machine learning, historical passenger-traffic analytics, demand forecasting, and a transit-operations dashboard. It demonstrates how historical subway traffic patterns can support congestion assessment and planning recommendations.
+Important scope note: The current prototype uses historical NYC subway turnstile data and simulated train information. It is not connected to a verified live MTA feed, live passenger-counting sensors, or real train-dispatch systems. Predictions are generated from submitted inputs; train positions and scheduling recommendations are demonstrations, not operational commands.
 
-All interns added as collaborators to this repository must follow the branch workflow below. **Direct commits or pushes to the `main` branch are not allowed.**
-
-> Note: `main` only contains the `LICENSE` and `README.md` — it is not used for active development. There is no need to pull the latest `main` into your branch at any point.
-
-### 1. Branch Naming
-
-- Every intern must create their own branch off `main`, named after themselves.
-- Suggested naming convention: `firstname-lastname` (all lowercase, hyphen-separated).
-  - Example: `john-doe`, `aisha-khan`
-
-### 2. How to Create Your Branch
-
-**Option A — Clone and push (recommended)**
-
-```bash
-# Clone the repository
-git clone https://github.com/springboardmentor443m-coder/Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization.git
-
-# Move into the project folder
+Table of Contents
+- Problem Statement
+- Objectives
+- Features
+- Technology Stack
+- Architecture
+- Machine Learning
+- Dataset
+- Project Structure
+- Installation
+- Run the Application
+- API
+- Screenshots
+- Limitations
+- Future Work
+- Push to GitHub
+Problem Statement
+Transit operators need to understand passenger-flow patterns, identify potential congestion, and plan service levels. Historical turnstile records reveal traffic patterns by station and time, but they do not directly measure how many people are physically inside a station at a given moment.
+AI MetroFlow demonstrates a workflow that analyzes historical entry/exit events, predicts a congestion category for supplied station/time features, estimates numerical traffic demand, and presents planning suggestions in a dashboard.
+Objectives
+- Analyze historical passenger traffic across stations and time periods.
+- Classify supplied observations as Low, Medium, or High congestion.
+- Estimate numerical passenger traffic for supported forecast horizons.
+- Present analytics, predictions, alerts, and scheduling suggestions in one interface.
+- Demonstrate data-driven planning while keeping suggestions separate from real-world train control.
+Features
+The current dashboard has been reported to include:
+1. Overview & Console — project and system summary.
+2. Crowd Monitoring — station-level traffic and congestion views.
+3. Live Train Tracking — simulated train positions and statuses.
+4. Schedule Management — frequency/headway suggestions using configurable prototype rules.
+5. Alerts & Incident Center — alert display and handling workflow.
+6. Real-Time Prediction — on-demand model inference from submitted inputs. “Real-time” means a prediction is generated when requested, not that live sensor data is streamed.
+7. Demand Forecasting — numerical traffic estimates for horizons such as 1 hour, 3 hours, and 24 hours.
+8. Dataset Analytics & EDA — summaries and traffic-pattern analysis.
+Confirm each feature in the current running version before describing it as production-ready.
+Technology Stack
+- Language / ML: Python, pandas, NumPy, scikit-learn; XGBoost was included in model comparisons.
+- Backend: FastAPI and Uvicorn.
+- Frontend: React and Vite.
+- Model artifacts: serialized .pkl files.
+- Version control: Git and GitHub.
+Architecture
+Historical NYC subway turnstile records
+                 |
+                 v
+      Data cleaning and validation
+                 |
+                 v
+       Feature engineering and EDA
+                 |
+          +------+------+
+          |             |
+          v             v
+ Congestion classifier  Demand regressor
+          |             |
+          +------+------+
+                 |
+                 v
+           FastAPI backend
+                 |
+                 v
+        React + Vite dashboard
+                 |
+                 v
+ Predictions, analytics, alerts, and
+ illustrative schedule recommendations
+This is a high-level architecture. Check the current source code for the exact feature pipeline and connections between modules.
+Machine Learning
+Congestion classification
+The classifier predicts one of three categories: Low, Medium, or High. The dashboard may show the predicted category, class probabilities/confidence where available, and a recommendation. The model predicts from supplied features; it does not directly count people in a station.
+Candidate classifiers evaluated reportedly included Logistic Regression, Decision Tree, Random Forest, Gradient Boosting, AdaBoost, and XGBoost. The reported selected model is a Random Forest Classifier. A previous evaluation reported approximately 87% accuracy. Replace this with the final reproducible evaluation result before publishing a formal metric.
+Passenger-demand forecasting
+The forecasting model produces a numerical traffic estimate, not a Low/Medium/High category. Supported dashboard horizons have been reported as:
+- 1 hour
+- 3 hours
+- 24 hours
+Random Forest Regressor and XGBoost Regressor were compared; the reported selected model is a Random Forest Regressor. Its target is based on historical traffic counts (entry/exit events), not a guaranteed count of future unique passengers.
+Previously reported Random Forest regression metrics were R² = 0.8537, RMSE = 1430.38, and MAE = 568.67. Verify these against the final evaluation artifacts and validation methodology before publishing them.
+Scheduling recommendations
+The prototype maps congestion categories to suggested service intervals/headways. These are configurable demonstration rules, not official MTA schedules and not automatic dispatch instructions. Any capacity or throughput estimate depends on assumptions configured in the application.
+Dataset
+The project has used historical NYC subway turnstile records, reported as approximately 4.59 million records from the 2017–2021 period. The data includes passenger entry/exit counts and station/time-related information.
+Preprocessing may include data cleaning, validation, creation of time-related features, calculation of traffic from entries and exits, and preparation of labels/features. Consult the current preprocessing scripts for the exact operations and feature list.
+Interpretation caveats
+- Entry/exit events are not the same as the number of people currently inside a station.
+- Historical turnstile counts are not live occupancy measurements.
+- Congestion labels depend on the project's labeling method and thresholds.
+- Do not describe this as a live MTA integration unless one has been implemented and verified.
+Project Structure
+This is a guide to the main files previously reported; adjust it to match your actual repository tree.
+Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization/
+├── api/
+│   └── main.py                 # FastAPI application
+├── frontend/                   # React + Vite dashboard
+├── src/
+│   └── demand_forecasting.py   # Demand-forecasting workflow
+├── models/
+│   ├── congestion_model.pkl    # If included
+│   └── demand_model.pkl        # If included
+├── reports/
+│   ├── forecast_results.csv    # If generated
+│   └── figures/                # Generated figures, if present
+├── notebooks/                  # If present
+├── requirements.txt
+├── .gitignore
+└── README.md
+Installation
+Prerequisites
+- Git
+- Python 3.10+ (developed with Python 3.11)
+- Node.js and npm
+- Required model artifacts, unless regenerated by the training pipeline
+1. Clone the repository
+Replace <your-github-username> with the owner of the repository.
+git clone https://github.com/<your-github-username>/Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization.git
 cd Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization
-
-# Create and switch to your own branch (off main)
-git checkout -b your-name
-
-# ... make your changes ...
-
-# Stage, commit, and push your changes to YOUR branch only
-git add .
-git commit -m "Describe your change here"
-git push origin your-name
-```
-
-**Option B — GitHub UI upload**
-
-1. Go to the repository on GitHub.
-2. Switch the branch dropdown from `main` to your own branch (create it first via **Branch: main → View all branches → New branch**, named after yourself).
-3. Once on your branch, use **Add file → Upload files** to upload your code.
-4. Commit directly to your branch (not `main`).
-
-### 3. Rules
-
-- ❌ Do **not** push or upload code directly to `main`.
-- ❌ Do **not** push code to another intern's branch.
-- ✅ Only push/upload code to the branch that carries your own name.
-- Keep uploading/pushing your code to your branch regularly as you make progress. No pull requests are required — your branch itself is the deliverable.
-
-### 4. Summary
-
-| Action | Allowed? |
-|---|---|
-| Push to `main` directly | ❌ No |
-| Create your own branch from `main` | ✅ Yes |
-| Push/upload code to your own branch | ✅ Yes |
-| Push/upload code to someone else's branch | ❌ No |
-| Open a Pull Request | Not required |
+2. Set up Python
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+3. Install frontend packages
+cd frontend
+npm install
+cd ..
+Run the Application
+Open two PowerShell terminals from the project root.
+Terminal 1 — Backend
+python -m uvicorn api.main:app --host 127.0.0.1 --port 8001 --reload
+- API base URL: http://127.0.0.1:8001
+- Swagger UI: http://127.0.0.1:8001/docs
+- Health endpoint: http://127.0.0.1:8001/health
+The API needs its dependencies and required model artifacts. If it fails, inspect terminal errors and verify model paths and required input fields.
+Terminal 2 — Frontend
+cd frontend
+npm run dev
+Open the local URL printed by Vite, commonly http://localhost:5173/. Keep both terminals open.
+API
+The project has been reported to expose these endpoints. Confirm their current request/response schemas in api/main.py or Swagger UI.
+Endpoint	Purpose
+GET /health	Checks service status.
+POST /predict	Accepts station/time-related inputs and returns a congestion prediction.
 
 
-## Vijaya Sree Progress Update
-
-### Completed
-- Dataset Selection (NYC Subway Traffic 2017–2021)
-- Data Cleaning & Preprocessing
-- Feature Engineering (Temporal & Spatial Variables)
-- Exploratory Data Analysis (`01_EDA.ipynb`)
-- **Target Leakage Investigation & Prevention Strategy**
-- **Machine Learning Model Training & Benchmarking** (Decision Tree, Random Forest, XGBoost)
-- **Automated Model Selection & Serialization** (`models/congestion_model.pkl`)
-- **Real-Time Prediction & Recommendation Engine** (`src/prediction.py`)
-- **Model Training Walkthrough Notebook** (`notebooks/02_Model_Training.ipynb`)
-- **FastAPI Real-Time Prediction & Scheduling Backend** (`api/main.py`)
-- **Real-Time Alert & Incident Notification Module** (`api/main.py`, `dashboard/app.py`)
-- **Schedule Management & Optimization Module** (`api/main.py`, `dashboard/app.py`)
-
----
-
-### Multi-Model Benchmarking & Model Comparison
-
-A comprehensive comparative evaluation was conducted across 6 diverse classification algorithms to benchmark predictive performance on subway congestion levels (`Low`, `Medium`, `High`).
-
-#### Benchmarking Methodology
-- **Leakage-Free Feature Set**: Strictly evaluated on non-leaked temporal (`hour`, `day`, `month`, `year`, `day_of_week`, `is_weekend`, `is_peak_hour`), spatial station coordinates (`Latitude`, `Longitude`), and encoded categoricals (`Borough_encoded`, `Structure_encoded`, `Stop Name_encoded`). `Total_Traffic`, `Entries`, and `Exits` were excluded.
-- **Identical Stratified Split**: Evaluated on an identical 80% train / 20% test stratified split across all algorithms to guarantee unbiased fairness.
-- **Multi-Class Evaluation Metrics**: Evaluated across multi-class **Accuracy**, **Precision (Weighted)**, **Recall (Weighted)**, and **F1 Score (Weighted)**.
-- **Selection Criterion**: Automated best-model selection is governed by the **Highest Weighted F1 Score** to reward balanced sensitivity across all congestion tiers.
-
-#### Benchmark Comparison Table
-
-| Rank | Model | Accuracy | Precision | Recall | F1 Score | Status |
-| :---: | :--- | :---: | :---: | :---: | :---: | :--- |
-| 🥇 **1st** | **Random Forest Classifier** | **0.8710** | **0.8701** | **0.8710** | **0.8703** | 🏆 **Production Champion (Selected)** |
-| 🥈 **2nd** | **XGBoost Classifier** | 0.8649 | 0.8634 | 0.8649 | 0.8638 | High-Efficiency Runner-Up |
-| 🥉 **3rd** | **Decision Tree Classifier** | 0.8562 | 0.8548 | 0.8562 | 0.8552 | Interpretable Baseline |
-| **4th** | **Gradient Boosting Classifier** | 0.7731 | 0.7680 | 0.7731 | 0.7685 | Non-Linear Ensemble |
-| **5th** | **Logistic Regression** | 0.5929 | 0.5775 | 0.5929 | 0.5799 | Linear Baseline |
-| **6th** | **AdaBoost Classifier** | 0.5835 | 0.3929 | 0.5835 | 0.4692 | Sequential Adaptive Boosting |
-
-> **Automated Best Model Decision**: **Random Forest Classifier** achieved the highest overall F1 Score (**0.8703**) and Accuracy (**87.10%**), effectively mitigating overfitting and demonstrating superior class separation across high-density rush periods. It was automatically saved as the active production model (`models/congestion_model.pkl`).
-
-- Metrics CSV Export: [`reports/model_comparison.csv`](file:///c:/Users/WaterMelon/OneDrive/Desktop/SpringBoard/Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization/reports/model_comparison.csv)
-- Benchmark Visualization: [`reports/figures/model_comparison.png`](file:///c:/Users/WaterMelon/OneDrive/Desktop/SpringBoard/Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization/reports/figures/model_comparison.png)
-
----
-
-### Target Leakage Prevention Strategy
-
-- **Observation**: `Total_Traffic` is mathematically defined as `Entries + Exits`, and `Congestion_Level` was defined directly from the 33rd and 66th quantiles of `Total_Traffic`.
-- **Leakage Experiment**:
-  - Model A (Clean: Temporal + Station Features): **87.08%** Accuracy.
-  - Model B (Leaked: Temporal + Station + Entries + Exits): **99.15%** Accuracy.
-- **Decision**: In real-world transit operations, future passenger entry/exit numbers are unavailable in advance. Feeding `Total_Traffic`, `Entries`, or `Exits` into the model causes target leakage. Therefore, the production model strictly relies on scheduled temporal and station coordinates (`hour`, `day_of_week`, `is_peak_hour`, `Latitude`, `Longitude`, `Borough`, `Structure`, `Stop Name`).
-
----
-
-### Top Feature Importances (Random Forest)
-
-1. **`hour` (27.99%)**: Captures major peak commuting windows (morning rush 8–9 AM, evening rush 5–7 PM) vs. overnight minimums.
-2. **`Latitude` (18.52%) & `Longitude` (17.04%)**: Spatial positioning distinguishes high-density Manhattan commercial corridors from outer residential terminals.
-3. **`Stop Name` (13.17%)**: Station-specific passenger capacity and major transfer hubs (e.g., Grand Central, Times Square).
-4. **`Structure` (5.24%) & `day_of_week` (4.35%)**: Underground subway hubs vs elevated stations, and weekday vs weekend commuting dynamics.
-
----
-
-### Scheduling Management Module
-
-The **Schedule Management Module** bridges real-time machine learning predictions with automated transit operations by converting predicted congestion tiers (**Low**, **Medium**, **High**) into actionable train headway frequencies, fleet allocation directives, and incident response dispatch modes.
-
-#### 1. Scheduling Module Architecture
-
-```text
-               ┌──────────────────────────────────────┐
-               │  Random Forest Prediction Engine    │
-               │  (Congestion: Low / Medium / High)   │
-               └──────────────────┬───────────────────┘
-                                  │
-                                  ▼
-               ┌──────────────────────────────────────┐
-               │    Schedule Recommendation Engine    │
-               │     (Headway Rules & Fleet Logic)    │
-               └─────────┬──────────────────┬─────────┘
-                         │                  │
-                         ▼                  ▼
-          ┌───────────────────────┐   ┌───────────────────────────┐
-          │  FastAPI Microservice │   │   Streamlit Dashboard     │
-          │  GET /schedule-       │   │   Schedule Optimization   │
-          │  recommendation/{tier}│   │   Center (Gauge, Plotly)  │
-          └───────────────────────┘   └─────────────┬─────────────┘
-                                                    │
-                                                    ▼
-                                      ┌───────────────────────────┐
-                                      │ Incident Response Modes   │
-                                      │ • 🚨 Emergency Surge      │
-                                      │ • ⚠️ Enhanced Monitoring  │
-                                      │ • ✅ Standard Operations  │
-                                      └───────────────────────────┘
-```
-
-#### 2. Master Headway & Dispatch Matrix
-
-| Congestion Tier | Recommended Frequency | Target Trains / Hour | Operational Dispatch Action | Incident Operating Mode |
-| :--- | :--- | :--- | :--- | :--- |
-| **Low** | Every 10 Minutes | **6** trains/hr | Normal schedule sufficient | ✅ **Standard Operations** |
-| **Medium** | Every 5 Minutes | **12** trains/hr | Increase monitoring and maintain schedule | ⚠️ **Enhanced Monitoring Mode** |
-| **High** | Every 2 Minutes | **30** trains/hr | Deploy standby trains and increase frequency | 🚨 **Emergency Scheduling Mode** |
-
-#### 3. API Endpoint Documentation
-
-##### `GET /schedule-recommendation/{congestion_level}`
-Translates congestion level (`Low`, `Medium`, `High` — case-insensitive) into operational headway and fleet throughput.
-
-**Example Request:**
-```bash
-curl -X GET "http://127.0.0.1:8000/schedule-recommendation/High" -H "accept: application/json"
-```
-
-**Example Response (`200 OK`):**
-```json
+Illustrative request
+An earlier API version used a request shaped like this. Check /docs before using it, because the current schema may differ.
 {
-  "congestion_level": "High",
-  "train_frequency": "Every 2 Minutes",
-  "trains_per_hour": 30,
-  "operational_action": "Deploy standby trains and increase frequency"
+  "hour": 8,
+  "day": 15,
+  "month": 9,
+  "year": 2021,
+  "day_of_week": 2,
+  "Latitude": 40.7527,
+  "Longitude": -73.9772,
+  "Borough": "Manhattan",
+  "Structure": "Subway",
+  "Stop Name": "Grand Central - 42 St"
 }
-```
-
-**Example Response for Low (`200 OK`):**
-```json
-{
-  "congestion_level": "Low",
-  "train_frequency": "Every 10 Minutes",
-  "trains_per_hour": 6,
-  "operational_action": "Normal schedule sufficient"
-}
-```
-
-**Error Handling (`404 Not Found` for invalid tier):**
-```json
-{
-  "detail": "Invalid congestion level 'Extreme'. Valid tiers are: ['Low', 'Medium', 'High']"
-}
-```
-
-#### 4. Dashboard Screenshots & Interactive Visualizations
-
-*(Screenshots placeholder for Internship Presentation Report & Demo Slide Deck)*
-
-- **Schedule Optimization Center Overview**: `reports/screenshots/schedule_optimization_center.png` *(Placeholder)*
-- **Fleet Capacity Utilization Gauge**: `reports/screenshots/capacity_utilization_gauge.png` *(Placeholder)*
-- **Incident Response Alert Modes**: `reports/screenshots/incident_scheduling_modes.png` *(Placeholder)*
-
-**Dashboard Capabilities:**
-- **Real-Time KPI Cards**: Current Congestion, Frequency Recommendation, Trains/Hour, and Operational Status.
-- **Plotly Visualizations**:
-  - *Bar Chart*: Congestion Level vs. Trains per Hour.
-  - *Donut Chart*: Train Resource Distribution across tiers.
-  - *Capacity Gauge*: Live fleet utilization load relative to corridor limits.
-- **Commuter Passenger Capacity Calculator**: Dynamic hourly throughput simulation based on train consist length and car capacity.
-- **CSV Dispatch Plan Export**: Instant download of timestamped dispatch schedules for control center logbooks.
-
-### Crowd Monitoring & Geospatial Heatmap Module
-
-The **Crowd Monitoring & Geospatial Heatmap Module** provides comprehensive, real-time spatial intelligence across **360 NYC subway stations**. It links machine learning passenger flow inferences with interactive cartographic visualizations to detect platform overcrowding hotspots and trigger emergency headway dispatch directives.
-
-#### 1. Geospatial Architecture & Data Flow
-
-```text
-┌────────────────────────────────┐       ┌────────────────────────────────┐
-│      MTA Station Database      │       │   Random Forest Model Bundle   │
-│       data/stations.csv        │       │   models/congestion_model.pkl  │
-│  (360 Stations, Lat/Lon, Boro) │       │   (Clean Non-Leaked Pipeline)  │
-└───────────────┬────────────────┘       └───────────────┬────────────────┘
-                │                                        │
-                └───────────────────┬────────────────────┘
-                                    │
-                                    ▼
-                ┌────────────────────────────────────────┐
-                │  Multi-Station Inference Engine        │
-                │  predict_network_congestion()          │
-                │  (Hour / Scenario / Day Simulation)    │
-                └───────────────────┬────────────────────┘
-                                    │
-       ┌────────────────────────────┼────────────────────────────┐
-       ▼                            ▼                            ▼
-┌──────────────┐             ┌──────────────┐             ┌──────────────┐
-│  High: Red   │             │ Medium: Orange│             │  Low: Green  │
-│ 🚨 Surge Svc │             │ ⚠️ Monitor   │             │ ✅ Nominal   │
-└──────┬───────┘             └──────┬───────┘             └──────┬───────┘
-       └────────────────────────────┼────────────────────────────┘
-                                    │
-                                    ▼
-       ┌─────────────────────────────────────────────────────────┐
-       │   Plotly Interactive Mapbox (Carto-Positron / OSM)      │
-       │   • 360 Stations with Hover Popups & Confidence Scores  │
-       │   • Borough, Congestion & Station Search Filters        │
-       │   • Station Detail Panel & 🚨 Dispatch Incident Alert   │
-       │   • Borough Distribution & Donut Share Analytics        │
-       └────────────────────────────┬────────────────────────────┘
-                                    │
-                                    ▼
-       ┌─────────────────────────────────────────────────────────┐
-       │         Incident Center (st.session_state)              │
-       │    Instant Dispatch to Alerts & Schedule Modules        │
-       └─────────────────────────────────────────────────────────┘
-```
-
-#### 2. Color Legend & Station Hover Popups
-
-| Congestion Tier | Marker Color | Hex Code | Dispatch Headway | Alert Directive |
-| :--- | :--- | :--- | :--- | :--- |
-| **High** | 🔴 **Red** | `#EF4444` | Every 2 Minutes (30 trains/hr) | 🚨 Overcrowding Alert: Immediate surge action recommended |
-| **Medium** | 🟠 **Orange** | `#F59E0B` | Every 5 Minutes (12 trains/hr) | ⚠️ Moderate Warning: Monitor platform passenger inflows |
-| **Low** | 🟢 **Green** | `#10B981` | Every 10 Minutes (6 trains/hr) | ✅ Normal Operations: System running smoothly within capacity |
-
-**Interactive Hover Popup & Station Inspector Schema:**
-- **Station Name**: Exact MTA subway stop (e.g. *Grand Central - 42 St*, *Times Sq - 42 St*).
-- **Borough & Structure**: *Manhattan*, *Brooklyn*, *Queens*, *Bronx* & *Subway* / *Elevated*.
-- **Congestion Level**: Color-coded tier (`High`, `Medium`, `Low`).
-- **Confidence Score**: Model prediction certainty percentage (e.g. `98.2%`).
-- **Recommended Action & Headway**: Automated dispatch frequency and trains per hour.
-
-#### 3. Operational Simulation & Multi-Filter Capabilities
-
-- **Operational Commute Scenarios**:
-  - `🌅 Morning Rush (8:00 AM)`: Peak commute load across commercial hubs.
-  - `🌇 Evening Rush (6:00 PM)`: High outbound platform congestion.
-  - `☀️ Midday Transit (1:00 PM)`: Standard inter-peak circulation.
-  - `🌙 Late Night (11:00 PM)`: Low passenger density operations.
-  - `⚙️ Custom Simulation Hour`: Interactive 0–23 slider with dynamic peak detection.
-- **Interactive Multi-Filter System**:
-  - Filter by **Borough** (`All Boroughs`, `Manhattan`, `Brooklyn`, `Queens`, `Bronx`).
-  - Filter by **Congestion Tier** (`All Levels`, `High`, `Medium`, `Low`).
-  - Search / Select specific **Station** for deep-dive inspection.
-- **🚨 Dispatch Incident Alert Action**:
-  - One-click trigger from the Station Inspector logs the event directly into `st.session_state.alert_history`, synchronizing with the **🚨 Alerts & Incident Center** and **🚆 Schedule Management** modules.
-
-#### 4. Geospatial Analytics & Station Watchlist
-
-- **A. Congestion Volume by Borough**: Grouped bar chart comparing congestion intensity across boroughs.
-- **B. Network Congestion Share**: Donut chart displaying the proportional distribution of Low, Medium, and High stations.
-- **C. Critical Overcrowding Watchlist**: Sortable operational table displaying prioritized stations with downloadable CSV export.
-
-#### 5. Dashboard Screenshots Placeholder
-
-*(Screenshots placeholder for Project Report & Demo Presentations)*
-
-- **NYC Subway Geospatial Heatmap**: `reports/screenshots/crowd_monitoring_map.png` *(Placeholder)*
-- **Station Operational Inspector**: `reports/screenshots/station_inspector_panel.png` *(Placeholder)*
-- **Borough Congestion Distribution**: `reports/screenshots/borough_congestion_analytics.png` *(Placeholder)*
-
-### Live Train Tracking & Real-Time Transit Monitoring Module
-
-The **Live Train Tracking & Real-Time Transit Monitoring Module** provides dynamic GPS kinematics, live fleet telemetry, headway adherence analytics, and track route mapping across active NYC subway corridors.
-
-#### 1. Architecture & Real-Time Simulation Pipeline
-
-```text
-┌─────────────────────────────────────────┐       ┌─────────────────────────────────────────┐
-│           MTA Route Geometry            │       │       Crowd & Headway Intelligence      │
-│   (Lines 1, 4, 6, 7, A, E, L, N)        │       │   • predict_network_congestion()        │
-│   Sequenced Stations in data/stations   │       │   • SCHEDULE_RECOMMENDATIONS Matrix     │
-└────────────────────┬────────────────────┘       └────────────────────┬────────────────────┘
-                     │                                                 │
-                     └────────────────────┬────────────────────────────┘
-                                          │
-                                          ▼
-                     ┌─────────────────────────────────────────┐
-                     │       TrainFleetSimulator Engine        │
-                     │          (src/train_tracker.py)         │
-                     │  • Dynamic Speed Kinematics (0-48 mph)  │
-                     │  • Station-to-Station GPS Interpolation │
-                     │  • Status (On Time, Delayed, Arriving)  │
-                     │  • Headway & Delay Time Tracking        │
-                     └────────────────────┬────────────────────┘
-                                          │
-       ┌──────────────────────────────────┴──────────────────────────────────┐
-       ▼                                                                     ▼
-┌─────────────────────────────────────────┐               ┌─────────────────────────────────────────┐
-│     Interactive Live Train Map          │               │      Train Operational Inspector        │
-│ • Real-Time GPS Train Markers           │               │ • Detailed Kinematic Telemetry          │
-│ • Colored MTA Track Trajectories        │               │ • Next Station Platform Crowding        │
-│ • Rich Hover Popups & Speeds            │               │ • Scheduled Headway Directive           │
-│ • Route & Status Filters (1, 4, A, L...)│               │ • 🚨 Dispatch Train Delay Alert Action  │
-└─────────────────────────────────────────┘               └─────────────────────────────────────────┘
-```
-
-#### 2. Fleet Telemetry & Status Specification
-
-| Parameter | Data Type | Description / Operational Range |
-| :--- | :--- | :--- |
-| **`Train ID`** | String | Unique consist identifier (e.g. `TR-101`, `TR-402`, `TR-A03`, `TR-L02`) |
-| **`Route`** | Categorical | Active subway line (`1`, `4`, `6`, `7`, `A`, `E`, `L`, `N`) with official MTA colors |
-| **`Speed (mph)`** | Float | Real-time speed (cruising: 28–45 mph, decelerating: 10–18 mph, dwelling: 0 mph) |
-| **`Status`** | Categorical | `On Time` (🟢), `Delayed` (🔴), `Arriving` (🟠), `Departed` (🔵) |
-| **`Current Station`** | String | Departure station origin for the active leg |
-| **`Next Station`** | String | Upcoming arrival station along the corridor |
-| **`Next Stop Crowding`** | Categorical | Cross-module prediction for the arrival platform (`High`, `Medium`, `Low`) |
-| **`Target Headway`** | String | Scheduled train frequency requirement (`Every 2 Minutes`, `Every 5 Minutes`) |
-
-#### 3. Cross-Module System Integration
-
-1. **🚨 Alert & Incident Center Integration**:
-   - Detects train delay incidents (>3 min variance) or trains approaching critical overcrowding stations.
-   - Dispatchers can click **`🚨 Dispatch Train Incident Alert`** to instantly log the event into `st.session_state.alert_history`.
-2. **🚆 Schedule Management Integration**:
-   - Compares active fleet throughput against the corridor dispatch schedule (`6`, `12`, or `30 trains/hr`).
-   - Flags headway gaps and directs operators to regulate headway frequency.
-3. **🗺️ Crowd Monitoring Module Integration**:
-   - Fuses each train's destination with real-time station congestion inferences from `predict_network_congestion()`.
-
-#### 4. Dashboard Screenshots Placeholder
-
-*(Screenshots placeholder for Project Report & Demo Presentations)*
-
-- **Live Train Tracking Map**: `reports/screenshots/live_train_tracking_map.png` *(Placeholder)*
-- **Train Operational Inspector**: `reports/screenshots/train_operational_inspector.png` *(Placeholder)*
-- **Active Fleet Telemetry Logbook**: `reports/screenshots/fleet_telemetry_table.png` *(Placeholder)*
-
-### Passenger Demand Forecasting Module
-
-The **Passenger Demand Forecasting Module** provides continuous ridership volume predictions (`Total_Traffic`), multi-horizon temporal curves (**Next 1 Hour**, **Next 3 Hours**, **Next 24 Hours**), and derived future congestion level anticipation across NYC subway stations.
-
-#### 1. Architecture & Multi-Horizon Pipeline
-
-```text
-┌─────────────────────────────────────────┐       ┌─────────────────────────────────────────┐
-│     Production Non-Leaked Features      │       │     MTA Station Network Database        │
-│   (Hour, Day, Month, Peak, Lat, Lon)    │       │   (360 Stations in data/stations.csv)   │
-└────────────────────┬────────────────────┘       └────────────────────┬────────────────────┘
-                     │                                                 │
-                     └────────────────────┬────────────────────────────┘
-                                          │
-                                          ▼
-                     ┌─────────────────────────────────────────┐
-                     │      Continuous Regression Engine       │
-                     │       (src/demand_forecasting.py)       │
-                     │   Random Forest Regressor vs XGBoost    │
-                     └────────────────────┬────────────────────┘
-                                          │
-       ┌──────────────────────────────────┴──────────────────────────────────┐
-       ▼                                                                     ▼
-┌─────────────────────────────────────────┐               ┌─────────────────────────────────────────┐
-│        Multi-Horizon Projections        │               │     Quantile Congestion Conversion      │
-│  • Next 1 Hour (Tactical Surge)         │               │  • Low: <= 791 riders/hr (Nominal)      │
-│  • Next 3 Hours (Peak Commute Window)   │               │  • Medium: 791 - 2,382 riders/hr (Warn) │
-│  • Next 24 Hours (Diurnal Daily Cycle)  │               │  • High: > 2,382 riders/hr (Critical)   │
-└────────────────────┬────────────────────┘               └────────────────────┬────────────────────┘
-                     │                                                         │
-                     └────────────────────┬────────────────────────────────────┘
-                                          │
-                                          ▼
-                     ┌─────────────────────────────────────────┐
-                     │     Demand Forecasting Center (UI)      │
-                     │  • Predicted Peak Demand & Network Load │
-                     │  • Diurnal Demand Curves & Parity Plot  │
-                     │  • Borough Comparison & Station Table   │
-                     │  • 🚨 Proactive Anticipatory Alerts     │
-                     └─────────────────────────────────────────┘
-```
-
-#### 2. Regression Benchmark Results
-
-| Model | $R^2$ Score | RMSE | MAE | Status |
-| :--- | :---: | :---: | :---: | :--- |
-| 🥇 **Random Forest Regressor** | **0.8537** | **1,430.38** | **568.67** | 🏆 **Production Champion (Selected)** |
-| 🥈 **XGBoost Regressor** | 0.7770 | 1,765.74 | 978.84 | High-Speed Baseline |
-
-> **Automated Model Selection**: **Random Forest Regressor** demonstrated superior non-linear spatial capture across NYC subway passenger hubs, achieving an $R^2$ of **0.8537** with an MAE of **568.67 riders/hour**. It was automatically serialized to [`models/demand_model.pkl`](file:///c:/Users/WaterMelon/OneDrive/Desktop/SpringBoard/Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization/models/demand_model.pkl).
-
-#### 3. Multi-Horizon Projections & Cross-Module Integration
-
-1. **Multi-Horizon Projections**:
-   - **Next 1 Hour**: Immediate operational readiness for upcoming platform surges.
-   - **Next 3 Hours**: Pre-allocation for rush hour transitions (morning 8–9 AM and evening 5–7 PM peaks).
-   - **Next 24 Hours**: Full diurnal demand profile for transit authority fleet deployment planning.
-2. **🚨 Alert & Incident Center Integration**:
-   - Enables operators to click **`🚨 Dispatch Anticipatory Alert`** directly from the forecast table to warn stations up to 3 hours in advance before platforms experience overcrowding.
-3. **🚆 Schedule Management Integration**:
-   - Automatically translates forecasted peak demand into headway frequency increases (`Every 2 Minutes / 30 trains/hr`).
-4. **Export Artifacts**:
-   - Multi-horizon projections exported to [`reports/forecast_results.csv`](file:///c:/Users/WaterMelon/OneDrive/Desktop/SpringBoard/Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization/reports/forecast_results.csv).
-   - High-resolution evaluation plot exported to [`reports/figures/demand_forecast.png`](file:///c:/Users/WaterMelon/OneDrive/Desktop/SpringBoard/Predictive-Public-Transit-Intelligence-Platform-for-Crowd-Management-and-Schedule-Optimization/reports/figures/demand_forecast.png).
-
----
-
-### Transit Operations Command Center (OCC) UI/UX Redesign
-
-The AI MetroFlow Streamlit interface was redesigned from a generic white application into a high-visibility, mission-critical **Transit Operations Command Center (OCC)** inspired by the MTA Rail Control Center console.
-
-#### 1. Command Center Color System & Palette
-
-| Token | Hex Code | Operational Purpose |
-|---|---|---|
-| **Canvas Background** | `#0B1220` | Deep slate/navy dark room operational console environment |
-| **Secondary Panels** | `#111827` | Glassmorphic containers, telemetry cards, and data surfaces |
-| **Primary Accent** | `#00D4AA` | MTA Tech Teal, live indicators, primary CTA actions |
-| **Information** | `#38BDF8` | Telemetry channels, station GPS coordinates, technical metadata |
-| **Warning** | `#F59E0B` | Moderate congestion warnings, buffer capacity thresholds |
-| **Critical Alert** | `#EF4444` | High overcrowding emergency surge protocols and delay incidents |
-| **Success / Normal** | `#10B981` | Standard operations, on-time fleet status, healthy nodes |
-| **Text Primary** | `#F8FAFC` | High-contrast crisp typography |
-
-#### 2. Module Color Identity System
-
-Each operational module features a unique color identity, visual tag, and glowing status pip:
-
-| Operational Module | Color Identity | Hex Code | Visual Tag |
-|---|---|---|---|
-| **Dashboard Overview** | Cyan | `#06B6D4` | `[OCC-OVERVIEW]` |
-| **Real-Time Prediction Center** | Blue | `#3B82F6` | `[AI-INFERENCE]` |
-| **Crowd Monitoring (Heatmap)** | Orange | `#F97316` | `[GEO-DENSITY]` |
-| **Live Train Tracking** | Green | `#10B981` | `[KINEMATIC-GPS]` |
-| **Alerts & Incident Center** | Red | `#EF4444` | `[INCIDENT-DISPATCH]` |
-| **Schedule Management** | Emerald | `#059669` | `[TIMETABLE-OPT]` |
-| **Demand Forecasting Center** | Purple | `#8B5CF6` | `[DEMAND-PROJECTION]` |
-| **Model Comparison Leaderboard** | Teal | `#00D4AA` | `[BENCHMARK-EVAL]` |
-| **Dataset Analytics & EDA** | Indigo | `#6366F1` | `[DATA-LAKE]` |
-
-#### 3. Core UI Architectural Features
-- **Fixed OCC Master Header**: Sticky command bar with title, platform version (`OCC v2.4`), UTC/EST real-time system clock, and live node status indicator.
-- **Operational Status Ribbon**:
-  - `● SYSTEM: ONLINE (99.98% Uptime)`
-  - `● API GATEWAY: CONNECTED / FASTAPI PORT 8000`
-  - `● MODEL ENGINE: RANDOM FOREST CHAMPION (R²: 0.854)`
-  - `● DEMAND FORECAST: SYNCED (24H HORIZON)`
-- **Glassmorphism KPI Cards**: `backdrop-filter: blur(14px)`, `12px` rounded corners, glowing status pips, and hover elevation transitions.
-- **Darkmatter Cartography**: Subway corridors rendered on Carto-Darkmatter tiles with high-contrast glowing neon routes and real-time kinematic train telemetry.
-
-#### 4. Before vs. After UI Transformation Comparison
-
-![AI MetroFlow Command Center Before vs After](reports/screenshots/command_center_before_after.png)
-
----
-
-### Project Structure
-
-```text
-.streamlit/
-└── config.toml               # Native theme palette configuration (#0B1220, #00D4AA)
-
-data/
-└── stations.csv              # Curated coordinates for 360 NYC subway stations
-
-api/
-└── main.py                   # FastAPI application with /predict, /health, Swagger docs
-
-dashboard/
-└── app.py                    # Transit Operations Command Center interactive interface
-
-src/
-├── data_cleaning.py          # Data ingestion and deduplication
-├── feature_engineering.py    # Temporal and congestion feature extraction
-├── utils.py                  # Data loading, validation, encoding, metrics, plots, persistence
-├── train_model.py            # Training pipeline, leakage experiment, model comparison & export
-├── prediction.py             # Inference engine (single, batch, confidence, recommendations)
-├── train_tracker.py          # Kinematic transit fleet simulator & GPS route interpolation
-└── demand_forecasting.py     # Regression forecasting pipeline & multi-horizon projections
-
-models/
-├── congestion_model.pkl      # Production classification model bundle (Random Forest)
-├── demand_model.pkl          # Production continuous demand regressor bundle
-└── model.pkl                 # Compatibility alias
-
-reports/
-├── model_comparison.csv      # Benchmarking evaluation matrix for all 6 classifiers
-├── forecast_results.csv      # Multi-horizon passenger demand projections (1h, 3h, 24h)
-├── figures/
-│   ├── confusion_matrix.png      # Confusion matrix heatmap for classification
-│   ├── feature_importance.png    # Feature importance horizontal bar chart
-│   ├── model_comparison.png      # Classifier benchmarking bar chart
-│   └── demand_forecast.png       # Regression parity, diurnal demand curve, borough comparison
-└── screenshots/
-    ├── command_center_before_after.png  # High-resolution Before/After comparison graphic
-    ├── crowd_monitoring_map.png         # NYC subway geospatial density map
-    └── live_train_tracking_map.png      # Real-time train movement and speed distribution
-
-notebooks/
-├── 01_EDA.ipynb              # Exploratory data analysis
-└── 02_Model_Training.ipynb   # Model training, comparison, leakage analysis, and evaluation
-```
-
----
-
-### How to Run
-
-1. **Train and compare models**:
-   ```bash
-   python src/train_model.py
-   ```
-
-2. **Run real-time prediction CLI**:
-   ```bash
-   python src/prediction.py
-   ```
-
-3. **Launch FastAPI Backend Server**:
-   ```bash
-   uvicorn api.main:app --reload --port 8000
-   ```
-   - Interactive Swagger API Documentation: `http://127.0.0.1:8000/docs`
-   - ReDoc Documentation: `http://127.0.0.1:8000/redoc`
-   - Health Check: `http://127.0.0.1:8000/health`
-
-4. **Launch Modern React Operations Command Center (New)**:
-   ```bash
-   cd frontend
-   npm run dev
-   ```
-   - Operations Command Center UI: `http://localhost:5173`
-   - Dark theme command center with 9 modules: Live train tracking, interactive geospatial crowd heatmaps, dynamic headway schedule regulation, multi-horizon demand forecasting, and real-time model inference.
-
-5. **Legacy Streamlit Dashboard (Deprecated/Archived)**:
-   ```bash
-   streamlit run dashboard/app.py
-   ```
-   - Dashboard UI: `http://localhost:8501` (Plotly colorscale fixed)
-
----
-
-### Production Deployment & Demo Status
-- **Backend API**: Running on `http://127.0.0.1:8000` (`/docs` available)
-- **Frontend Command Center**: Running on `http://localhost:5173`
-- **Trained Champion**: Random Forest Classifier (87.1% accuracy, 0.8703 weighted F1)
+Response fields may include a congestion label, probabilities/confidence, and a recommendation. Verify exact response keys and values in the current endpoint implementation.
+Screenshots
+Put screenshots of the actual current application in docs/images/, then uncomment/update paths below.
+Suggested images:
+- docs/images/dashboard-overview.png
+- docs/images/crowd-monitoring.png
+- docs/images/congestion-model-evaluation.png
+- docs/images/demand-forecasting.png
+- docs/images/schedule-management.png
+- docs/images/api-swagger.png
+Example:
+![Dashboard overview](docs/images/dashboard-overview.png)
+![Congestion model evaluation](docs/images/congestion-model-evaluation.png)
+![Demand forecasting](docs/images/demand-forecasting.png)
+Use real screenshots, not mockups represented as live results. Remove personal information, credentials, tokens, and sensitive local paths before committing.
+Limitations
+- No verified live MTA API or passenger-sensor integration is currently confirmed.
+- Train positions and statuses in the tracking view are simulated.
+- On-demand prediction is not continuous live monitoring.
+- Turnstile counts do not directly measure current station occupancy.
+- Scheduling outputs are prototype suggestions; the application does not control actual trains.
+- Metrics should be backed by reproducible evaluation and a clearly documented train/test or time-based split.
+- If model files are too large or excluded from Git, document how to obtain or regenerate them.
+Future Work
+- Integrate an approved live transit feed and passenger-count data where available.
+- Validate forecasts using time-ordered holdout data and compare with simple baselines.
+- Add model monitoring, drift checks, and uncertainty reporting.
+- Document alert creation and ID-generation logic.
+- Evaluate scheduling suggestions against verified operating constraints.
+- Add automated tests, continuous integration, and reproducible model training.
+- Deploy only after security, reliability, and operational testing.
+Push to GitHub
+The internship workflow previously used the branch vijaya-sree-nethagani. Check your current repository state and remote before pushing. Do not push directly to main if your team requires the internship branch.
+git status
+git branch
+git remote -v
+After confirming the branch and remote:
+git switch vijaya-sree-nethagani
+git status
+git add README.md
+git add api frontend src reports requirements.txt .gitignore
+git status
+git diff --cached
+git commit -m "Update AI MetroFlow project and documentation"
+git push -u origin vijaya-sree-nethagani
+Only stage paths that actually exist. If Git reports that a path does not exist, remove it from the command and stage the real folders/files. If the branch is not available locally, inspect git branch -a and coordinate with the repository owner before creating or switching branches. If origin is missing, add the correct repository URL with git remote add origin <repository-url>; do not add it again if it already exists.
+Checklist before pushing
+- Exclude .venv/, venv/, node_modules/, caches, .env files, credentials, and private data in .gitignore.
+- Never commit API keys, passwords, or access tokens.
+- Check .pkl models and generated datasets for size. GitHub blocks individual files larger than 100 MB; consider Git LFS or documented model regeneration/download steps for large artifacts.
+- Review git status and git diff --cached before committing.
+- Do not delete shared branches or force-push without permission.
+Acknowledgement
+AI MetroFlow is an AI-powered public-transit analytics prototype developed for learning and demonstration. Keep this README synchronized with the actual code, model metrics, API schema, and implemented capabilities.
