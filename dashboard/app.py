@@ -1543,7 +1543,7 @@ elif "Model Comparison" in page or "Leaderboard" in page:
             orientation="h",
             text=df_f1_sorted["F1 Score"].apply(lambda x: f"{x:.4f}"),
             color="F1 Score",
-            color_continuous_scale="Emerald",
+            color_continuous_scale="emrld",
             title="Weighted F1 Score Across Evaluated Models",
         )
         apply_occ_chart_style(fig_f1, height=380)

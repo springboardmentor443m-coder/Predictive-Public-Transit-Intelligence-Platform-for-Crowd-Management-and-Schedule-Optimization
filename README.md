@@ -561,13 +561,23 @@ notebooks/
    - ReDoc Documentation: `http://127.0.0.1:8000/redoc`
    - Health Check: `http://127.0.0.1:8000/health`
 
-4. **Launch Interactive Streamlit Dashboard**:
+4. **Launch Modern React Operations Command Center (New)**:
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+   - Operations Command Center UI: `http://localhost:5173`
+   - Dark theme command center with 9 modules: Live train tracking, interactive geospatial crowd heatmaps, dynamic headway schedule regulation, multi-horizon demand forecasting, and real-time model inference.
+
+5. **Legacy Streamlit Dashboard (Deprecated/Archived)**:
    ```bash
    streamlit run dashboard/app.py
    ```
-   - Dashboard UI: `http://localhost:8501`
+   - Dashboard UI: `http://localhost:8501` (Plotly colorscale fixed)
 
 ---
 
-### Upcoming
-- Traffic Forecasting (Time-Series / Demand Estimation)
+### Production Deployment & Demo Status
+- **Backend API**: Running on `http://127.0.0.1:8000` (`/docs` available)
+- **Frontend Command Center**: Running on `http://localhost:5173`
+- **Trained Champion**: Random Forest Classifier (87.1% accuracy, 0.8703 weighted F1)

@@ -6,3 +6,6 @@ data/features.csv
 data/cleaned_data.csv
 
 models/*.pkl
+node_modules/
+frontend/node_modules/
+frontend/dist/
