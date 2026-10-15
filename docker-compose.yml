@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # 1. MongoDB Service for Live Telemetry
+  mongodb:
+    image: mongo:7.0
+    container_name: metroflow_mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - metroflow_net
+
+  # 2. FastAPI Backend & ML Regressor Engine
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: metroflow_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URL=mongodb://mongodb:27017
+      - DB_NAME=metroflow_db
+    depends_on:
+      - mongodb
+    networks:
+      - metroflow_net
+
+  # 3. React Frontend Operations Control Room
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: metroflow_frontend
+    restart: always
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - metroflow_net
+
+volumes:
+  mongo_data:
+
+networks:
+  metroflow_net:
+    driver: bridge

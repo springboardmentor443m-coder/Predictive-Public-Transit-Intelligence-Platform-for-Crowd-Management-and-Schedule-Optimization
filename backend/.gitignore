@@ -1,0 +1,25 @@
+﻿# Python Virtual Environments
+.venv/
+venv/
+backend/.venv/
+backend/venv/
+
+# Python compiled cache
+__pycache__/
+*.py[cod]
+*.class
+*.so
+
+# Node & Frontend Build
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Editor Settings
+.vscode/
+.idea/
+*.swp
+
+# Environment local secrets
+.env
+*.local
