@@ -73,6 +73,32 @@ CONCISE_RECOMMENDATIONS = {
     "Low": "Standard or reduced frequency is sufficient.",
 }
 
+# Congestion-based operational alert notifications
+ALERT_MESSAGES = {
+    "High": "Overcrowding Alert: Immediate action recommended.",
+    "Medium": "Moderate Congestion Warning: Monitor platform passenger inflows.",
+    "Low": "Normal Operations: System running smoothly within capacity.",
+}
+
+# Operational train scheduling recommendations engine mapping
+SCHEDULE_RECOMMENDATIONS = {
+    "Low": {
+        "train_frequency": "Every 10 Minutes",
+        "trains_per_hour": 6,
+        "operational_action": "Normal schedule sufficient",
+    },
+    "Medium": {
+        "train_frequency": "Every 5 Minutes",
+        "trains_per_hour": 12,
+        "operational_action": "Increase monitoring and maintain schedule",
+    },
+    "High": {
+        "train_frequency": "Every 2 Minutes",
+        "trains_per_hour": 30,
+        "operational_action": "Deploy standby trains and increase frequency",
+    },
+}
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -166,7 +192,27 @@ class PredictionResponse(BaseModel):
     congestion_level: str = Field(..., description="Predicted congestion level ('Low', 'Medium', 'High')", example="High")
     confidence: float = Field(..., description="Confidence probability score for predicted class", example=0.98)
     recommendation: str = Field(..., description="Actionable transit dispatch recommendation", example="Increase train frequency.")
+    alert_message: str = Field(..., description="Operational alert notification message", example="Overcrowding Alert: Immediate action recommended.")
     probabilities: Optional[Dict[str, float]] = Field(None, description="Probability distribution across all tiers")
+
+
+class ScheduleRecommendation(BaseModel):
+    """Pydantic schema for operational train scheduling recommendation."""
+    congestion_level: str = Field(..., description="Congestion level tier ('Low', 'Medium', 'High')", example="High")
+    train_frequency: str = Field(..., description="Recommended train dispatch frequency", example="Every 2 Minutes")
+    trains_per_hour: int = Field(..., description="Target scheduled trains per hour", example=30)
+    operational_action: str = Field(..., description="Dispatch and operational action", example="Deploy standby trains and increase frequency")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "congestion_level": "High",
+                "train_frequency": "Every 2 Minutes",
+                "trains_per_hour": 30,
+                "operational_action": "Deploy standby trains and increase frequency"
+            }
+        }
+    )
 
 
 class HealthResponse(BaseModel):
@@ -193,7 +239,8 @@ def read_root():
         "endpoints": {
             "health": "/health",
             "predict": "/predict (POST)",
-            "batch_predict": "/predict/batch (POST)"
+            "batch_predict": "/predict/batch (POST)",
+            "schedule_recommendation": "/schedule-recommendation/{congestion_level} (GET)"
         },
         "model_loaded": predictor is not None,
     }
@@ -246,17 +293,22 @@ def predict_congestion(payload: PredictionRequest):
         # Run inference using CongestionPredictor
         result = predictor.predict(data)
 
-        # Get concise recommendation matching project spec
+        # Get concise recommendation and alert message matching project spec
         pred_level = result["congestion_level"]
         concise_rec = CONCISE_RECOMMENDATIONS.get(
             pred_level,
             result.get("recommendation", "Monitor station real-time telemetry.")
+        )
+        alert_msg = ALERT_MESSAGES.get(
+            pred_level,
+            f"Transit Notice: {pred_level} congestion."
         )
 
         return PredictionResponse(
             congestion_level=pred_level,
             confidence=round(result["confidence"], 2),
             recommendation=concise_rec,
+            alert_message=alert_msg,
             probabilities=result.get("probabilities"),
         )
     except Exception as e:
@@ -297,10 +349,52 @@ def predict_batch(payload: List[PredictionRequest]):
                 congestion_level=pred_level,
                 confidence=round(res["confidence"], 2),
                 recommendation=CONCISE_RECOMMENDATIONS.get(pred_level, res.get("recommendation")),
+                alert_message=ALERT_MESSAGES.get(pred_level, f"Transit Notice: {pred_level} congestion."),
                 probabilities=res.get("probabilities"),
             )
         )
     return results
+
+
+@app.get(
+    "/schedule-recommendation/{congestion_level}",
+    response_model=ScheduleRecommendation,
+    status_code=status.HTTP_200_OK,
+    tags=["Scheduling"],
+    summary="Get Train Schedule Recommendation",
+    description=(
+        "Translates predicted or observed subway congestion tier (Low, Medium, High) into actionable "
+        "train scheduling frequency, hourly train throughput, and operational dispatch instructions."
+    ),
+)
+def get_schedule_recommendation(congestion_level: str):
+    """
+    Translates congestion levels into operational train scheduling recommendations.
+    
+    Valid levels: Low, Medium, High (case-insensitive)
+    """
+    clean_level = congestion_level.strip().capitalize()
+    if clean_level not in SCHEDULE_RECOMMENDATIONS:
+        valid_tiers = list(SCHEDULE_RECOMMENDATIONS.keys())
+        logger.warning("Invalid congestion level requested: '%s'", congestion_level)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Invalid congestion level '{congestion_level}'. Valid tiers are: {valid_tiers}",
+        )
+
+    sched = SCHEDULE_RECOMMENDATIONS[clean_level]
+    logger.info(
+        "Schedule recommendation retrieved for tier '%s': %s (%d trains/hr)",
+        clean_level,
+        sched["train_frequency"],
+        sched["trains_per_hour"],
+    )
+    return ScheduleRecommendation(
+        congestion_level=clean_level,
+        train_frequency=sched["train_frequency"],
+        trains_per_hour=sched["trains_per_hour"],
+        operational_action=sched["operational_action"],
+    )
 
 
 if __name__ == "__main__":

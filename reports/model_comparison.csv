@@ -1,0 +1,7 @@
+Model,Accuracy,Precision,Recall,F1 Score
+Random Forest Classifier,0.871,0.8701,0.871,0.8703
+XGBoost Classifier,0.8649,0.8634,0.8649,0.8638
+Decision Tree Classifier,0.8562,0.8548,0.8562,0.8552
+Gradient Boosting Classifier,0.7731,0.768,0.7731,0.7685
+Logistic Regression,0.5929,0.5775,0.5929,0.5799
+AdaBoost Classifier,0.5835,0.3929,0.5835,0.4692
