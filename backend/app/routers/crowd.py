@@ -8,7 +8,9 @@ from app.services.crowd_service import (
     get_peak_period_ridership,
     get_station_hour_hotspots,
     get_station_crowd_status,
-    get_station_flow
+    get_station_flow,
+    get_station_crowd_heatmap,
+    get_station_demand_pressure
 )
 
 router = APIRouter(
@@ -76,4 +78,25 @@ def station_flow(
 ):
     return {
         "station_flow": get_station_flow()
+    }
+
+
+
+
+@router.get("/heatmap")
+def station_crowd_heatmap(
+    current_user=Depends(get_current_user)
+):
+    return {
+        "heatmap": get_station_crowd_heatmap()
+    }
+
+
+
+@router.get("/demand-pressure")
+def station_demand_pressure(
+    current_user=Depends(get_current_user)
+):
+    return {
+        "demand_pressure": get_station_demand_pressure()
     }

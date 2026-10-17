@@ -1,0 +1,7 @@
+{
+  "dataset_type": "SIMULATED DEMONSTRATION DATA",
+  "simulation_method": "Dates shifted to 2026; passenger counts remain historical and are not actual 2026 observations.",
+  "is_live_data": false,
+  "is_observed_2026_data": false,
+  "original_files_preserved": true
+}

@@ -35,11 +35,16 @@ def get_current_user(
                 detail="Invalid authentication token"
             )
 
-    except Exception:
+    
+    except HTTPException:
+        raise
+    except Exception as exc:
+        print(f"JWT validation failed: {type(exc).__name__}: {exc}")
         raise HTTPException(
             status_code=401,
             detail="Invalid authentication token"
         )
+
 
     user = db.query(User).filter(
         User.username == username
