@@ -1,0 +1,7 @@
+[
+  "predicted_next_hour",
+  "station_degree",
+  "is_transfer_hub",
+  "neighbor_predicted_demand",
+  "network_pressure_ratio"
+]

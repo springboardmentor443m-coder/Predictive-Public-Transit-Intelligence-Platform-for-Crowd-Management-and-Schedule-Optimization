@@ -1,0 +1,10 @@
+[
+  "hour",
+  "day_of_week",
+  "month",
+  "is_weekend",
+  "is_peak_hour",
+  "station_count",
+  "avg_transfers",
+  "historical_incidents"
+]

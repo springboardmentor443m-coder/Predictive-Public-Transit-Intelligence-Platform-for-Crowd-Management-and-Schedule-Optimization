@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: metroflow-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-metroflow_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-metroflow_password}
+      POSTGRES_DB: ${POSTGRES_DB:-metroflow_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-metroflow_user} -d ${POSTGRES_DB:-metroflow_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: metroflow-backend
+    environment:
+      - POSTGRES_SERVER=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-metroflow_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-metroflow_password}
+      - POSTGRES_DB=${POSTGRES_DB:-metroflow_db}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-metroflow_user}:${POSTGRES_PASSWORD:-metroflow_password}@db:5432/${POSTGRES_DB:-metroflow_db}
+      - SECRET_KEY=${SECRET_KEY:-super-secret-key-change-in-prod}
+      - INITIAL_ADMIN_EMAIL=${INITIAL_ADMIN_EMAIL:-admin@metroflow.io}
+      - INITIAL_ADMIN_PASSWORD=${INITIAL_ADMIN_PASSWORD:-AdminPassword123!}
+      - BACKEND_CORS_ORIGINS=http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: metroflow-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

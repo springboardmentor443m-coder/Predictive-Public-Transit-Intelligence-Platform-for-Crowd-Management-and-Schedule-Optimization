@@ -1,0 +1,160 @@
+/* Leaflet map CSS */
+@import 'leaflet/dist/leaflet.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
+  body {
+    background-color: #F7F5EF;
+    color: #29322F;
+    overflow-x: hidden;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #E8E4D8;
+}
+::-webkit-scrollbar-thumb {
+  background: #DDD9CF;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #6F8F87;
+}
+
+/* Metro control room background grid */
+.bg-grid-pattern {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(41, 50, 47, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(41, 50, 47, 0.03) 1px, transparent 1px);
+}
+
+.glass-panel {
+  background: #FFFFFF;
+  border: 1px solid #DDD9CF;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+.glass-panel-hover {
+  transition: all 0.25s ease-in-out;
+}
+.glass-panel-hover:hover {
+  border-color: #2F6F68;
+  box-shadow: 0 4px 12px -2px rgba(47, 111, 104, 0.15);
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s infinite ease-in-out;
+}
+
+/* ═════════════════════════════════════════════════════════════════════
+   METROFLOW HIGH-PRECISION DARK MODE COMMAND PALETTE
+   ═════════════════════════════════════════════════════════════════════ */
+
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #0E1412 !important;
+  color: #ECF2EE !important;
+}
+
+/* Background grid in dark mode */
+html.dark .bg-grid-pattern {
+  background-image: 
+    linear-gradient(to right, rgba(236, 242, 238, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(236, 242, 238, 0.035) 1px, transparent 1px);
+}
+
+/* Structural Backgrounds */
+html.dark .bg-\[\#F7F5EF\] { background-color: #0E1412 !important; }
+html.dark .bg-\[\#F7F5EF\]\/90 { background-color: rgba(14, 20, 18, 0.92) !important; }
+html.dark .bg-\[\#F7F5EF\]\/50 { background-color: rgba(22, 31, 28, 0.6) !important; }
+html.dark .bg-\[\#E8E4D8\] { background-color: #141D19 !important; }
+html.dark .bg-\[\#DDD9CF\] { background-color: #24332D !important; }
+html.dark .bg-white { background-color: #18231F !important; }
+html.dark .glass-panel { background-color: #18231F !important; border-color: #273932 !important; }
+
+/* Structural Borders & Dividers */
+html.dark .border-\[\#DDD9CF\] { border-color: #273932 !important; }
+html.dark .border-\[\#DDD9CF\]\/50 { border-color: rgba(39, 57, 50, 0.5) !important; }
+html.dark .border-\[\#DDD9CF\]\/30 { border-color: rgba(39, 57, 50, 0.3) !important; }
+html.dark .divide-\[\#DDD9CF\] > :not([hidden]) ~ :not([hidden]) { border-color: #273932 !important; }
+html.dark .divide-\[\#DDD9CF\]\/50 > :not([hidden]) ~ :not([hidden]) { border-color: rgba(39, 57, 50, 0.5) !important; }
+
+/* Text Palette */
+html.dark .text-\[\#29322F\] { color: #ECF2EE !important; }
+html.dark .text-\[\#6F8F87\] { color: #8FA79F !important; }
+
+/* Interactive Hovers */
+html.dark .hover\:bg-\[\#E8E4D8\]:hover { background-color: #23332D !important; }
+html.dark .hover\:bg-\[\#DDD9CF\]:hover { background-color: #23332D !important; }
+html.dark .hover\:bg-\[\#F7F5EF\]\/50:hover { background-color: rgba(35, 51, 45, 0.6) !important; }
+html.dark .hover\:text-\[\#29322F\]:hover { color: #ECF2EE !important; }
+
+/* Forms, Inputs, Selects */
+html.dark select, 
+html.dark input {
+  background-color: #141D19 !important;
+  color: #ECF2EE !important;
+  border-color: #273932 !important;
+}
+
+html.dark input::placeholder {
+  color: #6D847D !important;
+}
+
+/* Scrollbars in dark */
+html.dark ::-webkit-scrollbar-track { background: #111815; }
+html.dark ::-webkit-scrollbar-thumb { background: #273932; border-radius: 4px; }
+html.dark ::-webkit-scrollbar-thumb:hover { background: #3B544B; }
+
+/* Leaflet Night Operations Map */
+html.dark .leaflet-tile-pane {
+  filter: brightness(0.62) invert(1) contrast(2.8) hue-rotate(200deg) saturate(0.35) brightness(0.72);
+}
+
+html.dark .leaflet-popup-content-wrapper,
+html.dark .leaflet-popup-tip {
+  background-color: #18231F !important;
+  color: #ECF2EE !important;
+  border: 1px solid #273932 !important;
+}
+
+html.dark .leaflet-container {
+  background: #0E1412 !important;
+}
+
+/* Recharts Tooltips in Dark Mode */
+html.dark .recharts-default-tooltip {
+  background-color: #18231F !important;
+  border-color: #273932 !important;
+  color: #ECF2EE !important;
+}
+
+html.dark .recharts-tooltip-label {
+  color: #ECF2EE !important;
+}
+
+html.dark .recharts-cartesian-grid line {
+  stroke: #22302A !important;
+}

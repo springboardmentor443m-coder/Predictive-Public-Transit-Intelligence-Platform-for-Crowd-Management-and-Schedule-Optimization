@@ -1,3 +1,51 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
 .venv/
+backend/venv/
+backend/.venv/
+
+# Testing / caches
+.pytest_cache/
+.coverage
+.mypy_cache/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Node
+node_modules/
+frontend/node_modules/
+
+# Frontend build/cache
+dist/
+frontend/dist/
+.vite/
+frontend/.vite/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Oversized datasets & generated matrices (>100MB GitHub limit)
+data/raw/raw_ridership_top12.csv
+data/processed/network_congestion_predictions.csv
+data/processed/network_features.csv

@@ -1,0 +1,27 @@
+{
+  "model_type": "RandomForestClassifier",
+  "task": "Delay Impact Severity Classification (Audited)",
+  "target_leakage_status": "CLEAN_AUDITED (Direct delay baseline removed)",
+  "accuracy": 0.8945446245149509,
+  "precision": 0.9051768870349294,
+  "recall": 0.8945446245149509,
+  "f1_score": 0.8867493770977535,
+  "confusion_matrix": [
+    [
+      12517,
+      57
+    ],
+    [
+      1791,
+      3159
+    ]
+  ],
+  "classes": [
+    "LOW_DELAY (<3m)",
+    "MODERATE_DELAY (3-7.5m)",
+    "HIGH_DELAY (7.5-15m)",
+    "SEVERE_DELAY (>15m)"
+  ],
+  "train_samples": 70096,
+  "test_samples": 17524
+}

@@ -1,0 +1,13 @@
+station_complex_id,station_complex,p50_low_threshold,p80_moderate_threshold,p95_high_threshold
+164,"34 St-Penn Station (A,C,E)",1903.0,3038.600000000002,5148.0
+318,"34 St-Penn Station (1,2,3)",1665.0,2620.0,4948.0999999999985
+447,Flushing-Main St (7),1535.0,2468.0,4406.399999999998
+601,"14 St (F,M,1,2,3)/6 Av (L)",1101.0,2025.0,3215.5
+602,"14 St-Union Sq (L,N,Q,R,W,4,5,6)",2063.0,4091.0,6965.899999999998
+607,"34 St-Herald Sq (B,D,F,M,N,Q,R,W)",2527.0,4224.0,7549.0
+610,"Grand Central-42 St (S,4,5,6,7)",2706.0,5377.0,10862.999999999996
+611,"Times Sq-42 St (N,Q,R,W,S,1,2,3,7)/42 St (A,C,E)",4807.0,7491.600000000002,11673.0
+614,"59 St-Columbus Circle (A,B,C,D,1)",1578.0,2902.0,5330.0
+616,"74-Broadway (7)/Jackson Hts-Roosevelt Av (E,F,M,R)",1529.0,2503.0,4184.0
+624,"Chambers St (A,C)/WTC (E)/Park Pl (2,3)/Cortlandt (R,W)",972.0,2142.0,5159.0
+628,"Fulton St (A,C,J,Z,2,3,4,5)",1638.0,3064.600000000002,6775.799999999996

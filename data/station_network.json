@@ -1,0 +1,138 @@
+{
+  "network_name": "NYC MTA Subway Top 12 Hub Network",
+  "total_nodes": 12,
+  "nodes": [
+    {
+      "complex_id": "164",
+      "name": "34 St-Penn Station (A,C,E)",
+      "borough": "Manhattan",
+      "routes": ["A", "C", "E"],
+      "latitude": 40.752287,
+      "longitude": -73.993391,
+      "line": "8th Av - Fulton St",
+      "transfer_hub": true,
+      "neighbors": ["611", "624"]
+    },
+    {
+      "complex_id": "318",
+      "name": "34 St-Penn Station (1,2,3)",
+      "borough": "Manhattan",
+      "routes": ["1", "2", "3"],
+      "latitude": 40.750373,
+      "longitude": -73.991057,
+      "line": "Broadway - 7Av",
+      "transfer_hub": true,
+      "neighbors": ["611", "601"]
+    },
+    {
+      "complex_id": "447",
+      "name": "Flushing-Main St (7)",
+      "borough": "Queens",
+      "routes": ["7"],
+      "latitude": 40.759600,
+      "longitude": -73.830030,
+      "line": "Flushing",
+      "transfer_hub": false,
+      "neighbors": ["616", "610"]
+    },
+    {
+      "complex_id": "601",
+      "name": "14 St (F,M,1,2,3)/6 Av (L)",
+      "borough": "Manhattan",
+      "routes": ["1", "2", "3", "F", "L", "M"],
+      "latitude": 40.737404,
+      "longitude": -73.996808,
+      "line": "6th Av - Culver / Broadway - 7Av / Canarsie",
+      "transfer_hub": true,
+      "neighbors": ["318", "607", "602"]
+    },
+    {
+      "complex_id": "602",
+      "name": "14 St-Union Sq (L,N,Q,R,W,4,5,6)",
+      "borough": "Manhattan",
+      "routes": ["4", "5", "6", "L", "N", "Q", "R", "W"],
+      "latitude": 40.735736,
+      "longitude": -73.990568,
+      "line": "Broadway - Brighton / Canarsie / Lexington Av",
+      "transfer_hub": true,
+      "neighbors": ["607", "610", "628", "601"]
+    },
+    {
+      "complex_id": "607",
+      "name": "34 St-Herald Sq (B,D,F,M,N,Q,R,W)",
+      "borough": "Manhattan",
+      "routes": ["B", "D", "F", "M", "N", "Q", "R", "W"],
+      "latitude": 40.749719,
+      "longitude": -73.987823,
+      "line": "6th Av - Culver / Broadway - Brighton",
+      "transfer_hub": true,
+      "neighbors": ["611", "602", "601"]
+    },
+    {
+      "complex_id": "610",
+      "name": "Grand Central-42 St (S,4,5,6,7)",
+      "borough": "Manhattan",
+      "routes": ["4", "5", "6", "7", "S"],
+      "latitude": 40.751776,
+      "longitude": -73.976848,
+      "line": "Flushing / Lexington - Shuttle / Lexington Av",
+      "transfer_hub": true,
+      "neighbors": ["611", "602", "447", "616"]
+    },
+    {
+      "complex_id": "611",
+      "name": "Times Sq-42 St (N,Q,R,W,S,1,2,3,7)/42 St (A,C,E)",
+      "borough": "Manhattan",
+      "routes": ["1", "2", "3", "7", "A", "C", "E", "N", "Q", "R", "S", "W"],
+      "latitude": 40.755290,
+      "longitude": -73.987495,
+      "line": "8th Av - Fulton St / Broadway - 7Av / Broadway - Brighton / Flushing / Lexington - Shuttle",
+      "transfer_hub": true,
+      "neighbors": ["164", "318", "614", "610", "607"]
+    },
+    {
+      "complex_id": "614",
+      "name": "59 St-Columbus Circle (A,B,C,D,1)",
+      "borough": "Manhattan",
+      "routes": ["1", "A", "B", "C", "D"],
+      "latitude": 40.768296,
+      "longitude": -73.981884,
+      "line": "8th Av - Fulton St / Broadway - 7Av",
+      "transfer_hub": true,
+      "neighbors": ["611"]
+    },
+    {
+      "complex_id": "616",
+      "name": "74-Broadway (7)/Jackson Hts-Roosevelt Av (E,F,M,R)",
+      "borough": "Queens",
+      "routes": ["7", "E", "F", "M", "R"],
+      "latitude": 40.746644,
+      "longitude": -73.891338,
+      "line": "Flushing / Queens Blvd",
+      "transfer_hub": true,
+      "neighbors": ["447", "610"]
+    },
+    {
+      "complex_id": "624",
+      "name": "Chambers St (A,C)/WTC (E)/Park Pl (2,3)/Cortlandt (R,W)",
+      "borough": "Manhattan",
+      "routes": ["2", "3", "A", "C", "E", "R", "W"],
+      "latitude": 40.713243,
+      "longitude": -74.009301,
+      "line": "8th Av - Fulton St / Broadway / Clark St",
+      "transfer_hub": true,
+      "neighbors": ["164", "628"]
+    },
+    {
+      "complex_id": "628",
+      "name": "Fulton St (A,C,J,Z,2,3,4,5)",
+      "borough": "Manhattan",
+      "routes": ["2", "3", "4", "5", "A", "C", "J", "Z"],
+      "latitude": 40.710368,
+      "longitude": -74.007582,
+      "line": "8th Av - Fulton St / Clark St / Jamaica / Lexington Av",
+      "transfer_hub": true,
+      "neighbors": ["602", "624"]
+    }
+  ]
+}
