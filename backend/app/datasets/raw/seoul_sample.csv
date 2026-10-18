@@ -1,0 +1,11 @@
+Date,Line_Name,Station_Name,Hour,Boarding_Count,Alighting_Count
+2026-08-25,Line 1,Seoul Station,07,1850,920
+2026-08-25,Line 1,Seoul Station,08,4120,2890
+2026-08-25,Line 1,Seoul Station,09,3250,3410
+2026-08-25,Line 1,Seoul Station,18,3980,4250
+2026-08-25,Line 1,Seoul Station,19,2850,3100
+2026-08-25,Line 2,Gangnam,07,1250,2100
+2026-08-25,Line 2,Gangnam,08,3100,6850
+2026-08-25,Line 2,Gangnam,09,2450,5920
+2026-08-25,Line 2,Gangnam,18,6420,3100
+2026-08-25,Line 2,Gangnam,19,4890,2150

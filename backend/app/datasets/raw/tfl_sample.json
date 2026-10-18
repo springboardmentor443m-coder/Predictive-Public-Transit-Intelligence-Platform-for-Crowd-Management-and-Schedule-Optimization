@@ -1,0 +1,30 @@
+[
+  {
+    "timestamp": "2026-08-25T08:15:00Z",
+    "station": "Waterloo",
+    "line": "Jubilee Line",
+    "taps_in": 342,
+    "taps_out": 210
+  },
+  {
+    "timestamp": "2026-08-25T08:30:00Z",
+    "station": "Waterloo",
+    "line": "Jubilee Line",
+    "taps_in": 415,
+    "taps_out": 290
+  },
+  {
+    "timestamp": "2026-08-25T08:15:00Z",
+    "station": "King's Cross St. Pancras",
+    "line": "Victoria Line",
+    "taps_in": 510,
+    "taps_out": 480
+  },
+  {
+    "timestamp": "2026-08-25T18:15:00Z",
+    "station": "Oxford Circus",
+    "line": "Central Line",
+    "taps_in": 620,
+    "taps_out": 310
+  }
+]
