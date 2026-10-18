@@ -1,0 +1,20 @@
+services:
+  metroflow:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      METROFLOW_DB_PATH: /data/metroflow_ops.db
+      # Set METROFLOW_SECRET_KEY in your shell or deployment environment before public use.
+      METROFLOW_ALLOWED_ORIGINS: ${METROFLOW_ALLOWED_ORIGINS:-http://127.0.0.1:8000,http://localhost:8000}
+      METROFLOW_SECRET_KEY: ${METROFLOW_SECRET_KEY:-metroflow-dev-secret-change-in-production}
+    volumes:
+      - metroflow_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+volumes:
+  metroflow_data:

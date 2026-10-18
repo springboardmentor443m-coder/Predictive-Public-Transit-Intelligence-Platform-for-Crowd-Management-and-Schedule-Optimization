@@ -1,17 +1,18 @@
 """
-User Management Module — Admin/operator login, RBAC, JWT auth.
-Uses bcrypt directly (not passlib) to avoid the passlib/bcrypt 4.1+ crash.
+User Management: login, JWT sessions, role-based access control.
+bcrypt is used directly because passlib is unmaintained and breaks with bcrypt >= 4.1.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import bcrypt
+import os
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel
 
-SECRET_KEY = "metroflow-dev-secret-change-in-production"
+SECRET_KEY = os.getenv("METROFLOW_SECRET_KEY", "metroflow-dev-secret-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 120
 
@@ -26,19 +27,15 @@ def _verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
 
 
+# Demo user store. Replace with a real users table for production.
 _USERS_DB = {
     "admin": {
-        "username": "admin",
-        "hashed_password": _hash_password("admin123"),
-        "role": "admin",
-        "full_name": "Platform Administrator",
+        "username": "admin", "hashed_password": _hash_password("admin123"),
+        "role": "admin", "full_name": "Platform Administrator",
     },
     "operator1": {
-        "username": "operator1",
-        "hashed_password": _hash_password("operator123"),
-        "role": "operator",
-        "full_name": "Station Operator",
-        "assigned_station": "Taipei Main Station",
+        "username": "operator1", "hashed_password": _hash_password("operator123"),
+        "role": "operator", "full_name": "Station Operator", "assigned_station": "Taipei Main Station",
     },
 }
 
@@ -64,15 +61,14 @@ def authenticate_user(username: str, password: str):
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
 def get_current_user(token: str = Depends(oauth2_scheme)) -> UserProfile:
     credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
@@ -82,14 +78,11 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> UserProfile:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-
     user = _USERS_DB.get(username)
     if user is None:
         raise credentials_exception
     return UserProfile(
-        username=user["username"],
-        role=user["role"],
-        full_name=user["full_name"],
+        username=user["username"], role=user["role"], full_name=user["full_name"],
         assigned_station=user.get("assigned_station"),
     )
 

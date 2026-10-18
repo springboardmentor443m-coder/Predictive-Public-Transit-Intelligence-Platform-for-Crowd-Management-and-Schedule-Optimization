@@ -1,0 +1,134 @@
+{
+  "trained_at": "2026-10-14T10:42:37.995512+00:00",
+  "deployment_note": "Models are evaluated on a chronological split, then refit on all data for serving.",
+  "demand": {
+    "periods": {
+      "development": [
+        "2022-01-01",
+        "2023-08-28"
+      ],
+      "test": [
+        "2023-08-29",
+        "2023-12-31"
+      ],
+      "cv_validation_folds": [
+        [
+          "2022-07-21",
+          "2022-10-29"
+        ],
+        [
+          "2022-10-30",
+          "2023-02-07"
+        ],
+        [
+          "2023-02-08",
+          "2023-05-19"
+        ],
+        [
+          "2023-05-20",
+          "2023-08-28"
+        ]
+      ]
+    },
+    "rows": {
+      "development": 435600,
+      "test": 90000
+    },
+    "candidate_cross_validation": {
+      "historical_average_baseline": {
+        "mean_mae": 96.55,
+        "fold_mae": [
+          43.31,
+          59.83,
+          133.54,
+          149.52
+        ]
+      },
+      "profile_plus_trend_seasonality": {
+        "mean_mae": 107.83,
+        "fold_mae": [
+          185.48,
+          137.72,
+          82.05,
+          26.07
+        ]
+      },
+      "profile_plus_week_of_year": {
+        "mean_mae": 53.04,
+        "fold_mae": [
+          76.18,
+          71.95,
+          39.97,
+          24.07
+        ]
+      },
+      "profile_plus_holiday_calendar": {
+        "mean_mae": 37.78,
+        "fold_mae": [
+          48.24,
+          48.65,
+          30.08,
+          24.14
+        ]
+      },
+      "gradient_boosting_direct": {
+        "mean_mae": 127.18,
+        "fold_mae": [
+          81.64,
+          70.03,
+          296.1,
+          60.95
+        ]
+      }
+    },
+    "selected_model": "profile_plus_holiday_calendar",
+    "test_metrics_selected": {
+      "mae": 24.52,
+      "rmse": 40.09,
+      "wape_pct": 2.3,
+      "r2": 0.999
+    },
+    "test_metrics_baseline": {
+      "mae": 40.51,
+      "rmse": 84.69,
+      "wape_pct": 3.8,
+      "r2": 0.9955
+    },
+    "improvement_over_baseline_mae_pct": 39.5,
+    "comparison_note": "The selected model 'profile_plus_holiday_calendar' beats the historical-average baseline by 39.5% MAE on the untouched test period.",
+    "prediction_interval": {
+      "nominal_coverage_pct": 90,
+      "anscombe_half_width": 1.856,
+      "empirical_coverage_on_test_pct": 91.4,
+      "method": "Anscombe-transformed forecast +/- q, mapped back to counts; q calibrated on the two most recent cross-validation folds"
+    },
+    "anomaly_detector": {
+      "rule": "|observed - forecast| > 3.0 sigma",
+      "sigma_scaled": 1.081,
+      "false_alarm_rate_on_test_pct": 0.971,
+      "recall_on_injected_50pct_spikes_pct": 81.0,
+      "recall_on_injected_spikes_busy_hours_pct": 100.0,
+      "note": "Busy-hour recall (forecast >= 500 entries) is the meaningful figure; a 50% spike on a 5-passenger overnight hour is statistically undetectable."
+    }
+  },
+  "delay": {
+    "delay_event_rate_pct": 2.21,
+    "classifier": {
+      "algorithm": "HistGradientBoostingClassifier",
+      "roc_auc": 0.612,
+      "roc_auc_random_guess": 0.5,
+      "pr_auc": 0.0335,
+      "pr_auc_random_guess": 0.0228,
+      "brier_score": 0.02222,
+      "brier_score_base_rate_only": 0.02229,
+      "brier_skill_vs_base_rate_pct": 0.32,
+      "note": "Accuracy is deliberately not reported: always predicting 'no delay' is already ~98% accurate on rare events. Delays are rare and only weakly predictable from calendar and crowd patterns, so modest AUC is the realistic outcome; the useful output is the relative risk ranking by hour."
+    },
+    "severity_regressor": {
+      "algorithm": "HistGradientBoostingRegressor",
+      "mae_minutes": 2.19,
+      "mae_minutes_predicting_mean": 3.65,
+      "trained_on_delay_events_only": true
+    }
+  }
+}
