@@ -21,3 +21,18 @@ data/bmrcl/stop_areas.txt
 data/bmrcl/timeframes.txt
 data/bmrcl/transfers.txt
 data/bmrcl/translations.txt
+
+
+
+# Frontend dependencies and generated files
+
+frontend/node_modules/
+frontend/dist/
+
+# Local environment and secrets
+
+backend/venv/
+backend/.venv/
+.env
+.env.*
+!.env.example

@@ -1,10 +1,9 @@
+
 from app.services.monitoring_service import (
     get_network_monitoring,
-    get_station_monitoring
+    get_station_monitoring,
 )
 
-
-# Alert thresholds
 HIGH_PRESSURE_THRESHOLD = 60
 CRITICAL_PRESSURE_THRESHOLD = 80
 PREDICTION_ERROR_THRESHOLD = 20
@@ -17,69 +16,63 @@ def _create_alert(
     title,
     message,
     recommendation,
-    monitoring_data
+    monitoring_data,
 ):
-    return {
+    alert = {
         "station": station,
         "alert_type": alert_type,
         "severity": severity,
         "title": title,
         "message": message,
         "recommendation": recommendation,
-        "monitoring_date": monitoring_data.get("monitoring_date"),
-        "monitoring_hour": monitoring_data.get("monitoring_hour"),
-        "current_ridership": monitoring_data.get("current_ridership"),
-        "predicted_next_hour_ridership": monitoring_data.get(
-            "predicted_next_hour_ridership"
-        ),
-        "observed_next_hour_ridership": monitoring_data.get(
-            "observed_next_hour_ridership"
-        ),
-        "pressure_score": monitoring_data.get("pressure_score"),
-        "prediction_error_percentage": monitoring_data.get(
-            "prediction_error_percentage"
-        ),
-        "assessment_type": monitoring_data.get("assessment_type")
+        "monitoring_data": monitoring_data,
+    }
+
+    if alert_type == "prediction_deviation":
+        alert["prediction_error_percentage"] = (
+            monitoring_data.get("prediction_error_percentage", 0) or 0
+        )
+
+    return alert
+
+
+def _summarize_alerts(
+    alerts,
+    monitoring_date=None,
+    monitoring_hour=None,
+):
+    severity_counts = {
+        "CRITICAL": 0,
+        "HIGH": 0,
+        "MODERATE": 0,
+        "LOW": 0,
+    }
+
+    for alert in alerts:
+        severity = alert.get("severity")
+        if severity in severity_counts:
+            severity_counts[severity] += 1
+
+    return {
+        "monitoring_date": monitoring_date,
+        "monitoring_hour": monitoring_hour,
+        "total_alerts": len(alerts),
+        "alert_count": len(alerts),
+        "severity_counts": severity_counts,
+        "alerts": alerts,
+        "assessment_type": "historical-demand-alert-replay",
     }
 
 
-def generate_station_alerts(
-    station,
-    selected_date=None,
-    selected_hour=None
-):
-    """
-    Generate operational alerts for a station using
-    existing monitoring and prediction results.
-    """
-
-    monitoring_data = get_station_monitoring(
-        station=station,
-        selected_date=selected_date,
-        selected_hour=selected_hour
-    )
-
-    if monitoring_data is None:
-        return {
-            "station": station,
-            "alerts": [],
-            "message": "No monitoring data found."
-        }
-
+def _generate_alerts_for_snapshot(station, monitoring_data):
     alerts = []
 
-    pressure_score = monitoring_data.get("pressure_score", 0)
-    prediction_error = monitoring_data.get(
-        "prediction_error_percentage",
-        0
+    pressure_score = monitoring_data.get("pressure_score", 0) or 0
+    prediction_error = (
+        monitoring_data.get("prediction_error_percentage", 0) or 0
     )
 
-    # -------------------------------------------------
-    # 1. Critical / high crowd-pressure alert
-    # -------------------------------------------------
-
     if pressure_score >= CRITICAL_PRESSURE_THRESHOLD:
-
         alerts.append(
             _create_alert(
                 station=station,
@@ -91,16 +84,15 @@ def generate_station_alerts(
                     f"{pressure_score:.2f}."
                 ),
                 recommendation=(
-                    "Consider increasing service frequency, "
-                    "monitoring platform crowding, and preparing "
-                    "station-level crowd management measures."
+                    "Prioritize station monitoring and consider "
+                    "additional service capacity and crowd-management "
+                    "measures."
                 ),
-                monitoring_data=monitoring_data
+                monitoring_data=monitoring_data,
             )
         )
 
     elif pressure_score >= HIGH_PRESSURE_THRESHOLD:
-
         alerts.append(
             _create_alert(
                 station=station,
@@ -112,19 +104,14 @@ def generate_station_alerts(
                     f"{pressure_score:.2f}."
                 ),
                 recommendation=(
-                    "Monitor station crowd conditions and "
-                    "consider additional service capacity."
+                    "Monitor station demand and consider additional "
+                    "service capacity."
                 ),
-                monitoring_data=monitoring_data
+                monitoring_data=monitoring_data,
             )
         )
 
-    # -------------------------------------------------
-    # 2. Prediction accuracy alert
-    # -------------------------------------------------
-
     if prediction_error >= PREDICTION_ERROR_THRESHOLD:
-
         alerts.append(
             _create_alert(
                 station=station,
@@ -132,87 +119,102 @@ def generate_station_alerts(
                 severity="MODERATE",
                 title="Prediction deviation detected",
                 message=(
-                    f"The predicted ridership differs from the "
-                    f"observed next-hour ridership by "
+                    "The predicted ridership differs from the "
+                    "observed next-hour ridership by "
                     f"{prediction_error:.2f}%."
                 ),
                 recommendation=(
-                    "Review recent station demand conditions "
-                    "and monitor subsequent predictions."
+                    "Review recent station demand conditions and "
+                    "monitor subsequent predictions."
                 ),
-                monitoring_data=monitoring_data
+                monitoring_data=monitoring_data,
             )
         )
 
-    return {
-        "station": station,
-        "monitoring_date": monitoring_data.get("monitoring_date"),
-        "monitoring_hour": monitoring_data.get("monitoring_hour"),
-        "alert_count": len(alerts),
-        "alerts": alerts,
-        "assessment_type": monitoring_data.get(
-            "assessment_type"
+    return alerts
+
+
+def generate_station_alerts(
+    station,
+    selected_date=None,
+    selected_hour=None,
+):
+    monitoring = get_station_monitoring(
+        station=station,
+        selected_date=selected_date,
+        selected_hour=selected_hour,
+    )
+
+    if monitoring is None or monitoring.get("data_available") is False:
+        result = _summarize_alerts(
+            alerts=[],
+            monitoring_date=selected_date,
+            monitoring_hour=selected_hour,
         )
-    }
+        result.update({
+            "station": station,
+            "message": "No monitoring data found.",
+        })
+        return result
+
+    alerts = _generate_alerts_for_snapshot(
+        station=station,
+        monitoring_data=monitoring,
+    )
+
+    result = _summarize_alerts(
+        alerts=alerts,
+        monitoring_date=monitoring.get(
+            "monitoring_date", selected_date
+        ),
+        monitoring_hour=monitoring.get(
+            "monitoring_hour", selected_hour
+        ),
+    )
+
+    result["station"] = station
+    return result
 
 
 def generate_network_alerts(
     selected_date=None,
-    selected_hour=None
+    selected_hour=None,
+    network_data=None,
 ):
-    """
-    Generate alerts for all monitored stations.
-    """
+    if network_data is None:
+        network_data = get_network_monitoring(
+            selected_date=selected_date,
+            selected_hour=selected_hour,
+        )
 
-    network_data = get_network_monitoring(
-        selected_date=selected_date,
-        selected_hour=selected_hour
-    )
-
-    station_results = network_data.get(
-        "station_snapshots",
-        []
-    )
+    if network_data is None:
+        return _summarize_alerts(
+            alerts=[],
+            monitoring_date=selected_date,
+            monitoring_hour=selected_hour,
+        )
 
     alerts = []
 
-    for station_data in station_results:
+    for station_data in network_data.get("station_snapshots", []):
         station = station_data.get("station")
 
-        station_alerts = generate_station_alerts(
-            station=station,
-            selected_date=selected_date,
-            selected_hour=selected_hour
-        )
+        if not station or station_data.get("data_available") is False:
+            continue
 
         alerts.extend(
-            station_alerts.get("alerts", [])
+            _generate_alerts_for_snapshot(
+                station=station,
+                monitoring_data=station_data,
+            )
         )
 
-    severity_counts = {
-        "CRITICAL": 0,
-        "HIGH": 0,
-        "MODERATE": 0,
-        "LOW": 0
-    }
-
-    for alert in alerts:
-        severity = alert.get("severity")
-
-        if severity in severity_counts:
-            severity_counts[severity] += 1
-
-    return {
-        "monitoring_date": network_data.get(
-            "monitoring_date"
+    return _summarize_alerts(
+        alerts=alerts,
+        monitoring_date=network_data.get(
+            "monitoring_date", selected_date
         ),
-        "monitoring_hour": network_data.get(
-            "monitoring_hour"
+        monitoring_hour=network_data.get(
+            "monitoring_hour", selected_hour
         ),
-        "total_alerts": len(alerts),
-        "severity_counts": severity_counts,
-        "alerts": alerts,
-        "assessment_type": (
-            "historical-demand-alert-replay"
-        )
-    }
+    )
