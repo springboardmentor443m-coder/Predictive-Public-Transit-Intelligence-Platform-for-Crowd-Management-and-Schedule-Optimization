@@ -897,8 +897,61 @@ async function loadDelayModel() {
             );
         }
 
+        const stationPredictions = Array.isArray(data.station_predictions)
+            ? data.station_predictions
+            : [];
+
         if (placeholder) {
-            placeholder.textContent = description;
+            const stationCards = stationPredictions.map(station => {
+                const predictedDelay = Number(station.predicted_delay_minutes);
+                const historicalDelay = Number(station.historical_delay_minutes);
+                const predictedText = Number.isFinite(predictedDelay)
+                    ? `${number(predictedDelay, 2)} minutes`
+                    : "Not available";
+                const historicalText = Number.isFinite(historicalDelay)
+                    ? `${number(historicalDelay, 2)} minutes`
+                    : "Not available";
+
+                return renderDataCard(
+                    getValue(station, ["station_name"], "Unknown station"),
+                    [
+                        renderDataRow("Experimental delay estimate", predictedText),
+                        renderDataRow("Recorded historical delay", historicalText),
+                        renderDataRow(
+                            "Historical trip",
+                            String(getValue(station, ["trip_id"], "N/A"))
+                        )
+                    ],
+                    "PRELIMINARY ESTIMATE"
+                );
+            }).join("");
+
+            placeholder.innerHTML = `
+                <p class="section-description">
+                    ${escapeHTML(description)}
+                </p>
+
+                <section class="delay-prediction-results">
+                    <h3>Experimental Station Delay Estimates</h3>
+                    ${stationCards
+                        ? `<div class="data-grid">${stationCards}</div>`
+                        : renderEmpty(
+                            data.prediction_error
+                                ? `Station estimates could not be generated: ${data.prediction_error}`
+                                : "No station estimates are currently available."
+                        )}
+                </section>
+
+                <p class="section-description">
+                    ${escapeHTML(
+                        getValue(
+                            data,
+                            ["evaluation_note"],
+                            "These estimates are preliminary and are not validated live forecasts."
+                        )
+                    )}
+                </p>
+            `;
         }
 
         if (rulesContainer) {
