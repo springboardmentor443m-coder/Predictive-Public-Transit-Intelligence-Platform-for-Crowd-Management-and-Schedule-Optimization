@@ -1,4 +1,4 @@
-import os
+﻿import os
 import time
 from datetime import datetime, timezone
 
@@ -12,8 +12,8 @@ from google.transit import gtfs_realtime_pb2
 # =========================================================
 
 REALTIME_URL = (
-    "https://api.vic.gov.au/transport/"
-    "vline/gtfs-realtime/trip-updates"
+    "https://api.opendata.transport.vic.gov.au/opendata/public-transport/gtfs/realtime/v1/"
+    "vline/trip-updates"
 )
 
 API_KEY = os.getenv("TV_API_KEY")
