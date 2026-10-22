@@ -1,0 +1,31 @@
+station_id,station,line,hourly_capacity
+S01,Taipei Main,Blue,14000
+S02,Ximen,Blue,9000
+S03,Zhongxiao Fuxing,Brown,8500
+S04,Daan,Brown,6500
+S05,Dongmen,Red,6200
+S06,Yuanshan,Red,4800
+S07,Shilin,Red,6000
+S08,Beitou,Red,5100
+S09,Nangang,Blue,7200
+S10,Banqiao,Blue,8000
+S11,Guting,Green,5200
+S12,Gongguan,Green,5800
+S13,Songjiang Nanjing,Orange,5700
+S14,Zhongshan,Red,7300
+S15,Shandao Temple,Blue,3900
+S16,Longshan Temple,Blue,6100
+S17,Jiangzicui,Blue,4900
+S18,Xinpu,Blue,5600
+S19,Kunyang,Blue,4200
+S20,Houshanpi,Blue,3600
+S21,Yongchun,Blue,4400
+S22,City Hall,Blue,9200
+S23,Sun Yat-Sen Memorial Hall,Blue,6800
+S24,Zhongxiao Dunhua,Blue,7400
+S25,Nanjing Fuxing,Brown,6900
+S26,Technology Building,Brown,4600
+S27,Linguang,Brown,3100
+S28,Xiaobitan,Green,2300
+S29,Tamsui,Red,7000
+S30,Taipei Arena,Green,5300
