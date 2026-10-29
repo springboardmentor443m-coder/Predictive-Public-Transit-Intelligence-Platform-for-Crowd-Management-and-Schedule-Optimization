@@ -1,6 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from backend.model import model, df
 
 app = FastAPI()
@@ -30,7 +30,7 @@ app.add_middleware(
 
 class PredictionRequest(BaseModel):
     station: str
-    hour: int
+    hour: int = Field(..., ge=0, le=23)
 
 
 # =====================================================
@@ -102,16 +102,14 @@ def predict(data: PredictionRequest):
     station = data.station
     hour = data.hour
 
-    # ---------------------------------------------
     # Check whether station exists
-    # ---------------------------------------------
-
     if station not in df["Station"].unique():
+        raise HTTPException(
+            status_code=404,
+            detail="Station not found"
+        )
 
-        return {
-            "error": "Station not found"
-        }
-
+    # Keep your existing prediction code below this line
     # ---------------------------------------------
     # Get station code
     # ---------------------------------------------

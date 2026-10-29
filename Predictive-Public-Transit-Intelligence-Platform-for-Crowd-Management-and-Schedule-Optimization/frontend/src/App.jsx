@@ -28,6 +28,14 @@ function App() {
   const [error, setError] = useState("");
 
   // =====================================================
+  // SCHEDULE OPTIMIZATION STATES
+  // =====================================================
+
+  const [scheduleResult, setScheduleResult] = useState(null);
+  const [scheduleError, setScheduleError] = useState("");
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
+
+  // =====================================================
   // ANALYTICS STATES
   // =====================================================
 
@@ -43,6 +51,9 @@ function App() {
     if (!isLoggedIn) {
       return;
     }
+
+    setLoadingAnalytics(true);
+    setAnalyticsError("");
 
     fetch("http://127.0.0.1:8000/analytics")
       .then((response) => {
@@ -105,6 +116,10 @@ function App() {
     setAlert("");
     setRecommendedAction("");
 
+    setScheduleResult(null);
+    setScheduleError("");
+    setLoadingSchedule(false);
+
     setError("");
   };
 
@@ -121,10 +136,13 @@ function App() {
     setAlert("");
     setRecommendedAction("");
 
+    setScheduleResult(null);
+    setScheduleError("");
+
     setError("");
 
     try {
-      console.log("Sending request:", {
+      console.log("Sending prediction request:", {
         station,
         hour: Number(hour),
       });
@@ -147,7 +165,7 @@ function App() {
 
       const data = await response.json();
 
-      console.log("Backend response:", data);
+      console.log("Prediction backend response:", data);
 
       if (data.error) {
         setError(data.error);
@@ -173,6 +191,61 @@ function App() {
   };
 
   // =====================================================
+  // SCHEDULE OPTIMIZATION
+  // =====================================================
+
+  const handleOptimizeSchedule = async () => {
+    setScheduleResult(null);
+    setScheduleError("");
+    setLoadingSchedule(true);
+
+    try {
+      console.log("Schedule request:", {
+        station,
+        hour: Number(hour),
+      });
+
+      const response = await fetch(
+        "http://127.0.0.1:8000/schedule",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({
+            station: station,
+            hour: Number(hour),
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      console.log("Schedule response:", data);
+
+      if (data.error) {
+        setScheduleError(data.error);
+        return;
+      }
+
+      setScheduleResult(data);
+    } catch (err) {
+      console.error(
+        "Schedule optimization error:",
+        err
+      );
+
+      setScheduleError(
+        "Unable to connect to MetroFlow backend."
+      );
+    } finally {
+      setLoadingSchedule(false);
+    }
+  };
+
+  // =====================================================
   // MAX HOURLY RIDERSHIP
   // =====================================================
 
@@ -193,7 +266,6 @@ function App() {
   if (!isLoggedIn) {
     return (
       <div style={styles.loginContainer}>
-
         <div style={styles.loginCard}>
 
           <div style={styles.loginIcon}>
@@ -254,7 +326,6 @@ function App() {
           </p>
 
         </div>
-
       </div>
     );
   }
@@ -470,6 +541,138 @@ function App() {
 
           </div>
 
+          {/* =================================================
+              SCHEDULE OPTIMIZATION
+          ================================================= */}
+
+          <div style={styles.scheduleCard}>
+
+            <h3>
+              🚇 Schedule Optimization
+            </h3>
+
+            <p style={styles.scheduleDescription}>
+              Based on the predicted ridership and
+              crowd level, MetroFlow recommends an
+              optimized train frequency.
+            </p>
+
+            <button
+              onClick={handleOptimizeSchedule}
+              style={styles.scheduleButton}
+            >
+              Optimize Train Schedule
+            </button>
+
+            {/* LOADING */}
+
+            {loadingSchedule && (
+              <div style={styles.loading}>
+                Optimizing train schedule...
+              </div>
+            )}
+
+            {/* ERROR */}
+
+            {scheduleError && (
+              <div style={styles.error}>
+                {scheduleError}
+              </div>
+            )}
+
+            {/* SCHEDULE RESULT */}
+
+            {scheduleResult && (
+
+              <div style={styles.scheduleResult}>
+
+                <h3>
+                  📊 Schedule Recommendation
+                </h3>
+
+                <p>
+                  <strong>Station:</strong>{" "}
+                  {scheduleResult.station}
+                </p>
+
+                <p>
+                  <strong>Hour:</strong>{" "}
+                  {scheduleResult.hour}:00
+                </p>
+
+                {/* PREDICTED RIDERSHIP */}
+
+                <div style={styles.scheduleInfo}>
+
+                  <span>
+                    Predicted Ridership
+                  </span>
+
+                  <strong>
+                    {scheduleResult.predicted_ridership}
+                  </strong>
+
+                </div>
+
+                {/* CROWD LEVEL */}
+
+                <div style={styles.scheduleInfo}>
+
+                  <span>
+                    Crowd Level
+                  </span>
+
+                  <strong
+                    style={{
+                      color:
+                        scheduleResult.crowd_level ===
+                        "HIGH"
+                          ? "#ff4444"
+                          : scheduleResult.crowd_level ===
+                            "MEDIUM"
+                          ? "#ff9800"
+                          : "#22c55e",
+                    }}
+                  >
+                    {scheduleResult.crowd_level}
+                  </strong>
+
+                </div>
+
+                {/* FREQUENCY */}
+
+                <div style={styles.frequencyBox}>
+
+                  <span>
+                    Recommended Train Frequency
+                  </span>
+
+                  <strong>
+                    {scheduleResult.recommended_frequency}
+                  </strong>
+
+                </div>
+
+                {/* ACTION */}
+
+                <div style={styles.actionBox}>
+
+                  <strong>
+                    Recommended Action
+                  </strong>
+
+                  <p>
+                    {scheduleResult.action}
+                  </p>
+
+                </div>
+
+              </div>
+
+            )}
+
+          </div>
+
         </div>
       )}
 
@@ -644,6 +847,7 @@ function App() {
             </div>
 
           </>
+
         )}
 
       </div>
@@ -651,7 +855,6 @@ function App() {
     </div>
   );
 }
-
 
 // =====================================================
 // STYLES
@@ -857,6 +1060,71 @@ const styles = {
     padding: "20px",
     border: "2px solid",
     borderRadius: "10px",
+    lineHeight: "1.6",
+  },
+
+  // ===================================================
+  // SCHEDULE OPTIMIZATION
+  // ===================================================
+
+  scheduleCard: {
+    marginTop: "20px",
+    padding: "20px",
+    border: "2px solid #2196f3",
+    borderRadius: "10px",
+    backgroundColor: "#f8fbff",
+  },
+
+  scheduleDescription: {
+    color: "#555",
+    lineHeight: "1.6",
+  },
+
+  scheduleButton: {
+    marginTop: "15px",
+    padding: "12px 20px",
+    border: "none",
+    borderRadius: "6px",
+    backgroundColor: "#2196f3",
+    color: "white",
+    fontSize: "16px",
+    cursor: "pointer",
+  },
+
+  scheduleResult: {
+    marginTop: "20px",
+    padding: "20px",
+    border: "1px solid #ddd",
+    borderRadius: "8px",
+    backgroundColor: "white",
+  },
+
+  scheduleInfo: {
+    marginTop: "12px",
+    padding: "15px",
+    backgroundColor: "#f5f5f5",
+    borderRadius: "8px",
+    display: "flex",
+    justifyContent: "space-between",
+    fontSize: "17px",
+  },
+
+  frequencyBox: {
+    marginTop: "15px",
+    padding: "18px",
+    backgroundColor: "#e8f5e9",
+    borderRadius: "8px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    fontSize: "17px",
+  },
+
+  actionBox: {
+    marginTop: "15px",
+    padding: "18px",
+    backgroundColor: "#fff3cd",
+    borderRadius: "8px",
     lineHeight: "1.6",
   },
 
